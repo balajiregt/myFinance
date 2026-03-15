@@ -1,0 +1,15 @@
+{
+  "name": "myfinance",
+  "version": "1.0.0",
+  "description": "Self-hostable personal portfolio tracker for Indian investors",
+  "private": true,
+  "author": "balajiregt",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/balajiregt/myFinance.git"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  }
+}
