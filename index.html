@@ -936,11 +936,11 @@ select option { background: var(--s2); }
   <div style="display:flex;gap:12px;margin-bottom:20px;">
     <div style="flex:1;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
       <span style="font-size:1.3rem;">🏦</span>
-      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">HDFC Bank FDs</div><div style="font-size:0.75rem;color:var(--text2);">Fixed Deposits — Safe, Guaranteed</div></div>
+      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">Fixed Deposits</div><div style="font-size:0.75rem;color:var(--text2);">Safe, Guaranteed Returns</div></div>
     </div>
     <div style="flex:1;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
       <span style="font-size:1.3rem;">🏛️</span>
-      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">Canara Bank RD</div><div style="font-size:0.75rem;color:var(--text2);">Recurring Deposits — Monthly discipline</div></div>
+      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">Recurring Deposits</div><div style="font-size:0.75rem;color:var(--text2);">Monthly Savings Discipline</div></div>
     </div>
   </div>
 
@@ -956,8 +956,9 @@ select option { background: var(--s2); }
       <div id="dp-fd" class="dp-panel active">
         <div class="g2" style="margin-bottom:16px;">
           <div>
-            <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Add HDFC FD</div>
+            <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Add Fixed Deposit</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Bank / Institution</label><input type="text" id="fdBank" placeholder="e.g. HDFC Bank"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Principal (₹)</label><input type="number" id="fdPrincipal" placeholder="200000"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Rate (%)</label><input type="number" id="fdRate" placeholder="7.10" step="0.05"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Tenure (months)</label><input type="number" id="fdTenure" placeholder="12"></div>
@@ -971,8 +972,8 @@ select option { background: var(--s2); }
           </div>
         </div>
         <table id="fdTable">
-          <thead><tr><th>Amount</th><th>Rate</th><th>Tenure</th><th>Start</th><th>Maturity Date</th><th>Maturity Amount</th><th>Interest</th><th>Status</th><th></th></tr></thead>
-          <tbody id="fdTbody"><tr><td colspan="9" style="color:var(--text3);text-align:center;padding:20px;">No FDs added</td></tr></tbody>
+          <thead><tr><th>Bank</th><th>Amount</th><th>Rate</th><th>Tenure</th><th>Start</th><th>Maturity Date</th><th>Maturity Amount</th><th>Interest</th><th>Status</th><th></th></tr></thead>
+          <tbody id="fdTbody"><tr><td colspan="10" style="color:var(--text3);text-align:center;padding:20px;">No FDs added</td></tr></tbody>
         </table>
       </div>
 
@@ -980,8 +981,9 @@ select option { background: var(--s2); }
       <div id="dp-rd" class="dp-panel">
         <div class="g2" style="margin-bottom:16px;">
           <div>
-            <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Add Canara Bank RD</div>
+            <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Add Recurring Deposit</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Bank / Institution</label><input type="text" id="rdBank" placeholder="e.g. Canara Bank"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Monthly Installment (₹)</label><input type="number" id="rdMonthly" placeholder="5000"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Rate (%)</label><input type="number" id="rdRate" placeholder="6.80" step="0.05"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Tenure (months)</label><input type="number" id="rdTenure" placeholder="24"></div>
@@ -995,7 +997,7 @@ select option { background: var(--s2); }
           </div>
         </div>
         <table>
-          <thead><tr><th>Monthly</th><th>Rate</th><th>Tenure</th><th>Start</th><th>Maturity Date</th><th>Total Deposited</th><th>Maturity Amount</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Bank</th><th>Monthly</th><th>Rate</th><th>Tenure</th><th>Start</th><th>Maturity Date</th><th>Total Deposited</th><th>Maturity Amount</th><th>Status</th><th></th></tr></thead>
           <tbody id="rdTbody"><tr><td colspan="9" style="color:var(--text3);text-align:center;padding:20px;">No RDs added</td></tr></tbody>
         </table>
       </div>
@@ -1007,7 +1009,7 @@ select option { background: var(--s2); }
           <thead><tr><th>Bank</th><th>6 Month</th><th>1 Year</th><th>2 Year</th><th>3 Year</th><th>Best For</th></tr></thead>
           <tbody>
             <tr><td>HDFC Bank</td><td>6.60%</td><td class="mono" style="color:var(--green)">7.10%</td><td class="mono" style="color:var(--green)">7.15%</td><td>7.00%</td><td></td></tr>
-            <tr><td>Canara Bank</td><td>6.75%</td><td>6.80%</td><td>6.80%</td><td>6.70%</td><td><span class="badge badge-purple">Your RD Bank</span></td></tr>
+            <tr><td>Canara Bank</td><td>6.75%</td><td>6.80%</td><td>6.80%</td><td>6.70%</td><td></td></tr>
             <tr><td>SBI</td><td>6.50%</td><td>6.80%</td><td>7.00%</td><td>6.75%</td><td><span class="badge badge-green">Safety</span></td></tr>
             <tr><td>Kotak Mahindra</td><td>7.00%</td><td>7.10%</td><td>7.25%</td><td>7.10%</td><td><span class="badge badge-amber">Higher yield</span></td></tr>
             <tr><td>IDFC First</td><td>7.50%</td><td>7.75%</td><td>7.75%</td><td>7.50%</td><td><span class="badge badge-amber">Max yield</span></td></tr>
@@ -3402,6 +3404,7 @@ function classifyBrokerHoldings() {
 // fds loaded at top
 
 function addFD() {
+  const bank = document.getElementById('fdBank')?.value.trim() || 'Bank';
   const p = parseFloat(document.getElementById('fdPrincipal').value);
   const r = parseFloat(document.getElementById('fdRate').value);
   const t = parseInt(document.getElementById('fdTenure').value);
@@ -3410,11 +3413,11 @@ function addFD() {
   const sd = new Date(s), md = new Date(s);
   md.setMonth(md.getMonth()+t);
   const mat = Math.round(p * Math.pow(1+r/400, t/3));
-  const fd = { id: Date.now(), principal:p, rate:r, tenure:t, start:s, maturity: md.toISOString(), matAmt: mat };
+  const fd = { id: Date.now(), bank, principal:p, rate:r, tenure:t, start:s, maturity: md.toISOString(), matAmt: mat };
   fds.push(fd); state.fds = fds;
   localStorage.setItem('mypf_fds', JSON.stringify(fds));
   renderFDs(); updateDonut(); save();
-  ['fdPrincipal','fdRate','fdTenure','fdStart'].forEach(id => document.getElementById(id).value = '');
+  ['fdBank','fdPrincipal','fdRate','fdTenure','fdStart'].forEach(id => document.getElementById(id).value = '');
 }
 
 function delFD(id) {
@@ -3425,12 +3428,12 @@ function delFD(id) {
 
 function renderFDs() {
   const tbody = document.getElementById('fdTbody');
-  if (!fds.length) { tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:20px;">No FDs added</td></tr>'; document.getElementById('fdSummary').innerHTML = 'No FDs yet.'; return; }
+  if (!fds.length) { tbody.innerHTML = '<tr><td colspan="10" style="color:var(--text3);text-align:center;padding:20px;">No FDs added</td></tr>'; document.getElementById('fdSummary').innerHTML = 'No FDs yet.'; return; }
   const fmtD = iso => new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   tbody.innerHTML = fds.map(f => {
     const days = Math.ceil((new Date(f.maturity)-new Date())/86400000);
     const status = days<0?'<span class="badge badge-red">Matured</span>':days<30?'<span class="badge badge-red">Soon</span>':days<90?'<span class="badge badge-amber">Upcoming</span>':'<span class="badge badge-green">Active</span>';
-    return `<tr><td class="mono">₹${f.principal.toLocaleString('en-IN')}</td><td>${f.rate}%</td><td>${f.tenure}m</td><td>${fmtD(f.start)}</td><td>${fmtD(f.maturity)}</td><td class="mono" style="color:var(--green)">₹${f.matAmt.toLocaleString('en-IN')}</td><td class="mono" style="color:var(--yellow)">₹${(f.matAmt-f.principal).toLocaleString('en-IN')}</td><td>${status}</td><td><button onclick="delFD(${f.id})" class="le-del">✕</button></td></tr>`;
+    return `<tr><td style="font-weight:600;color:var(--blue);">${f.bank||'Bank'}</td><td class="mono">₹${f.principal.toLocaleString('en-IN')}</td><td>${f.rate}%</td><td>${f.tenure}m</td><td>${fmtD(f.start)}</td><td>${fmtD(f.maturity)}</td><td class="mono" style="color:var(--green)">₹${f.matAmt.toLocaleString('en-IN')}</td><td class="mono" style="color:var(--yellow)">₹${(f.matAmt-f.principal).toLocaleString('en-IN')}</td><td>${status}</td><td><button onclick="delFD(${f.id})" class="le-del">✕</button></td></tr>`;
   }).join('');
   const tot = fds.reduce((s,f)=>s+f.principal,0);
   const totMat = fds.reduce((s,f)=>s+f.matAmt,0);
@@ -3441,6 +3444,7 @@ function renderFDs() {
 // rds loaded at top
 
 function addRD() {
+  const bank = document.getElementById('rdBank')?.value.trim() || 'Bank';
   const m = parseFloat(document.getElementById('rdMonthly').value);
   const r = parseFloat(document.getElementById('rdRate').value);
   const t = parseInt(document.getElementById('rdTenure').value);
@@ -3452,11 +3456,11 @@ function addRD() {
   const paid = Math.min(t, Math.max(0, Math.floor((now-sd)/(1000*60*60*24*30))));
   // RD maturity calc (quarterly compounding approximation)
   const mat = Math.round(m * t * (1 + r/400 * (t+1)/2));
-  const rd = { id: Date.now(), monthly:m, rate:r, tenure:t, start:s, maturity: md.toISOString(), matAmt: mat, paidMonths: paid };
+  const rd = { id: Date.now(), bank, monthly:m, rate:r, tenure:t, start:s, maturity: md.toISOString(), matAmt: mat, paidMonths: paid };
   rds.push(rd); state.rds = rds;
   localStorage.setItem('mypf_rds', JSON.stringify(rds));
   renderRDs(); updateDonut(); save();
-  ['rdMonthly','rdRate','rdTenure','rdStart'].forEach(id => document.getElementById(id).value='');
+  ['rdBank','rdMonthly','rdRate','rdTenure','rdStart'].forEach(id => document.getElementById(id).value='');
 }
 
 function delRD(id) {
@@ -3467,13 +3471,13 @@ function delRD(id) {
 
 function renderRDs() {
   const tbody = document.getElementById('rdTbody');
-  if (!rds.length) { tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:20px;">No RDs added</td></tr>'; document.getElementById('rdSummary').innerHTML = 'No RDs yet.'; return; }
+  if (!rds.length) { tbody.innerHTML = '<tr><td colspan="10" style="color:var(--text3);text-align:center;padding:20px;">No RDs added</td></tr>'; document.getElementById('rdSummary').innerHTML = 'No RDs yet.'; return; }
   const fmtD = iso => new Date(iso).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   tbody.innerHTML = rds.map(r => {
     const days = Math.ceil((new Date(r.maturity)-new Date())/86400000);
     const status = days<0?'<span class="badge badge-red">Matured</span>':days<30?'<span class="badge badge-red">Soon</span>':'<span class="badge badge-green">Active</span>';
     const deposited = r.monthly * r.paidMonths;
-    return `<tr><td class="mono">₹${r.monthly.toLocaleString('en-IN')}/mo</td><td>${r.rate}%</td><td>${r.tenure}m</td><td>${fmtD(r.start)}</td><td>${fmtD(r.maturity)}</td><td class="mono">₹${deposited.toLocaleString('en-IN')}</td><td class="mono" style="color:var(--green)">₹${r.matAmt.toLocaleString('en-IN')}</td><td>${status}</td><td><button onclick="delRD(${r.id})" class="le-del">✕</button></td></tr>`;
+    return `<tr><td style="font-weight:600;color:var(--blue);">${r.bank||'Bank'}</td><td class="mono">₹${r.monthly.toLocaleString('en-IN')}/mo</td><td>${r.rate}%</td><td>${r.tenure}m</td><td>${fmtD(r.start)}</td><td>${fmtD(r.maturity)}</td><td class="mono">₹${deposited.toLocaleString('en-IN')}</td><td class="mono" style="color:var(--green)">₹${r.matAmt.toLocaleString('en-IN')}</td><td>${status}</td><td><button onclick="delRD(${r.id})" class="le-del">✕</button></td></tr>`;
   }).join('');
   const totM = rds.reduce((s,r)=>s+r.monthly,0);
   document.getElementById('rdSummary').innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;"><div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Total Monthly</span><strong style="font-family:'JetBrains Mono',monospace">₹${totM.toLocaleString('en-IN')}</strong></div><div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)"># of RDs</span><strong>${rds.length}</strong></div></div>`;
@@ -5937,6 +5941,7 @@ async function fetchBrokerHoldings() {
       localStorage.setItem('mypf_broker_etf', JSON.stringify(classified.etf));
       localStorage.setItem('mypf_broker_bonds', JSON.stringify(classified.bonds));
       updateDonut(); // Trigger Overview refresh with broker data
+      if (isBrokerMode()) renderBrokerMFSection(); // Sync MF tab with broker data
       const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
       status.innerHTML = `✅ <span style="color:var(--green);">${holdings.length} holdings fetched</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
     } else {
