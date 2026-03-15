@@ -816,7 +816,7 @@ select option { background: var(--s2); }
       <div style="text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Market Value</div>
         <div id="ssMarketVal" style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1rem;color:var(--amber)">₹ —</div>
-        <div style="font-size:0.62rem;color:var(--text3);">158 × price</div>
+        <div style="font-size:0.62rem;color:var(--text3);" id="ssOptionsLabel">— × price</div>
       </div>
       <div style="text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Contributed</div>
@@ -843,35 +843,35 @@ select option { background: var(--s2); }
 
     <!-- DYNAMIC SCENARIO TABLE -->
     <div class="card">
-      <div class="card-hdr">Live Profit Scenarios at Maturity (Feb 2027)</div>
+      <div class="card-hdr">Live Profit Scenarios at Maturity</div>
       <table>
         <thead><tr><th>Scenario</th><th>Share Price</th><th>Option Gain</th><th>Total Payout</th><th>Return on Principal</th><th>Action</th></tr></thead>
         <tbody id="ssScenarioTbody">
           <tr><td colspan="6" style="color:var(--text3);text-align:center;padding:16px;">Enter current share price above to see live scenarios</td></tr>
         </tbody>
       </table>
-      <div style="font-size:0.7rem;color:var(--text3);margin-top:8px;">* Full principal ₹4,75,000 always returned at maturity regardless of share price.</div>
+      <div style="font-size:0.7rem;color:var(--text3);margin-top:8px;">* Full principal always returned at maturity regardless of share price.</div>
     </div>
 
     <!-- TIMELINE -->
     <div class="card">
       <div class="card-hdr">Plan Timeline</div>
       <div style="margin-bottom:14px;">
-        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text2);margin-bottom:6px;"><span>Grant: 15 Dec 2023</span><span>Maturity: 01 Feb 2027</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text2);margin-bottom:6px;"><span id="ssGrantLabel">Grant: —</span><span id="ssMaturityLabel">Maturity: —</span></div>
         <div class="pbar" style="height:8px;"><div class="pbar-fill" id="ssPbar" style="background:linear-gradient(90deg,var(--amber),var(--yellow));"></div></div>
         <div style="font-size:0.75rem;color:var(--text3);margin-top:5px;" id="ssTimeLabel"></div>
       </div>
       <table>
         <tr><th>Milestone</th><th>Date</th><th>Status</th></tr>
-        <tr><td>Grant</td><td>15 Dec 2023</td><td><span class="badge badge-green">Done</span></td></tr>
-        <tr><td>Vesting check</td><td>15 Jun 2025</td><td><span class="badge badge-green">Passed</span></td></tr>
-        <tr><td>Maturity</td><td>01 Feb 2027</td><td><span class="badge badge-amber" id="ssMatBadge">Upcoming</span></td></tr>
+        <tr><td>Grant</td><td id="ssMilestoneGrant">—</td><td><span class="badge badge-green" id="ssMilestoneGrantBadge">—</span></td></tr>
+        <tr><td>Vesting check</td><td id="ssMilestoneVesting">—</td><td><span class="badge badge-green" id="ssMilestoneVestingBadge">—</span></td></tr>
+        <tr><td>Maturity</td><td id="ssMilestoneMaturity">—</td><td><span class="badge badge-amber" id="ssMatBadge">—</span></td></tr>
       </table>
       <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;font-size:0.83rem;">
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Months completed</span><span id="ssMonthsDone" class="mono" style="color:var(--amber)">—</span></div>
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Contributed so far</span><span id="ssContribSoFar" class="mono">—</span></div>
         <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Remaining contributions</span><span id="ssRemainingContrib" class="mono" style="color:var(--text3)">—</span></div>
-        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Full principal at maturity</span><span class="mono" style="color:var(--yellow)">₹4,75,000</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2)">Full principal at maturity</span><span class="mono" style="color:var(--yellow)" id="ssPrincipalDisplay">₹ —</span></div>
       </div>
     </div>
 
@@ -881,15 +881,15 @@ select option { background: var(--s2); }
   <div class="card" style="margin-bottom:18px;">
     <div class="card-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span>💰 Dividend Income Tracker</span>
-      <span style="font-size:0.72rem;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:normal;">$0.33/share quarterly · $1.32/year · 158 shares</span>
+      <span style="font-size:0.72rem;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:normal;" id="ssDivSubHeader">Configure share plan to see dividend estimates</span>
     </div>
 
     <!-- KPI strip -->
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;">
       <div style="background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.18);border-radius:12px;padding:12px 14px;text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Annual Dividend (USD)</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.1rem;color:var(--yellow)">$208.56</div>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;">158 × $1.32</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.1rem;color:var(--yellow)" id="ssDivAnnualUsd">$ —</div>
+        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;" id="ssDivCalcLabel">— × $1.32</div>
       </div>
       <div style="background:rgba(240,192,64,0.07);border:1px solid rgba(240,192,64,0.18);border-radius:12px;padding:12px 14px;text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Annual Dividend (₹)</div>
@@ -899,12 +899,12 @@ select option { background: var(--s2); }
       <div style="background:rgba(232,146,58,0.07);border:1px solid rgba(232,146,58,0.2);border-radius:12px;padding:12px 14px;text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Total Received (est.)</div>
         <div id="ssDivTotalReceived" style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.1rem;color:var(--amber)">₹ —</div>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;" id="ssDivReceivedLabel">since grant Dec 2023</div>
+        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;" id="ssDivReceivedLabel">since grant</div>
       </div>
       <div style="background:rgba(62,207,142,0.07);border:1px solid rgba(62,207,142,0.18);border-radius:12px;padding:12px 14px;text-align:center;">
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Still to Receive</div>
         <div id="ssDivStillToReceive" style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.1rem;color:var(--green)">₹ —</div>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;">till maturity Feb 2027</div>
+        <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;" id="ssDivRemainingLabel">till maturity</div>
       </div>
     </div>
 
@@ -918,7 +918,7 @@ select option { background: var(--s2); }
     </table>
 
     <div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:10px;font-size:0.76rem;color:var(--text2);line-height:1.7;">
-      ⚠️ <strong>Important:</strong> Since your options aren't exercised yet (maturity Feb 2027), you won't receive dividends until you actually hold the shares post-exercise. These figures show what you <em>would</em> earn if you held all 158 shares right now — useful for understanding the income potential once exercised.
+      ⚠️ <strong>Important:</strong> Since your options aren't exercised yet, you won't receive dividends until you actually hold the shares post-exercise. These figures show what you <em>would</em> earn if you held all your shares right now — useful for understanding the income potential once exercised.
       <br>Dividends are paid in USD and will be subject to applicable taxes (TDS/DTAA between India-US).
     </div>
   </div>
@@ -2689,7 +2689,7 @@ function updateSharesave() {
   const alertEl = document.getElementById('ssAlert');
   if (alertEl) {
     if (!inMoney) {
-      alertEl.innerHTML = '<div class="warn">⚠️ Current price ₹' + price.toLocaleString('en-IN') + ' is <strong>below strike ₹2,840.26</strong> by ₹' + Math.abs(vsStrike).toFixed(2) + ' (' + vsStrikePct + '%). No option gain right now — but your full principal ₹4,75,000 is safe. Price needs to rise ₹' + Math.abs(vsStrike).toFixed(2) + ' to break even on options.</div>';
+      alertEl.innerHTML = '<div class="warn">⚠️ Current price ₹' + price.toLocaleString('en-IN') + ' is <strong>below strike ₹' + SS_STRIKE().toLocaleString('en-IN') + '</strong> by ₹' + Math.abs(vsStrike).toFixed(2) + ' (' + vsStrikePct + '%). No option gain right now — but your full principal ₹' + SS_PRINCIPAL().toLocaleString('en-IN') + ' is safe. Price needs to rise ₹' + Math.abs(vsStrike).toFixed(2) + ' to break even on options.</div>';
     } else {
       alertEl.innerHTML = '<div class="good">✅ Price ₹' + price.toLocaleString('en-IN') + ' is <strong style="color:var(--green)">IN THE MONEY</strong> — ₹' + vsStrike.toFixed(2) + ' above strike (+' + vsStrikePct + '%). Option gain today = <strong>₹' + optionGain.toLocaleString('en-IN') + '</strong>. If maturity price stays here → Total payout = ₹' + (SS_PRINCIPAL() + optionGain).toLocaleString('en-IN') + ' 🎯</div>';
     }
@@ -3023,16 +3023,77 @@ function updateSSHeader() {
   const ss = getSS();
   const titleEl = document.getElementById('ssCompanyTitle');
   const subEl   = document.getElementById('ssSubtitle');
+  const fmtDate = d => d ? d.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—';
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+
   if (!ss.configured) {
     if (titleEl) titleEl.textContent = 'Company Share Plan';
     if (subEl)   subEl.textContent   = 'Configure your scheme below to get started';
+    // Clear all dynamic fields
+    set('ssGrantLabel', 'Grant: —');
+    set('ssMaturityLabel', 'Maturity: —');
+    set('ssMilestoneGrant', '—');
+    set('ssMilestoneVesting', '—');
+    set('ssMilestoneMaturity', '—');
+    set('ssMilestoneGrantBadge', '—');
+    set('ssMilestoneVestingBadge', '—');
+    set('ssMatBadge', '—');
+    set('ssPrincipalDisplay', '₹ —');
+    set('ssDivSubHeader', 'Configure share plan to see dividend estimates');
+    set('ssDivAnnualUsd', '$ —');
+    set('ssDivRemainingLabel', 'till maturity');
     return;
   }
+
   if (titleEl) titleEl.textContent = (ss.company || 'Company') + ' Share Plan';
   if (subEl)   subEl.textContent   = ss.options + ' options · Strike ₹' + ss.strike.toLocaleString('en-IN')
     + ' · ₹' + ss.monthly.toLocaleString('en-IN') + '/month'
-    + (ss.maturity ? ' · Matures ' + ss.maturity.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '');
-  // Also update chipSS on overview
+    + (ss.maturity ? ' · Matures ' + fmtDate(ss.maturity) : '');
+
+  // Milestone dates
+  set('ssGrantLabel', 'Grant: ' + fmtDate(ss.grant));
+  set('ssMaturityLabel', 'Maturity: ' + fmtDate(ss.maturity));
+  set('ssMilestoneGrant', fmtDate(ss.grant));
+  set('ssMilestoneMaturity', fmtDate(ss.maturity));
+
+  // Vesting = grant + 18 months (typical)
+  if (ss.grant) {
+    const vesting = new Date(ss.grant);
+    vesting.setMonth(vesting.getMonth() + 18);
+    set('ssMilestoneVesting', fmtDate(vesting));
+    const now = new Date();
+    const vestEl = document.getElementById('ssMilestoneVestingBadge');
+    if (vestEl) {
+      if (now >= vesting) { vestEl.textContent = 'Passed'; vestEl.className = 'badge badge-green'; }
+      else { vestEl.textContent = 'Upcoming'; vestEl.className = 'badge badge-amber'; }
+    }
+    const grantEl = document.getElementById('ssMilestoneGrantBadge');
+    if (grantEl) { grantEl.textContent = 'Done'; grantEl.className = 'badge badge-green'; }
+  }
+
+  // Maturity badge
+  if (ss.maturity) {
+    const matEl = document.getElementById('ssMatBadge');
+    if (matEl) {
+      const monthsLeft = Math.max(0, Math.round((ss.maturity - new Date()) / (1000*60*60*24*30.44)));
+      if (monthsLeft <= 0) { matEl.textContent = 'Matured'; matEl.className = 'badge badge-green'; }
+      else { matEl.textContent = '~' + monthsLeft + ' mo'; matEl.className = 'badge badge-amber'; }
+    }
+    set('ssDivRemainingLabel', 'till maturity ' + fmtDate(ss.maturity));
+  }
+
+  // Principal
+  set('ssPrincipalDisplay', ss.principal > 0 ? '₹' + ss.principal.toLocaleString('en-IN') : '₹ —');
+
+  // Dividend header
+  const divPerShare = 1.32; // can be made configurable later
+  const divQuarterly = 0.33;
+  set('ssDivSubHeader', '$' + divQuarterly + '/share quarterly · $' + divPerShare + '/year · ' + ss.options + ' shares');
+  set('ssDivAnnualUsd', '$' + (divPerShare * ss.options).toFixed(2));
+  set('ssDivCalcLabel', ss.options + ' × $' + divPerShare);
+  set('ssOptionsLabel', ss.options + ' × price');
+
+  // ChipSS on overview
   const chipSS = document.getElementById('chipSS');
   if (chipSS) chipSS.textContent = ss.monthly > 0 ? '₹\u202f' + ss.monthly.toLocaleString('en-IN') : '₹\u202f—';
 }
@@ -5488,6 +5549,8 @@ const BROKER_META = {
 };
 
 // Session state for broker
+// SECURITY: Token stays in sessionStorage (cleared on tab close)
+// PERSISTENCE: Holdings/funds cached in localStorage (survives refresh)
 let brokerSession = {
   broker: null,
   token: null,
@@ -5495,13 +5558,52 @@ let brokerSession = {
   funds: null,
   lastFetched: null,
 };
-try { 
-  const saved = JSON.parse(sessionStorage.getItem('mypf_broker_session') || 'null');
-  if (saved) brokerSession = saved;
+try {
+  // Restore token from sessionStorage (short-lived, secure)
+  const sessionData = JSON.parse(sessionStorage.getItem('mypf_broker_token') || 'null');
+  if (sessionData) {
+    brokerSession.broker = sessionData.broker;
+    brokerSession.token = sessionData.token;
+  }
+  // Restore holdings from localStorage (persists across refresh)
+  const cachedHoldings = JSON.parse(localStorage.getItem('mypf_broker_holdings_cache') || 'null');
+  if (cachedHoldings) {
+    brokerSession.holdings = cachedHoldings.holdings || [];
+    brokerSession.funds = cachedHoldings.funds || null;
+    brokerSession.lastFetched = cachedHoldings.lastFetched || null;
+    // Also restore broker name if we have cached holdings but no active session
+    if (!brokerSession.broker && cachedHoldings.broker) {
+      brokerSession.broker = cachedHoldings.broker;
+    }
+  }
 } catch(e) {}
 
 function saveBrokerSession() {
-  sessionStorage.setItem('mypf_broker_session', JSON.stringify(brokerSession));
+  // Token → sessionStorage (secure, clears on tab close)
+  if (brokerSession.token) {
+    sessionStorage.setItem('mypf_broker_token', JSON.stringify({
+      broker: brokerSession.broker,
+      token: brokerSession.token,
+    }));
+  }
+  // Holdings + funds → localStorage (persists across refresh)
+  localStorage.setItem('mypf_broker_holdings_cache', JSON.stringify({
+    broker: brokerSession.broker,
+    holdings: brokerSession.holdings,
+    funds: brokerSession.funds,
+    lastFetched: brokerSession.lastFetched,
+  }));
+}
+
+function clearBrokerStorage() {
+  sessionStorage.removeItem('mypf_broker_token');
+  localStorage.removeItem('mypf_broker_holdings_cache');
+  localStorage.removeItem('mypf_broker_stocks');
+  localStorage.removeItem('mypf_broker_mf');
+  localStorage.removeItem('mypf_broker_sgb');
+  localStorage.removeItem('mypf_broker_etf');
+  localStorage.removeItem('mypf_broker_bonds');
+  localStorage.removeItem('mypf_broker_classified');
 }
 
 // Detect if running on Netlify (has functions available)
@@ -5784,15 +5886,16 @@ function completeAuth(broker, token, isDirect) {
 }
 
 function brokerDisconnect() {
-  if (!confirm('Disconnect from ' + (BROKER_META[brokerSession.broker]?.name || 'broker') + '?')) return;
+  if (!confirm('Disconnect from ' + (BROKER_META[brokerSession.broker]?.name || 'broker') + '?\n\nThis will clear your cached holdings and token.')) return;
   brokerSession = { broker: null, token: null, holdings: [], funds: null, lastFetched: null };
-  saveBrokerSession();
+  clearBrokerStorage();
   updateBrokerUI('disconnected');
   document.getElementById('brokerHoldingsTbody').innerHTML = 
     '<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">Connect a broker above to fetch your holdings</td></tr>';
   document.getElementById('brokerSummary').innerHTML = 'No holdings fetched yet.';
   document.getElementById('brokerFundsInfo').innerHTML = 'Connect a broker to view available funds.';
   document.getElementById('brokerFetchStatus').textContent = '';
+  updateDonut(); // Refresh Overview without broker data
 }
 
 // Fetch holdings via Netlify Function proxy
@@ -6071,17 +6174,27 @@ function initBrokerTab() {
     }
   }
 
-  // If we have a session, restore UI
+  // If we have an active token session → show as connected
   if (brokerSession.broker && brokerSession.token) {
     const sel = document.getElementById('brokerSelect');
     if (sel) sel.value = brokerSession.broker;
     onBrokerSelect();
-    // Re-render cached holdings
     if (brokerSession.holdings?.length) {
       renderBrokerHoldings(brokerSession.holdings);
       const ts = brokerSession.lastFetched ? new Date(brokerSession.lastFetched).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
-      document.getElementById('brokerFetchStatus').innerHTML = `✅ <span style="color:var(--green);">${brokerSession.holdings.length} holdings (cached)</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
+      document.getElementById('brokerFetchStatus').innerHTML = `✅ <span style="color:var(--green);">${brokerSession.holdings.length} holdings (live session)</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
     }
+  }
+  // If no token but we have cached holdings → show cached data with "session expired" notice
+  else if (brokerSession.holdings?.length) {
+    const sel = document.getElementById('brokerSelect');
+    if (sel && brokerSession.broker) { sel.value = brokerSession.broker; onBrokerSelect(); }
+    renderBrokerHoldings(brokerSession.holdings);
+    const ts = brokerSession.lastFetched ? new Date(brokerSession.lastFetched).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+    document.getElementById('brokerFetchStatus').innerHTML = `📋 <span style="color:var(--yellow);">${brokerSession.holdings.length} holdings (cached · session expired)</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts} · Login again to refresh</span>`;
+    // Keep fetch button disabled since token is gone
+    const fetchBtn = document.getElementById('brokerFetchBtn');
+    if (fetchBtn) fetchBtn.disabled = true;
   }
 
   // Restore source preferences in Settings
