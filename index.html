@@ -26,6 +26,7 @@
   --c-mf: #3ecf8e;
   --c-po: #20c4a8;
   --c-cash: #f06080;
+  --c-stocks: #ff6b9d;
 
   --green: #3ecf8e;
   --red: #f06060;
@@ -201,7 +202,7 @@ nav {
 .card-hdr-right { font-family: 'Instrument Sans', sans-serif; font-weight: 600; font-size: 0.78rem; color: var(--text2); text-transform: none; letter-spacing: normal; }
 
 /* ── ASSET OVERVIEW TILES ── */
-.asset-tiles { display: grid; grid-template-columns: repeat(6,1fr); gap: 12px; margin-bottom: 24px; }
+.asset-tiles { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
 .asset-tile {
   background: var(--s2); border: 1.5px solid var(--border);
   border-radius: 16px; padding: 16px 18px; cursor: pointer;
@@ -220,6 +221,10 @@ nav {
 .tile-val { font-family: 'Cabinet Grotesk', sans-serif; font-weight: 800; font-size: 1rem; }
 .tile-sub { font-size: 0.7rem; color: var(--text3); margin-top: 3px; }
 .tile-pct { font-size: 0.72rem; font-weight: 600; margin-top: 6px; }
+.tile-source { font-size: 0.58rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; letter-spacing: 0.04em; }
+.tile-source.src-broker { background: rgba(74,158,255,0.15); color: var(--blue); }
+.tile-source.src-manual { background: rgba(160,160,192,0.12); color: var(--text3); }
+.tile-source.src-stale  { background: rgba(240,192,64,0.15); color: var(--yellow); }
 
 /* ── NET WORTH HERO ── */
 .nw-hero {
@@ -370,7 +375,7 @@ select option { background: var(--s2); }
 .le-del:hover { color: var(--red); }
 
 @media (max-width:1100px) {
-  .asset-tiles { grid-template-columns: repeat(3,1fr); }
+  .asset-tiles { grid-template-columns: repeat(2,1fr); }
   .nw-hero { grid-template-columns: 1fr; }
   .g2,.g3 { grid-template-columns: 1fr; }
   .strat-row { grid-template-columns: 1fr; }
@@ -460,7 +465,7 @@ select option { background: var(--s2); }
       <span style="color:var(--text3);font-size:0.85rem;">+</span>
 
       <div class="sc-chip" style="border-color:rgba(240,192,64,0.3);flex:1;min-width:90px;">
-        <div class="sc-chip-label"><span id="chipPctLabel">15%</span> of Salary</div>
+        <div class="sc-chip-label"><span id="chipPctLabel">—%</span> of Salary</div>
         <div class="sc-chip-val" id="chip15" style="color:var(--yellow)">₹ —</div>
         <div style="font-size:0.58rem;color:var(--text3);margin-top:2px;">total savings target</div>
       </div>
@@ -545,26 +550,21 @@ select option { background: var(--s2); }
 
   <!-- ASSET TILES -->
   <div class="asset-tiles">
-    <div class="asset-tile active" style="--tile-color:var(--c-sharesave)" onclick="gotoPage('sharesave', null)">
-      <div class="tile-icon">🏢</div>
-      <div class="tile-name">Sharesave</div>
-      <div class="tile-val" style="color:var(--c-sharesave)" id="tile-ss">₹ —</div>
-      <div class="tile-sub">158 options · Locked till Feb 2027</div>
-      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-ss">—% of portfolio</div>
+    <div class="asset-tile" style="--tile-color:var(--c-stocks)" onclick="gotoPage('broker', null)">
+      <div class="tile-icon">📊</div>
+      <div class="tile-name">Stocks</div>
+      <div class="tile-val" style="color:var(--c-stocks)" id="tile-stocks">₹ —</div>
+      <div class="tile-sub" id="tile-stocks-sub">Connect broker to fetch</div>
+      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-stocks">—% of portfolio</div>
+      <div class="tile-source src-broker" id="tile-src-stocks">BROKER</div>
     </div>
-    <div class="asset-tile" style="--tile-color:var(--c-fd)" onclick="gotoPage('deposits', null)">
-      <div class="tile-icon">🏦</div>
-      <div class="tile-name">HDFC Bank FD</div>
-      <div class="tile-val" style="color:var(--c-fd)" id="tile-fd">₹ —</div>
-      <div class="tile-sub">Add your FD amounts</div>
-      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-fd">—% of portfolio</div>
-    </div>
-    <div class="asset-tile" style="--tile-color:var(--c-rd)" onclick="gotoPage('deposits', null)">
-      <div class="tile-icon">🏛️</div>
-      <div class="tile-name">Canara Bank RD</div>
-      <div class="tile-val" style="color:var(--c-rd)" id="tile-rd">₹ —</div>
-      <div class="tile-sub">Add your RD details</div>
-      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-rd">—% of portfolio</div>
+    <div class="asset-tile" style="--tile-color:var(--c-mf)" onclick="gotoPage('mf', null)">
+      <div class="tile-icon">📈</div>
+      <div class="tile-name">Mutual Funds</div>
+      <div class="tile-val" style="color:var(--c-mf)" id="tile-mf">₹ —</div>
+      <div class="tile-sub" id="tile-mf-sub">Add funds or connect broker</div>
+      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-mf">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-mf">MANUAL</div>
     </div>
     <div class="asset-tile" style="--tile-color:var(--c-gold)" onclick="gotoPage('gold', null)">
       <div class="tile-icon">🥇</div>
@@ -572,13 +572,31 @@ select option { background: var(--s2); }
       <div class="tile-val" style="color:var(--c-gold)" id="tile-gold">₹ —</div>
       <div class="tile-sub">Sovereign Gold Bond</div>
       <div class="tile-pct" style="color:var(--text3)" id="tile-pct-gold">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-gold">MANUAL</div>
     </div>
-    <div class="asset-tile" style="--tile-color:var(--c-mf)" onclick="gotoPage('mf', null)">
-      <div class="tile-icon">📈</div>
-      <div class="tile-name">Mutual Funds</div>
-      <div class="tile-val" style="color:var(--c-mf)" id="tile-mf">₹ 0</div>
-      <div class="tile-sub">Fresh start · 0 funds</div>
-      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-mf">—% of portfolio</div>
+    <div class="asset-tile" style="--tile-color:var(--c-fd)" onclick="gotoPage('deposits', null)">
+      <div class="tile-icon">🏦</div>
+      <div class="tile-name">Fixed Deposits</div>
+      <div class="tile-val" style="color:var(--c-fd)" id="tile-fd">₹ —</div>
+      <div class="tile-sub">Add your FD amounts</div>
+      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-fd">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-fd">MANUAL</div>
+    </div>
+    <div class="asset-tile" style="--tile-color:var(--c-rd)" onclick="gotoPage('deposits', null)">
+      <div class="tile-icon">🏛️</div>
+      <div class="tile-name">Recurring Deposits</div>
+      <div class="tile-val" style="color:var(--c-rd)" id="tile-rd">₹ —</div>
+      <div class="tile-sub">Add your RD details</div>
+      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-rd">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-rd">MANUAL</div>
+    </div>
+    <div class="asset-tile active" style="--tile-color:var(--c-sharesave)" onclick="gotoPage('sharesave', null)">
+      <div class="tile-icon">💼</div>
+      <div class="tile-name">Share Plan</div>
+      <div class="tile-val" style="color:var(--c-sharesave)" id="tile-ss">₹ —</div>
+      <div class="tile-sub" id="tile-ss-sub">Configure your scheme</div>
+      <div class="tile-pct" style="color:var(--text3)" id="tile-pct-ss">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-ss">MANUAL</div>
     </div>
     <div class="asset-tile" style="--tile-color:var(--c-po)" onclick="gotoPage('po', null)">
       <div class="tile-icon">🏤</div>
@@ -586,6 +604,7 @@ select option { background: var(--s2); }
       <div class="tile-val" style="color:var(--c-po)" id="tile-po">₹ —</div>
       <div class="tile-sub">SSY · PPF · NSC · MIS</div>
       <div class="tile-pct" style="color:var(--text3)" id="tile-pct-po">—% of portfolio</div>
+      <div class="tile-source src-manual" id="tile-src-po">MANUAL</div>
     </div>
     <div class="asset-tile" style="--tile-color:var(--c-cash)">
       <div class="tile-icon">💰</div>
@@ -611,11 +630,12 @@ select option { background: var(--s2); }
     <div class="nw-right">
       <div class="donut-wrap"><canvas id="donut" width="130" height="130"></canvas><div class="donut-center"><div class="donut-center-val">Allocation</div></div></div>
       <div class="donut-legend" id="donutLegend">
-        <div class="dl-item"><div class="dl-dot" style="background:var(--c-sharesave)"></div><span class="dl-name">Sharesave</span><span class="dl-pct" id="dl-ss" style="color:var(--c-sharesave)">—</span></div>
-        <div class="dl-item"><div class="dl-dot" style="background:var(--c-fd)"></div><span class="dl-name">HDFC FD</span><span class="dl-pct" id="dl-fd" style="color:var(--c-fd)">—</span></div>
-        <div class="dl-item"><div class="dl-dot" style="background:var(--c-rd)"></div><span class="dl-name">Canara RD</span><span class="dl-pct" id="dl-rd" style="color:var(--c-rd)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-stocks)"></div><span class="dl-name">Stocks</span><span class="dl-pct" id="dl-stocks" style="color:var(--c-stocks)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-mf)"></div><span class="dl-name">Mutual Funds</span><span class="dl-pct" id="dl-mf" style="color:var(--c-mf)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-gold)"></div><span class="dl-name">SGB Gold</span><span class="dl-pct" id="dl-gold" style="color:var(--c-gold)">—</span></div>
-        <div class="dl-item"><div class="dl-dot" style="background:var(--c-mf)"></div><span class="dl-name">MF (new)</span><span class="dl-pct" id="dl-mf" style="color:var(--c-mf)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-fd)"></div><span class="dl-name">Fixed Deposits</span><span class="dl-pct" id="dl-fd" style="color:var(--c-fd)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-rd)"></div><span class="dl-name">Recurring Deposits</span><span class="dl-pct" id="dl-rd" style="color:var(--c-rd)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-sharesave)"></div><span class="dl-name">Share Plan</span><span class="dl-pct" id="dl-ss" style="color:var(--c-sharesave)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-po)"></div><span class="dl-name">Post Office</span><span class="dl-pct" id="dl-po" style="color:var(--c-po)">—</span></div>
       </div>
     </div>
@@ -636,13 +656,13 @@ select option { background: var(--s2); }
         <div><div style="font-size:0.65rem;color:var(--text3)">MEDIUM</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;color:var(--amber)" id="riskMed">—</div></div>
         <div><div style="font-size:0.65rem;color:var(--text3)">LOW RISK</div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;color:var(--green)" id="riskLow">—</div></div>
       </div>
-      <div style="font-size:0.75rem;color:var(--text3);margin-top:8px;">Sharesave=High · MF=Med-High · FD/RD=Low · Gold=Med · SGB=Low-Med</div>
+      <div style="font-size:0.75rem;color:var(--text3);margin-top:8px;">Stocks/MF=High · Gold=Med · FD/RD=Low · SGB=Low-Med</div>
     </div>
     <div class="card-sm">
       <div class="card-hdr">Key Alerts</div>
       <div id="alerts" style="font-size:0.8rem;color:var(--text2);line-height:1.7;">
-        ⏰ Sharesave matures Feb 2027<br>
-        🟢 MF portfolio: fresh start this month<br>
+        🏦 Connect your broker for live data<br>
+        🟢 Configure your share plan & MFs<br>
         💡 SGB: 2.5% guaranteed + gold upside
       </div>
     </div>
@@ -658,8 +678,8 @@ select option { background: var(--s2); }
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
     <div style="width:40px;height:40px;border-radius:12px;background:rgba(232,146,58,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏢</div>
     <div>
-      <div id="ssCompanyTitle" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Comcast Sharesave 2023</div>
-      <div id="ssSubtitle" style="font-size:0.8rem;color:var(--text2);">158 options · Strike ₹2,840.26 · ₹12,500/month · Matures 01 Feb 2027</div>
+      <div id="ssCompanyTitle" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Company Share Plan</div>
+      <div id="ssSubtitle" style="font-size:0.8rem;color:var(--text2);">Configure your scheme below to get started</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
       <button onclick="toggleSSConfig()" id="ssConfigToggleBtn"
@@ -681,19 +701,19 @@ select option { background: var(--s2); }
 
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Company Name</div>
-        <input type="text" id="ssCfgCompany" placeholder="e.g. Comcast"
+        <input type="text" id="ssCfgCompany" placeholder="e.g. Infosys"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'Cabinet Grotesk',sans-serif;">
       </div>
 
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Stock Ticker</div>
-        <input type="text" id="ssCfgTicker" placeholder="e.g. CMCSA"
+        <input type="text" id="ssCfgTicker" placeholder="e.g. INFY"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;text-transform:uppercase;">
       </div>
 
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Strike Price (₹)</div>
-        <input type="number" id="ssCfgStrike" placeholder="e.g. 2840.26" step="0.01"
+        <input type="number" id="ssCfgStrike" placeholder="e.g. 1500" step="0.01"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--amber);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
       </div>
 
@@ -705,7 +725,7 @@ select option { background: var(--s2); }
 
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Monthly Deduction (₹)</div>
-        <input type="number" id="ssCfgMonthly" placeholder="e.g. 12500" min="1"
+        <input type="number" id="ssCfgMonthly" placeholder="e.g. 10000" min="1"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
       </div>
 
@@ -768,18 +788,18 @@ select option { background: var(--s2); }
     <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
       <div style="flex:1;min-width:200px;">
         <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">
-          Current Comcast Share Price (₹)
+          Current Share Price (₹)
           <span id="ssPriceSource" style="text-transform:none;letter-spacing:normal;color:var(--text3);font-size:0.62rem;"></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="color:var(--amber);font-weight:700;font-size:1.1rem;">₹</span>
-          <input type="number" id="ssSharePrice" placeholder="2840.26 (strike = ₹4,48,761)" step="0.01"
+          <input type="number" id="ssSharePrice" placeholder="Enter current share price" step="0.01"
             style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.5rem;color:var(--amber);background:transparent;border:none;border-bottom:2px solid rgba(232,146,58,0.4);outline:none;width:220px;padding-bottom:3px;"
             oninput="updateSharesave()">
         </div>
         <div style="display:flex;gap:16px;margin-top:6px;">
           <div style="font-size:0.68rem;color:var(--text3);">
-            USD: <span id="ssCmcsaUsd" style="color:var(--text2);font-family:'JetBrains Mono',monospace;">—</span>
+            USD: <span id="ssStockUsd" style="color:var(--text2);font-family:'JetBrains Mono',monospace;">—</span>
           </div>
           <div style="font-size:0.68rem;color:var(--text3);">
             USD/INR: <span id="ssUsdInrRate" style="color:var(--text2);font-family:'JetBrains Mono',monospace;">—</span>
@@ -787,7 +807,7 @@ select option { background: var(--s2); }
           <div style="font-size:0.68rem;color:var(--text3);" id="ssLastFetched"></div>
         </div>
         <div style="margin-top:8px;padding:8px 12px;background:rgba(232,146,58,0.08);border-radius:8px;border-left:3px solid var(--amber);font-size:0.72rem;color:var(--text2);line-height:1.6;">
-          📌 Your portal shows <strong style="color:var(--amber)">₹4,48,761</strong> = 158 × ₹2,840.26 (strike price). This is the <strong>guaranteed floor</strong> — your principal is always protected at this value. Use <em>Fetch Live Price</em> to see current market value above/below this.
+          📌 Your portal shows the <strong>guaranteed floor</strong> (options × strike price) — your principal is always protected at this value. Use <em>Fetch Live Price</em> to see current market value above/below this.
         </div>
       </div>
       <!-- LIVE KPI STRIP -->
@@ -902,7 +922,7 @@ select option { background: var(--s2); }
     </div>
   </div>
 
-  <div class="good">💡 <strong>Strategy Tip:</strong> At maturity Feb 2027 — exercise all 158 options if price > ₹2,840.26, then decide: (a) <strong>sell immediately</strong> and deploy as lumpsum into MFs, or (b) <strong>hold shares</strong> and collect $1.32/share/year (~₹19,000/yr at current rates) as passive USD income. Given Comcast's 19-year streak of dividend increases, holding has merit too.</div>
+  <div class="good">💡 <strong>Strategy Tip:</strong> At maturity — exercise all options if the share price is above your strike price. Then decide: (a) <strong>sell immediately</strong> and deploy as lumpsum into MFs, or (b) <strong>hold shares</strong> if the company pays dividends for passive income.</div>
 
 </div>
 </div>
@@ -985,7 +1005,7 @@ select option { background: var(--s2); }
         <table>
           <thead><tr><th>Bank</th><th>6 Month</th><th>1 Year</th><th>2 Year</th><th>3 Year</th><th>Best For</th></tr></thead>
           <tbody>
-            <tr><td>HDFC Bank</td><td>6.60%</td><td class="mono" style="color:var(--green)">7.10%</td><td class="mono" style="color:var(--green)">7.15%</td><td>7.00%</td><td><span class="badge badge-blue">Your Bank</span></td></tr>
+            <tr><td>HDFC Bank</td><td>6.60%</td><td class="mono" style="color:var(--green)">7.10%</td><td class="mono" style="color:var(--green)">7.15%</td><td>7.00%</td><td></td></tr>
             <tr><td>Canara Bank</td><td>6.75%</td><td>6.80%</td><td>6.80%</td><td>6.70%</td><td><span class="badge badge-purple">Your RD Bank</span></td></tr>
             <tr><td>SBI</td><td>6.50%</td><td>6.80%</td><td>7.00%</td><td>6.75%</td><td><span class="badge badge-green">Safety</span></td></tr>
             <tr><td>Kotak Mahindra</td><td>7.00%</td><td>7.10%</td><td>7.25%</td><td>7.10%</td><td><span class="badge badge-amber">Higher yield</span></td></tr>
@@ -1564,7 +1584,7 @@ select option { background: var(--s2); }
     <div class="strat-card" id="sc-crash" onclick="setStrat('crash')">
       <div class="strat-icon">🔥</div>
       <div class="strat-name">Crash Mode</div>
-      <div class="strat-desc">20%+ fall. Pause SIPs. Deploy full 15% as one focused lumpsum.</div>
+      <div class="strat-desc">20%+ fall. Pause SIPs. Deploy full savings allocation as one focused lumpsum.</div>
     </div>
   </div>
   <div id="stratMsg" class="info" style="margin-bottom:20px;"></div>
@@ -1586,7 +1606,7 @@ select option { background: var(--s2); }
   <div class="card-hdr" style="margin-bottom:12px;">This Month's Allocation</div>
   <div class="card" style="margin-bottom:20px;">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">15% Total</div><div id="pa15" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--yellow)">₹ —</div></div>
+      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;"><span id="paPctLabel">—%</span> Total</div><div id="pa15" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--yellow)">₹ —</div></div>
       <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">SIP Pool</div><div id="paSIP" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--green)">₹ —</div></div>
       <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Lumpsum Reserve</div><div id="paLump" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--blue)">₹ —</div></div>
       <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Deployed This Month</div><div id="paDeployed" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--amber)">₹ 0</div></div>
@@ -2117,7 +2137,7 @@ select option { background: var(--s2); }
         <span style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:rgba(62,207,142,0.1);color:var(--green);">Free</span>
       </div>
       <div style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">
-        Live CMCSA stock price + USD/INR rate for Sharesave valuation.
+        Live stock price + USD/INR rate for share plan valuation.
         Register at <a href="https://finnhub.io/register" target="_blank" style="color:var(--blue);">finnhub.io/register</a> — free, no credit card
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -2127,6 +2147,41 @@ select option { background: var(--s2); }
         <button onclick="clearSettingsKey('finnhub')" style="padding:8px 12px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-weight:600;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">Clear</button>
       </div>
       <div id="finnhub-key-msg" style="font-size:0.72rem;margin-top:6px;min-height:16px;"></div>
+    </div>
+  </div>
+
+  <!-- ── DATA SOURCE PREFERENCES ── -->
+  <div style="margin-bottom:28px;">
+    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">🔄 Data Source Preferences</div>
+    <div style="font-size:0.78rem;color:var(--text3);margin-bottom:16px;padding:10px 14px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15);border-radius:8px;">
+      When broker data is available, choose which source the <strong style="color:var(--text2);">Overview</strong> uses for each asset class. Broker data is always live; manual entry is your fallback.
+    </div>
+    <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="padding:10px;background:var(--s3);border-radius:8px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text2);margin-bottom:6px;">📊 Stocks</div>
+          <div style="font-size:0.68rem;color:var(--text3);">Always from broker (no manual stock tab)</div>
+        </div>
+        <div style="padding:10px;background:var(--s3);border-radius:8px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text2);margin-bottom:6px;">📈 Mutual Funds</div>
+          <select id="prefMfSource" onchange="saveSourcePrefs()" style="width:100%;font-size:0.75rem;">
+            <option value="broker_first">Broker first, manual fallback</option>
+            <option value="manual_only">Manual only (ignore broker)</option>
+          </select>
+        </div>
+        <div style="padding:10px;background:var(--s3);border-radius:8px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text2);margin-bottom:6px;">🥇 SGB Gold</div>
+          <select id="prefSgbSource" onchange="saveSourcePrefs()" style="width:100%;font-size:0.75rem;">
+            <option value="broker_first">Broker first, manual fallback</option>
+            <option value="manual_only">Manual only (ignore broker)</option>
+          </select>
+        </div>
+        <div style="padding:10px;background:var(--s3);border-radius:8px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text2);margin-bottom:6px;">🏦 FD / 🏛️ RD / 💼 Share Plan / 🏤 PO</div>
+          <div style="font-size:0.68rem;color:var(--text3);">Always manual (broker APIs don't return these)</div>
+        </div>
+      </div>
+      <div id="sourcePrefsMsg" style="font-size:0.72rem;color:var(--text3);margin-top:10px;min-height:16px;"></div>
     </div>
   </div>
 
@@ -2175,7 +2230,7 @@ select option { background: var(--s2); }
 <script>
 // ══ STATE ══
 let state = {
-  salary: 0, savingsPct: 15, strategy: 'normal', mood: 'slight',
+  salary: 0, savingsPct: 0, strategy: 'normal', mood: 'slight',
   fds: [], rds: [], sgb: {}, logs: [],
   selectedMFs: [],
 };
@@ -2201,16 +2256,16 @@ try { poSchemes = JSON.parse(localStorage.getItem('mypf_po') || '[]'); } catch(e
 // ── SHARESAVE CONFIG — loaded from localStorage, editable in Sharesave tab ──
 function getSS() {
   const d = JSON.parse(localStorage.getItem('mypf_ss_config') || '{}');
-  const strike   = parseFloat(d.strike)   || 2840.26;
-  const options  = parseInt(d.options)    || 158;
-  const monthly  = parseFloat(d.monthly)  || 12500;
-  const company  = d.company              || 'Comcast';
-  const ticker   = d.ticker               || 'CMCSA';
-  const grant    = new Date(d.grant       || '2023-12-15');
-  const maturity = new Date(d.maturity    || '2027-02-01');
-  const totalMo  = Math.round((maturity - grant) / (1000*60*60*24*30.44));
+  const strike   = parseFloat(d.strike)   || 0;
+  const options  = parseInt(d.options)    || 0;
+  const monthly  = parseFloat(d.monthly)  || 0;
+  const company  = d.company              || '';
+  const ticker   = d.ticker               || '';
+  const grant    = d.grant ? new Date(d.grant) : null;
+  const maturity = d.maturity ? new Date(d.maturity) : null;
+  const totalMo  = (grant && maturity) ? Math.round((maturity - grant) / (1000*60*60*24*30.44)) : 0;
   const principal = monthly * totalMo;
-  return { strike, options, monthly, company, ticker, grant, maturity, totalMo, principal };
+  return { strike, options, monthly, company, ticker, grant, maturity, totalMo, principal, configured: !!(company && strike && options) };
 }
 // Convenience aliases (lazy-evaluated each call so always fresh)
 function SS_STRIKE()    { return getSS().strike; }
@@ -2220,12 +2275,12 @@ function SS_GRANT()     { return getSS().grant; }
 function SS_MATURITY()  { return getSS().maturity; }
 function SS_TOTAL_MO()  { return getSS().totalMo; }
 function SS_PRINCIPAL() { return getSS().principal; }
-const SHARESAVE_DEDUCTION = 12500; // kept for salary chip, overridden by getSS().monthly
+const SHARESAVE_DEDUCTION = 0; // overridden by getSS().monthly when configured
 
 const stratData = {
   normal: { sipPct: 1, lumpPct: 0, msg: '💡 <strong>Regular SIP Mode</strong> — Market fairly valued. Deploy your SIP amount into all selected funds as scheduled. Park nothing extra; keep the discipline.', cls: 'info' },
   dip: { sipPct: 0.65, lumpPct: 0.35, msg: '📉 <strong>Dip + SIP Mode</strong> — Market down 5–15%. Keep 65% as regular SIP. Use the remaining 35% as lumpsum into your highest conviction fund (usually Mirae or PPFCF). Great entry opportunity.', cls: 'warn' },
-  crash: { sipPct: 0, lumpPct: 1, msg: '🔥 <strong>Crash Mode</strong> — 20%+ drawdown. Suspend regular SIP this month. Deploy the <strong>entire 15%</strong> as one focused lumpsum into your #1 or #2 fund. Crashes build fortunes — act, don\'t freeze.', cls: 'good' },
+  crash: { sipPct: 0, lumpPct: 1, msg: '🔥 <strong>Crash Mode</strong> — 20%+ drawdown. Suspend regular SIP this month. Deploy your <strong>entire savings allocation</strong> as one focused lumpsum into your #1 or #2 fund. Crashes build fortunes — act, don\'t freeze.', cls: 'good' },
 };
 
 const moodData = {
@@ -2272,11 +2327,10 @@ function initDashboard() {
   if (logDateEl)   logDateEl.value   = today;
   if (mfLogDateEl) mfLogDateEl.value = today;
 
-  // Restore SS share price — default to strike ₹2,840.26 (= ₹4,48,761 / 158)
-  // so overview always shows at least the guaranteed valuation
-  const savedSSPrice = localStorage.getItem('mypf_ss_price') || '2840.26';
+  // Restore SS share price if previously saved
+  const savedSSPrice = localStorage.getItem('mypf_ss_price') || '';
   const ssEl = document.getElementById('ssSharePrice');
-  if (ssEl) ssEl.value = savedSSPrice;
+  if (ssEl && savedSSPrice) ssEl.value = savedSSPrice;
 
   // Finnhub key — stored in localStorage only, never in source code
   const fKey = localStorage.getItem('mypf_finnhub_key');
@@ -2288,7 +2342,7 @@ function initDashboard() {
   const cachedFx  = localStorage.getItem('mypf_ss_usdinr');
   const cachedTime = localStorage.getItem('mypf_ss_fetched');
   if (cachedUsd) {
-    const usdEl  = document.getElementById('ssCmcsaUsd');
+    const usdEl  = document.getElementById('ssStockUsd');
     const fxEl   = document.getElementById('ssUsdInrRate');
     const lastEl = document.getElementById('ssLastFetched');
     const srcEl  = document.getElementById('ssPriceSource');
@@ -2463,9 +2517,12 @@ async function fetchLivePrice() {
   if (src) src.textContent = '— fetching live data...';
 
   try {
-    // Fetch CMCSA price and USD/INR in parallel
+    const ss = getSS();
+    const ticker = ss.ticker;
+    if (!ticker) throw new Error('No stock ticker configured. Go to Scheme Configuration and set your company ticker.');
+    // Fetch stock price and USD/INR in parallel
     const [stockRes, fxRes] = await Promise.all([
-      fetch(`https://finnhub.io/api/v1/quote?symbol=CMCSA&token=${key}`),
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${key}`),
       fetch(`https://finnhub.io/api/v1/forex/rates?base=USD&token=${key}`)
     ]);
 
@@ -2486,7 +2543,7 @@ async function fetchLivePrice() {
 
     // Update inputs
     document.getElementById('ssSharePrice').value = priceInr.toFixed(2);
-    const usdEl = document.getElementById('ssCmcsaUsd');
+    const usdEl = document.getElementById('ssStockUsd');
     const fxEl  = document.getElementById('ssUsdInrRate');
     const lastEl = document.getElementById('ssLastFetched');
     if (usdEl)  usdEl.textContent  = '$' + priceUsd.toFixed(2) + ' (' + (changePct >= 0 ? '+' : '') + changePct.toFixed(2) + '%)';
@@ -2514,7 +2571,7 @@ async function fetchLivePrice() {
   const cachedFx   = localStorage.getItem('mypf_ss_usdinr');
   const cachedTime = localStorage.getItem('mypf_ss_fetched');
   if (cachedUsd) {
-    const usdEl = document.getElementById('ssCmcsaUsd');
+    const usdEl = document.getElementById('ssStockUsd');
     const fxEl  = document.getElementById('ssUsdInrRate');
     const lastEl = document.getElementById('ssLastFetched');
     const src   = document.getElementById('ssPriceSource');
@@ -2549,11 +2606,11 @@ function updateSharesave() {
   set('ssMonthsDone',       monthsDone + ' / ' + SS_TOTAL_MO());
   set('ssContribMonths',    monthsDone + ' of ' + SS_TOTAL_MO() + ' months');
   set('ssContribSoFar',     '₹' + contributed.toLocaleString('en-IN'));
-  set('ssRemainingContrib', monthsLeft + ' × ₹12,500 = ₹' + (monthsLeft * SS_MONTHLY()).toLocaleString('en-IN'));
+  set('ssRemainingContrib', monthsLeft + ' × ₹' + SS_MONTHLY().toLocaleString('en-IN') + ' = ₹' + (monthsLeft * SS_MONTHLY()).toLocaleString('en-IN'));
 
   if (!price) {
     const a = document.getElementById('ssAlert');
-    if (a) a.innerHTML = '<div class="info">Enter the current Comcast share price in ₹ above to see live P&L, option gain, and dynamic scenarios.</div>';
+    if (a) a.innerHTML = '<div class="info">Enter the current share price in ₹ above to see live P&L, option gain, and dynamic scenarios.</div>';
     updateDonut(); return;
   }
 
@@ -2627,16 +2684,20 @@ function updateSharesave() {
   const divAnnualInr = Math.round(DIV_PER_SHARE_USD * SS_OPTIONS() * usdInr);
   const divQtrInr    = Math.round(DIV_QUARTERLY_USD * SS_OPTIONS() * usdInr);
 
-  // Quarters elapsed since grant (Dec 2023) — each quarter = Jan, Apr, Jul, Oct pay dates
-  // Comcast pays roughly Feb, Apr, Jul, Oct. Grant Dec 2023 → first div ~Feb 2024
-  const grantYear = 2023, grantQ = 4; // Q4 2023
+  // Quarters elapsed since grant — dynamic from config
+  const ss = getSS();
+  const grantDate = ss.grant || new Date();
+  const grantYear = grantDate.getFullYear();
+  const grantQ    = Math.ceil((grantDate.getMonth() + 1) / 3);
   const nowDate   = new Date();
   const nowYear   = nowDate.getFullYear();
   const nowQ      = Math.ceil((nowDate.getMonth() + 1) / 3);
   const qtrsElapsed = Math.max(0, (nowYear - grantYear) * 4 + (nowQ - grantQ) - 1);
 
-  // Quarters remaining till maturity Feb 2027 = Q1 2027
-  const matYear = 2027, matQ = 1;
+  // Quarters remaining till maturity
+  const matDate = ss.maturity || new Date();
+  const matYear = matDate.getFullYear();
+  const matQ    = Math.ceil((matDate.getMonth() + 1) / 3);
   const qtrsRemaining = Math.max(0, (matYear - nowYear) * 4 + (matQ - nowQ));
 
   const totalReceived  = Math.round(qtrsElapsed  * DIV_QUARTERLY_USD * SS_OPTIONS() * usdInr);
@@ -2872,11 +2933,11 @@ function updateSSConfigPreview() {
 
 function saveSSConfig() {
   const cfg = {
-    company:  document.getElementById('ssCfgCompany')?.value.trim()  || 'Comcast',
-    ticker:   document.getElementById('ssCfgTicker')?.value.trim().toUpperCase() || 'CMCSA',
-    strike:   parseFloat(document.getElementById('ssCfgStrike')?.value)   || 2840.26,
+    company:  document.getElementById('ssCfgCompany')?.value.trim()  || '',
+    ticker:   document.getElementById('ssCfgTicker')?.value.trim().toUpperCase() || '',
+    strike:   parseFloat(document.getElementById('ssCfgStrike')?.value)   || 0,
     options:  parseInt(document.getElementById('ssCfgOptions')?.value)    || 158,
-    monthly:  parseFloat(document.getElementById('ssCfgMonthly')?.value)  || 12500,
+    monthly:  parseFloat(document.getElementById('ssCfgMonthly')?.value)  || 0,
     grant:    document.getElementById('ssCfgGrant')?.value    || '2023-12-15',
     maturity: document.getElementById('ssCfgMaturity')?.value || '2027-02-01',
   };
@@ -2895,7 +2956,7 @@ function saveSSConfig() {
 }
 
 function resetSSConfig() {
-  if (!confirm('Reset to Comcast defaults?')) return;
+  if (!confirm('Reset share plan configuration? This will clear all saved values.')) return;
   localStorage.removeItem('mypf_ss_config');
   loadSSConfigInputs();
   updateSSHeader();
@@ -2931,7 +2992,9 @@ function onSalaryChange() {
 
   // Update chips
   const pctLabelEl = document.getElementById('chipPctLabel');
-  if (pctLabelEl) pctLabelEl.textContent = state.savingsPct + '%';
+  if (pctLabelEl) pctLabelEl.textContent = state.savingsPct ? state.savingsPct + '%' : '—%';
+  const paPctLabelEl = document.getElementById('paPctLabel');
+  if (paPctLabelEl) paPctLabelEl.textContent = state.savingsPct ? state.savingsPct + '%' : '—%';
   document.getElementById('chip15').textContent = totalSavingsTarget > 0 ? '₹\u202f' + totalSavingsTarget.toLocaleString('en-IN') : '₹\u202f—';
   const chipNet = document.getElementById('chipNet');
   if (chipNet) chipNet.textContent = manualBudget > 0 ? '₹\u202f' + manualBudget.toLocaleString('en-IN') : '₹\u202f—';
@@ -2957,65 +3020,140 @@ function saveSalary() {
 
 // ══ DONUT ══
 function updateDonut() {
-  // Live Sharesave value: market price × options, else contributed principal
+  const fmt = v => v > 0 ? '₹\u202f' + v.toLocaleString('en-IN') : '₹\u202f—';
+  const srcBadge = (id, type, stale) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (stale) { el.className = 'tile-source src-stale'; el.textContent = 'STALE'; }
+    else if (type === 'broker') { el.className = 'tile-source src-broker'; el.textContent = 'BROKER'; }
+    else { el.className = 'tile-source src-manual'; el.textContent = 'MANUAL'; }
+  };
+
+  // ── Classify broker holdings ──
+  const classified = classifyBrokerHoldings();
+  const brokerStocksV = classified.stocks.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
+  const brokerMfV     = classified.mf.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
+  const brokerSgbV    = classified.sgb.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
+  const brokerEtfV    = classified.etf.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
+  const hasBrokerData = brokerSession.holdings?.length > 0;
+  const brokerStale   = hasBrokerData && brokerSession.lastFetched &&
+    (Date.now() - new Date(brokerSession.lastFetched).getTime() > 24 * 60 * 60 * 1000);
+
+  // ── Data source preferences (stored in localStorage) ──
+  const prefs = JSON.parse(localStorage.getItem('mypf_source_prefs') || '{}');
+  const mfPref   = prefs.mf   || 'broker_first'; // broker_first | manual_only
+  const sgbPref  = prefs.sgb  || 'broker_first';
+
+  // ── Manual data sources ──
   const _ssP = parseFloat(document.getElementById('ssSharePrice')?.value) || 0;
-  const _ssMo = Math.min(SS_TOTAL_MO()||38, Math.max(0, Math.round((new Date()-SS_GRANT()) / (1000*60*60*24*30.44))));
-  const ssV = _ssP > 0 ? Math.round(_ssP * SS_OPTIONS()) : _ssMo * SS_MONTHLY();
+  const ss = getSS();
+  const _ssMo = (ss.grant && ss.totalMo) ? Math.min(ss.totalMo, Math.max(0, Math.round((new Date()-ss.grant) / (1000*60*60*24*30.44)))) : 0;
+  const ssV = _ssP > 0 ? Math.round(_ssP * (ss.options||0)) : _ssMo * (ss.monthly||0);
+
   const fdV = state.fds.reduce((s,f) => s + f.principal, 0);
   const rdV = state.rds.reduce((s,r) => s + r.monthly * r.paidMonths, 0);
+
   const curPriceGold = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || 0;
-  const goldV = sgbHoldings.reduce((s, h) => {
+  const manualGoldV = sgbHoldings.reduce((s, h) => {
     const cp = curPriceGold || h.currentPrice || h.issuePrice;
     return s + Math.round(h.grams * cp);
   }, 0);
-  // MF value: use current NAV * units if available, else invested amount
+
   const mfByFund = {};
   mfLogs.forEach(l => { if (!mfByFund[l.fundRank]) mfByFund[l.fundRank] = {amt:0, units:0}; mfByFund[l.fundRank].amt += l.amt; mfByFund[l.fundRank].units += l.units; });
-  let mfV = 0;
-  Object.entries(mfByFund).forEach(([r, fd]) => { const nd = mfNavs[r]; mfV += nd ? fd.units * nd.nav : fd.amt; });
-  const total = ssV + fdV + rdV + goldV + mfV || 1;
+  let manualMfV = 0;
+  Object.entries(mfByFund).forEach(([r, fd]) => { const nd = mfNavs[r]; manualMfV += nd ? fd.units * nd.nav : fd.amt; });
 
-  // Update tiles
-  const fmt = v => v > 0 ? '₹\u202f' + v.toLocaleString('en-IN') : '₹\u202f—';
-  const tileSS = document.getElementById('tile-ss');
-  if (tileSS) tileSS.textContent = ssV > 0 ? '₹\u202f' + ssV.toLocaleString('en-IN') : '₹\u202f—';
+  // ── Apply source priority ──
+  // Stocks: always broker (no manual tab for stocks)
+  const stocksV = Math.round(brokerStocksV + brokerEtfV);
+
+  // MF: broker first (if available and not manual_only), else manual
+  let mfV, mfSource;
+  if (mfPref === 'manual_only' || !hasBrokerData || brokerMfV === 0) {
+    mfV = manualMfV; mfSource = 'manual';
+  } else {
+    mfV = Math.round(brokerMfV); mfSource = 'broker';
+  }
+
+  // SGB: broker first, else manual
+  let goldV, goldSource;
+  if (sgbPref === 'manual_only' || !hasBrokerData || brokerSgbV === 0) {
+    goldV = manualGoldV; goldSource = 'manual';
+  } else {
+    goldV = Math.round(brokerSgbV); goldSource = 'broker';
+  }
+
+  // PO value
+  let poV = 0;
+  poSchemes.forEach(p => { poV += p.currentValue || p.invested || 0; });
+
+  // ── Totals ──
+  const realTotal = stocksV + mfV + goldV + fdV + rdV + ssV + poV;
+  const total = realTotal || 1;
+
+  // ── Update tiles ──
+  document.getElementById('tile-stocks').textContent = fmt(stocksV);
+  document.getElementById('tile-mf').textContent = fmt(mfV);
+  document.getElementById('tile-gold').textContent = fmt(goldV);
   document.getElementById('tile-fd').textContent = fmt(fdV);
   document.getElementById('tile-rd').textContent = fmt(rdV);
-  document.getElementById('tile-gold').textContent = fmt(goldV);
-  document.getElementById('tile-mf').textContent = mfV > 0 ? '₹\u202f' + mfV.toLocaleString('en-IN') : '₹ 0';
+  const tileSS = document.getElementById('tile-ss');
+  if (tileSS) tileSS.textContent = fmt(ssV);
+  document.getElementById('tile-nw').textContent = fmt(realTotal);
+  document.getElementById('nwHeroVal').textContent = fmt(realTotal);
 
-  const realTotal = ssV + fdV + rdV + goldV + mfV;
-  document.getElementById('tile-nw').textContent = realTotal > 0 ? '₹\u202f' + realTotal.toLocaleString('en-IN') : '₹\u202f—';
-  document.getElementById('nwHeroVal').textContent = realTotal > 0 ? '₹\u202f' + realTotal.toLocaleString('en-IN') : '₹\u202f—';
+  // Tile subtitles
+  if (hasBrokerData) {
+    document.getElementById('tile-stocks-sub').textContent = classified.stocks.length + ' stocks' + (classified.etf.length ? ' + ' + classified.etf.length + ' ETFs' : '');
+  }
+  if (mfSource === 'broker') {
+    document.getElementById('tile-mf-sub').textContent = classified.mf.length + ' funds via broker';
+  }
 
+  // ── Source badges ──
+  srcBadge('tile-src-stocks', 'broker', brokerStale && stocksV > 0);
+  srcBadge('tile-src-mf', mfSource, brokerStale && mfSource === 'broker');
+  srcBadge('tile-src-gold', goldSource, brokerStale && goldSource === 'broker');
+  srcBadge('tile-src-fd', 'manual', false);
+  srcBadge('tile-src-rd', 'manual', false);
+  srcBadge('tile-src-ss', 'manual', false);
+  srcBadge('tile-src-po', 'manual', false);
+
+  // ── Percentages ──
   const pct = v => realTotal > 0 ? Math.round(v/realTotal*100) + '%' : '—';
-  document.getElementById('tile-pct-ss').textContent = realTotal > 0 ? pct(ssV) + ' of portfolio' : '—% of portfolio';
+  document.getElementById('tile-pct-stocks').textContent = realTotal > 0 ? pct(stocksV) + ' of portfolio' : '—% of portfolio';
+  document.getElementById('tile-pct-mf').textContent = realTotal > 0 ? pct(mfV) + ' of portfolio' : '—% of portfolio';
+  document.getElementById('tile-pct-gold').textContent = realTotal > 0 ? pct(goldV) + ' of portfolio' : '—% of portfolio';
   document.getElementById('tile-pct-fd').textContent = realTotal > 0 ? pct(fdV) + ' of portfolio' : '—% of portfolio';
   document.getElementById('tile-pct-rd').textContent = realTotal > 0 ? pct(rdV) + ' of portfolio' : '—% of portfolio';
-  document.getElementById('tile-pct-gold').textContent = realTotal > 0 ? pct(goldV) + ' of portfolio' : '—% of portfolio';
-  document.getElementById('tile-pct-mf').textContent = realTotal > 0 ? pct(mfV) + ' of portfolio' : '—% of portfolio';
+  document.getElementById('tile-pct-ss').textContent = realTotal > 0 ? pct(ssV) + ' of portfolio' : '—% of portfolio';
 
-  ['dl-ss','dl-fd','dl-rd','dl-gold','dl-mf'].forEach((id, i) => {
-    const v = [ssV,fdV,rdV,goldV,mfV][i];
-    document.getElementById(id).textContent = realTotal > 0 ? pct(v) : '—';
+  // Donut legend
+  ['dl-stocks','dl-mf','dl-gold','dl-fd','dl-rd','dl-ss'].forEach((id, i) => {
+    const v = [stocksV,mfV,goldV,fdV,rdV,ssV][i];
+    const el = document.getElementById(id);
+    if (el) el.textContent = realTotal > 0 ? pct(v) : '—';
   });
+  const dlPo = document.getElementById('dl-po');
+  if (dlPo) dlPo.textContent = realTotal > 0 ? pct(poV) : '—';
 
-  // NW locked/liquid/equity
+  // NW breakdown
   document.getElementById('nwLocked').textContent = ssV > 0 ? '₹\u202f' + ssV.toLocaleString('en-IN') : '—';
   document.getElementById('nwLiquid').textContent = (fdV+rdV) > 0 ? '₹\u202f' + (fdV+rdV).toLocaleString('en-IN') : '—';
-  document.getElementById('nwEquity').textContent = (ssV+mfV) > 0 ? '₹\u202f' + (ssV+mfV).toLocaleString('en-IN') : '—';
+  document.getElementById('nwEquity').textContent = (stocksV+mfV+ssV) > 0 ? '₹\u202f' + (stocksV+mfV+ssV).toLocaleString('en-IN') : '—';
 
   // Risk balance
-  const high = ssV + mfV, med = goldV, low = fdV + rdV;
+  const high = stocksV + ssV + mfV, med = goldV, low = fdV + rdV;
   document.getElementById('riskHigh').textContent = realTotal>0 ? Math.round(high/realTotal*100)+'%' : '—';
   document.getElementById('riskMed').textContent = realTotal>0 ? Math.round(med/realTotal*100)+'%' : '—';
   document.getElementById('riskLow').textContent = realTotal>0 ? Math.round(low/realTotal*100)+'%' : '—';
 
-  // Donut
+  // ── Donut chart ──
   const canvas = document.getElementById('donut');
   const ctx = canvas.getContext('2d');
-  const vals = [ssV,fdV,rdV,goldV,mfV].map(v => v/total);
-  const colors = ['#e8923a','#4a9eff','#a78bfa','#f0c040','#3ecf8e'];
+  const vals = [stocksV,mfV,goldV,fdV,rdV,ssV,poV].map(v => v/total);
+  const colors = ['#ff6b9d','#3ecf8e','#f0c040','#4a9eff','#a78bfa','#e8923a','#20c4a8'];
   ctx.clearRect(0,0,130,130);
   let start = -Math.PI/2;
   vals.forEach((v,i) => {
@@ -3025,6 +3163,59 @@ function updateDonut() {
     ctx.fillStyle = colors[i]; ctx.fill(); start = end;
   });
   ctx.beginPath(); ctx.arc(65,65,33,0,Math.PI*2); ctx.fillStyle='#0f1012'; ctx.fill();
+
+  // Post Office tile (updated via separate function but sync pct here)
+  const tilePo = document.getElementById('tile-pct-po');
+  if (tilePo) tilePo.textContent = realTotal > 0 ? pct(poV) + ' of portfolio' : '—% of portfolio';
+}
+
+// ── Classify broker holdings into asset types ──
+function classifyBrokerHoldings() {
+  const result = { stocks: [], mf: [], sgb: [], etf: [], bonds: [], other: [] };
+  if (!brokerSession.holdings?.length) return result;
+
+  brokerSession.holdings.forEach(h => {
+    const sym = (h.symbol || '').toUpperCase();
+    const name = (h.name || '').toUpperCase();
+
+    // SGB detection
+    if (sym.includes('SGB') || sym.includes('SGOLD') || name.includes('SOVEREIGN GOLD') || name.includes('SGB')) {
+      result.sgb.push(h);
+    }
+    // MF detection (mutual fund units often have specific patterns)
+    else if (sym.includes('-GR') || sym.includes('-DP') || sym.includes('MF') || 
+             name.includes('MUTUAL FUND') || name.includes('DIRECT') || name.includes('GROWTH') ||
+             name.includes('DIVIDEND') || name.includes('FUND') || name.includes('SCHEME') ||
+             name.includes('NAV') || h.type === 'mf') {
+      result.mf.push(h);
+    }
+    // ETF detection
+    else if (sym.includes('BEES') || sym.includes('ETF') || name.includes('ETF') ||
+             name.includes('EXCHANGE TRADED') || sym.includes('NIFTYBEES') || sym.includes('GOLDBEES')) {
+      result.etf.push(h);
+    }
+    // Bond / NCD detection
+    else if (name.includes('BOND') || name.includes('NCD') || name.includes('DEBENTURE') ||
+             sym.includes('BOND') || h.type === 'bond') {
+      result.bonds.push(h);
+    }
+    // Default: stock
+    else {
+      result.stocks.push(h);
+    }
+  });
+
+  // Cache classification
+  localStorage.setItem('mypf_broker_classified', JSON.stringify({
+    stocks: result.stocks.length,
+    mf: result.mf.length,
+    sgb: result.sgb.length,
+    etf: result.etf.length,
+    bonds: result.bonds.length,
+    ts: new Date().toISOString(),
+  }));
+
+  return result;
 }
 
 // ══ FD ══
@@ -5472,6 +5663,14 @@ async function fetchBrokerHoldings() {
       brokerSession.lastFetched = new Date().toISOString();
       saveBrokerSession();
       renderBrokerHoldings(holdings);
+      // Sync classified data to localStorage for Overview
+      const classified = classifyBrokerHoldings();
+      localStorage.setItem('mypf_broker_stocks', JSON.stringify(classified.stocks));
+      localStorage.setItem('mypf_broker_mf', JSON.stringify(classified.mf));
+      localStorage.setItem('mypf_broker_sgb', JSON.stringify(classified.sgb));
+      localStorage.setItem('mypf_broker_etf', JSON.stringify(classified.etf));
+      localStorage.setItem('mypf_broker_bonds', JSON.stringify(classified.bonds));
+      updateDonut(); // Trigger Overview refresh with broker data
       const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
       status.innerHTML = `✅ <span style="color:var(--green);">${holdings.length} holdings fetched</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
     } else {
@@ -5716,6 +5915,31 @@ function initBrokerTab() {
       document.getElementById('brokerFetchStatus').innerHTML = `✅ <span style="color:var(--green);">${brokerSession.holdings.length} holdings (cached)</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
     }
   }
+
+  // Restore source preferences in Settings
+  restoreSourcePrefs();
+}
+
+// ── Data Source Preferences ──
+function saveSourcePrefs() {
+  const prefs = {
+    mf:  document.getElementById('prefMfSource')?.value  || 'broker_first',
+    sgb: document.getElementById('prefSgbSource')?.value || 'broker_first',
+  };
+  localStorage.setItem('mypf_source_prefs', JSON.stringify(prefs));
+  const msg = document.getElementById('sourcePrefsMsg');
+  if (msg) { msg.textContent = '✅ Saved'; msg.style.color = 'var(--green)'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+  updateDonut(); // Re-sync Overview with new preference
+}
+
+function restoreSourcePrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('mypf_source_prefs') || '{}');
+    const mfEl = document.getElementById('prefMfSource');
+    const sgbEl = document.getElementById('prefSgbSource');
+    if (mfEl && prefs.mf) mfEl.value = prefs.mf;
+    if (sgbEl && prefs.sgb) sgbEl.value = prefs.sgb;
+  } catch(e) {}
 }
 
 // ══════════════════════════════════════════════════════
