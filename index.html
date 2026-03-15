@@ -95,7 +95,6 @@ nav {
 .page { display: none; position: relative; z-index: 1; }
 .page.active { display: block; animation: fadein 0.25s ease; }
 @keyframes fadein { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 .wrap { max-width: 1340px; margin: 0 auto; padding: 28px 36px; }
 
 /* ── SALARY MODAL / INLINE ── */
@@ -403,6 +402,7 @@ select option { background: var(--s2); }
     <button class="ntab" onclick="gotoPage('mf', this)">Mutual Funds</button>
     <button class="ntab" onclick="gotoPage('planner', this)">Monthly Planner</button>
     <button class="ntab" onclick="gotoPage('budget', this)">💰 Budget</button>
+    <button class="ntab" onclick="gotoPage('broker', this)">🏦 Broker</button>
     <button class="ntab" onclick="gotoPage('settings', this)">⚙️ Settings</button>
   </div>
   <div class="nav-right">
@@ -1101,7 +1101,7 @@ select option { background: var(--s2); }
       </div>
     </div>
     <table>
-      <thead><tr><th>Series</th><th>Grams</th><th>Issue Price</th><th>Invested</th><th>Current Value <span id="sgbLiveBadge" style="display:none;font-size:0.55rem;background:var(--green);color:#000;padding:1px 5px;border-radius:4px;vertical-align:middle;animation:pulse 2s infinite;">LIVE</span></th><th>Gain / Loss</th><th>Annual Interest (2.5%)</th><th>Maturity Year</th><th></th></tr></thead>
+      <thead><tr><th>Series</th><th>Grams</th><th>Issue Price</th><th>Invested</th><th>Current Value</th><th>Gain / Loss</th><th>Annual Interest (2.5%)</th><th>Maturity Year</th><th></th></tr></thead>
       <tbody id="sgbTbody"><tr><td colspan="9" style="color:var(--text3);text-align:center;padding:20px;">No SGBs added</td></tr></tbody>
     </table>
   </div>
@@ -1839,6 +1839,188 @@ select option { background: var(--s2); }
 </div>
 
 <!-- ══════════════════ SETTINGS ══════════════════ -->
+<!-- ══════════════════ BROKER ══════════════════ -->
+<div id="page-broker" class="page">
+<div class="wrap">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <div style="width:40px;height:40px;border-radius:12px;background:rgba(74,158,255,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🏦</div>
+    <div>
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Broker Integration</div>
+      <div style="font-size:0.8rem;color:var(--text2);">Connect your demat account · fetch live holdings · auto-sync portfolio</div>
+    </div>
+  </div>
+
+  <!-- SELF-HOST NOTICE -->
+  <div id="brokerSelfHostNotice" style="padding:14px 18px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:12px;margin-bottom:20px;display:none;">
+    <div style="font-size:0.82rem;color:var(--yellow);font-weight:700;margin-bottom:4px;">⚡ Self-hosting required for broker API</div>
+    <div style="font-size:0.75rem;color:var(--text3);line-height:1.6;">
+      Broker integration needs Netlify Functions to securely proxy API calls. If you're running this file locally (not on Netlify), broker fetch won't work — but you can still enter holdings manually in other tabs.<br>
+      <a href="https://github.com/balajiregt/myFinance" target="_blank" style="color:var(--blue);">See setup guide →</a>
+    </div>
+  </div>
+
+  <!-- BROKER CONNECTION CARD -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-hdr">🔗 Connect Your Broker</div>
+    <div style="font-size:0.75rem;color:var(--text3);margin-bottom:16px;">
+      Select your broker, authenticate via OAuth, and your holdings will be fetched automatically. API keys are stored server-side as environment variables — never in your browser.
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <!-- Broker Select -->
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Select Broker</label>
+        <select id="brokerSelect" style="width:100%;" onchange="onBrokerSelect()">
+          <option value="">— Choose your broker —</option>
+          <option value="hdfc_securities">HDFC Securities (InvestRight)</option>
+          <option value="zerodha">Zerodha (Kite Connect)</option>
+          <option value="angel_one">Angel One (SmartAPI)</option>
+          <option value="upstox">Upstox v2</option>
+          <option value="groww">Groww</option>
+          <option value="dhan">Dhan (DhanHQ)</option>
+          <option value="fyers">Fyers v3</option>
+          <option value="shoonya">Shoonya (Finvasia)</option>
+        </select>
+      </div>
+
+      <!-- Status -->
+      <div style="flex:0 0 auto;">
+        <span id="brokerStatus" style="font-size:0.75rem;padding:6px 14px;border-radius:20px;background:var(--s3);color:var(--text3);display:inline-block;">
+          Not connected
+        </span>
+      </div>
+    </div>
+
+    <!-- Broker Info Panel — shows after selection -->
+    <div id="brokerInfoPanel" style="display:none;margin-top:16px;padding:14px;background:var(--s3);border-radius:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+          <div id="brokerInfoName" style="font-weight:700;font-size:0.9rem;color:var(--text1);"></div>
+          <div id="brokerInfoDesc" style="font-size:0.72rem;color:var(--text3);margin-top:3px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="brokerLogin()" id="brokerLoginBtn"
+            style="padding:8px 20px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.3);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
+            🔐 Login & Connect
+          </button>
+          <button onclick="brokerDisconnect()" id="brokerDisconnectBtn"
+            style="display:none;padding:8px 16px;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.2);border-radius:8px;color:var(--red);font-weight:600;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">
+            ✕ Disconnect
+          </button>
+        </div>
+      </div>
+      <!-- Setup hint -->
+      <div id="brokerSetupHint" style="font-size:0.7rem;color:var(--text3);margin-top:10px;padding:10px;background:rgba(74,158,255,0.04);border:1px solid rgba(74,158,255,0.1);border-radius:8px;line-height:1.6;"></div>
+    </div>
+  </div>
+
+  <!-- FETCH HOLDINGS -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <div class="card-hdr" style="margin-bottom:0;">📊 Your Holdings</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="brokerFetchStatus" style="font-size:0.72rem;color:var(--text3);"></span>
+        <button onclick="fetchBrokerHoldings()" id="brokerFetchBtn"
+          style="padding:6px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;" disabled>
+          ⟳ Fetch Holdings
+        </button>
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Name</th>
+            <th>Qty</th>
+            <th>Avg Price</th>
+            <th>Invested</th>
+            <th>Current Price</th>
+            <th>Current Value</th>
+            <th>P&L</th>
+            <th>P&L %</th>
+          </tr>
+        </thead>
+        <tbody id="brokerHoldingsTbody">
+          <tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">
+            Connect a broker above to fetch your holdings
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- HOLDINGS SUMMARY -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-hdr">📈 Portfolio Summary</div>
+    <div id="brokerSummary" style="font-size:0.83rem;color:var(--text3);">
+      No holdings fetched yet. Connect your broker and click "Fetch Holdings" to see your portfolio summary.
+    </div>
+  </div>
+
+  <!-- FUNDS / MARGIN -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+      <div class="card-hdr" style="margin-bottom:0;">💵 Funds & Margins</div>
+      <button onclick="fetchBrokerFunds()" id="brokerFundsBtn"
+        style="padding:5px 14px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.72rem;" disabled>
+        ⟳ Fetch Funds
+      </button>
+    </div>
+    <div id="brokerFundsInfo" style="font-size:0.83rem;color:var(--text3);">
+      Connect a broker to view available funds and margin details.
+    </div>
+  </div>
+
+  <!-- SUPPORTED BROKERS INFO -->
+  <div class="card">
+    <div class="card-hdr">🇮🇳 Supported Indian Brokers</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px;">
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:var(--green);color:#000;font-weight:700;">LIVE</span>
+        <span style="font-size:0.8rem;font-weight:600;">HDFC Securities</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:var(--green);color:#000;font-weight:700;">LIVE</span>
+        <span style="font-size:0.8rem;font-weight:600;">Zerodha</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:var(--green);color:#000;font-weight:700;">LIVE</span>
+        <span style="font-size:0.8rem;font-weight:600;">Angel One</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:var(--green);color:#000;font-weight:700;">LIVE</span>
+        <span style="font-size:0.8rem;font-weight:600;">Upstox</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:var(--green);color:#000;font-weight:700;">LIVE</span>
+        <span style="font-size:0.8rem;font-weight:600;">Groww</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:rgba(240,192,64,0.4);color:#000;font-weight:700;">SOON</span>
+        <span style="font-size:0.8rem;font-weight:600;">Dhan</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:rgba(240,192,64,0.4);color:#000;font-weight:700;">SOON</span>
+        <span style="font-size:0.8rem;font-weight:600;">Fyers</span>
+      </div>
+      <div style="padding:10px 14px;background:var(--s3);border-radius:8px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:0.72rem;padding:2px 7px;border-radius:4px;background:rgba(240,192,64,0.4);color:#000;font-weight:700;">SOON</span>
+        <span style="font-size:0.8rem;font-weight:600;">Shoonya</span>
+      </div>
+    </div>
+    <div style="font-size:0.72rem;color:var(--text3);margin-top:12px;line-height:1.6;">
+      All brokers above offer <strong style="color:var(--green);">free API access</strong> for individual clients (holdings, positions, funds). You need to self-host this app on Netlify (free) and configure your broker's API key as an environment variable.
+      <a href="https://github.com/balajiregt/myFinance" target="_blank" style="color:var(--blue);">Setup guide →</a>
+    </div>
+  </div>
+
+</div>
+</div>
+
 <div id="page-settings" class="page">
 <div class="wrap">
 
@@ -1978,7 +2160,7 @@ select option { background: var(--s2); }
     <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;font-size:0.8rem;color:var(--text2);line-height:1.7;">
       <div style="font-weight:800;font-size:0.95rem;margin-bottom:6px;">My Portfolio Dashboard</div>
       A self-contained personal finance tracker — single HTML file, zero backend, all data in your browser.<br>
-      <span style="color:var(--text3);">Sharesave · FD/RD · SGB Gold · Post Office · Mutual Funds · Monthly Planner · Budget</span><br><br>
+      <span style="color:var(--text3);">Sharesave · FD/RD · SGB Gold · Post Office · Mutual Funds · Monthly Planner · Budget · Broker API</span><br><br>
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
         <div><span style="color:var(--text3);">AI model</span><br><strong>Claude Sonnet (Anthropic)</strong></div>
         <div><span style="color:var(--text3);">Price data</span><br><strong>Finnhub · AMFI · mfapi.in</strong></div>
@@ -2246,6 +2428,9 @@ function initDashboard() {
   // Nifty — restore cached instantly, then auto-fetch fresh in background
   restoreCachedNifty();
   fetchNiftyPrice();
+
+  // Broker tab — restore session, handle OAuth callback
+  initBrokerTab();
 }
 
 window.onload = initDashboard;
@@ -2949,56 +3134,30 @@ async function fetchLiveGoldRate() {
   let sourceLabel  = '';
 
   // ─── METHOD 1: International spot price via gold-api.com (free, CORS, no key) ───
-  // Returns USD/oz → convert to INR/gram using live forex rate
   try {
     if (src) src.textContent = 'Fetching spot gold (gold-api.com)…';
-    const [goldRes, fxRes] = await Promise.all([
-      fetch('https://api.gold-api.com/price/XAU', { cache: 'no-cache' }),
-      // Get USD/INR rate from a free forex source
-      fetch('https://api.gold-api.com/price/XAU', { cache: 'no-cache' }) // placeholder, we'll parse the price
-    ]);
-
+    const goldRes = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-cache' });
     if (goldRes.ok) {
       const goldData = await goldRes.json();
       const usdPerOz = parseFloat(goldData?.price);
-      
       if (usdPerOz && !isNaN(usdPerOz)) {
-        // Get USD/INR exchange rate — try CDN-based forex API
         let usdInr = null;
-        
-        // Try fetching USD/INR rate from a free source
         try {
           const fxR = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', { cache: 'no-cache' });
-          if (fxR.ok) {
-            const fxData = await fxR.json();
-            usdInr = parseFloat(fxData?.usd?.inr);
-          }
+          if (fxR.ok) { const fxData = await fxR.json(); usdInr = parseFloat(fxData?.usd?.inr); }
         } catch(e) { console.warn('Forex API 1 failed:', e.message); }
-
-        // Fallback: try alternate CDN path
         if (!usdInr) {
           try {
             const fxR2 = await fetch('https://latest.currency-api.pages.dev/v1/currencies/usd.json', { cache: 'no-cache' });
-            if (fxR2.ok) {
-              const fxData2 = await fxR2.json();
-              usdInr = parseFloat(fxData2?.usd?.inr);
-            }
+            if (fxR2.ok) { const fxData2 = await fxR2.json(); usdInr = parseFloat(fxData2?.usd?.inr); }
           } catch(e) { console.warn('Forex API 2 failed:', e.message); }
         }
-
-        // Last resort: use a reasonable recent USD/INR rate (updated periodically)
-        if (!usdInr) usdInr = 86.5;
-
-        // Convert: 1 troy ounce = 31.1035 grams
+        if (!usdInr) usdInr = 86.5; // fallback
         const inrPerGram24K = (usdPerOz * usdInr) / 31.1035;
-        // Add ~3% for import duty + GST to match India domestic gold price
-        const domesticPrice = Math.round(inrPerGram24K * 1.03);
-        
-        if (domesticPrice > 3000 && domesticPrice < 30000) { // sanity check
+        const domesticPrice = Math.round(inrPerGram24K * 1.03); // +3% duties
+        if (domesticPrice > 3000 && domesticPrice < 30000) {
           pricePerGram = domesticPrice;
           sourceLabel  = `Spot Gold · $${usdPerOz.toFixed(0)}/oz · ₹${usdInr.toFixed(1)}/$ · +3% duties`;
-
-          // Update USD-specific display elements if they exist
           const usdOzEl  = document.getElementById('goldUsdOz');
           const usdInrEl = document.getElementById('goldUsdInr');
           if (usdOzEl)  usdOzEl.textContent = `$${usdPerOz.toFixed(2)}`;
@@ -3009,16 +3168,14 @@ async function fetchLiveGoldRate() {
   } catch(e) { console.warn('gold-api.com failed:', e.message); }
 
   // ─── METHOD 2 (FALLBACK): Gold ETF NAV from AMFI ───
-  // This underestimates (~60-70% of actual) due to ETF unit size drift
   if (!pricePerGram) {
     if (src) src.textContent = 'Spot API failed, trying AMFI ETFs…';
     const GOLD_ETFS = [
-      { code: '135480', name: 'Nippon Gold ETF',   multiplier: 100 },
-      { code: '120503', name: 'SBI Gold ETF',       multiplier: 100 },
-      { code: '120716', name: 'HDFC Gold ETF',      multiplier: 100 },
-      { code: '135389', name: 'Axis Gold ETF',      multiplier: 100 },
+      { code: '135480', name: 'Nippon Gold ETF', multiplier: 157 },
+      { code: '120503', name: 'SBI Gold ETF',     multiplier: 157 },
+      { code: '120716', name: 'HDFC Gold ETF',    multiplier: 157 },
+      { code: '135389', name: 'Axis Gold ETF',    multiplier: 157 },
     ];
-
     for (const etf of GOLD_ETFS) {
       try {
         const r = await fetch(`https://api.mfapi.in/mf/${etf.code}/latest`, { cache: 'no-cache' });
@@ -3026,14 +3183,8 @@ async function fetchLiveGoldRate() {
         const d = await r.json();
         const nav = parseFloat(d?.data?.[0]?.nav);
         if (!nav || isNaN(nav)) continue;
-        // NAV × 100 is a rough estimate; ETF units don't exactly equal 1/100g anymore
-        // Apply a correction factor: actual gold ≈ NAV × 157 (based on current drift)
-        const derived = Math.round(nav * 157);
-        if (derived > 3000) {
-          pricePerGram = derived;
-          sourceLabel  = etf.name + ' (AMFI · adjusted)';
-          break;
-        }
+        const derived = Math.round(nav * etf.multiplier);
+        if (derived > 3000) { pricePerGram = derived; sourceLabel = etf.name + ' (AMFI · adjusted)'; break; }
       } catch(e) { console.warn(etf.name, 'failed:', e.message); }
     }
   }
@@ -3044,20 +3195,17 @@ async function fetchLiveGoldRate() {
     applyGoldRate(pricePerGram, sourceLabel);
   } else {
     if (src) {
-      src.innerHTML = `⚠ Could not fetch rate. Enter ₹/gram manually below or check `
-        + `<a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
+      src.innerHTML = `⚠ Could not fetch rate. Enter ₹/gram manually or check <a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
       src.style.color = 'var(--amber)';
     }
   }
 }
 
-// Centralized function to apply a gold rate from any source
 function applyGoldRate(pricePerGram, sourceLabel) {
   const priceEl = document.getElementById('sgbCurrentPrice');
   if (priceEl) priceEl.value = pricePerGram;
   const formPriceEl = document.getElementById('sgbFormCurrentPrice');
   if (formPriceEl) formPriceEl.value = pricePerGram;
-
   const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
   const src = document.getElementById('goldRateSource');
   if (src) {
@@ -3065,13 +3213,10 @@ function applyGoldRate(pricePerGram, sourceLabel) {
       + ` <span style="color:var(--text3);font-size:0.65rem;">· ${sourceLabel} · ${ts}</span>`;
     src.style.color = 'var(--text2)';
   }
-
   const updEl = document.getElementById('goldLastUpdated');
   if (updEl) updEl.textContent = ts;
-
   localStorage.setItem('mypf_gold_rate', JSON.stringify({ pricePerGram, ts, sourceLabel }));
   renderSGBHoldings();
-  flashSGBCurrentValues();
 }
 
 function restoreCachedGoldRate() {
@@ -3161,8 +3306,8 @@ function renderSGBHoldings() {
       <td class="mono">${h.grams}g</td>
       <td class="mono">₹${h.issuePrice.toLocaleString('en-IN')}</td>
       <td class="mono">₹${h.invested.toLocaleString('en-IN')}</td>
-      <td class="mono" style="color:var(--green)" data-sgb-live="curval">₹${curVal.toLocaleString('en-IN')}</td>
-      <td class="mono" style="color:${gain>=0?'var(--green)':'var(--red)'}" data-sgb-live="gain">${gain>=0?'+':''}₹${Math.abs(gain).toLocaleString('en-IN')} (${gainPct}%)</td>
+      <td class="mono" style="color:var(--green)">₹${curVal.toLocaleString('en-IN')}</td>
+      <td class="mono" style="color:${gain>=0?'var(--green)':'var(--red)'}">${gain>=0?'+':''}₹${Math.abs(gain).toLocaleString('en-IN')} (${gainPct}%)</td>
       <td class="mono" style="color:var(--yellow)">₹${annualInt.toLocaleString('en-IN')}/yr</td>
       <td>${taxFree ? '<span class="badge badge-green">Tax Free Now</span>' : `<span class="badge badge-amber">Matures ${h.maturityYear}</span>`}</td>
       <td><button onclick="delSGB(${h.id})" class="le-del">✕</button></td>
@@ -3185,33 +3330,6 @@ function renderSGBHoldings() {
 function loadSGBFields() { renderSGBHoldings(); }
 function saveSGB() {}
 function calcSGB() {}
-
-// Flash current-value cells after live fetch to give visual feedback
-function flashSGBCurrentValues() {
-  const tbody = document.getElementById('sgbTbody');
-  if (!tbody) return;
-  // Show the LIVE badge next to "Current Value" header
-  const liveBadge = document.getElementById('sgbLiveBadge');
-  if (liveBadge) liveBadge.style.display = 'inline';
-  // Current Value is column index 4 (0-based), Gain/Loss is 5
-  tbody.querySelectorAll('tr').forEach(row => {
-    const cells = row.querySelectorAll('td');
-    if (cells.length >= 6) {
-      [cells[4], cells[5]].forEach(cell => {
-        cell.style.transition = 'background 0.3s';
-        cell.style.background = 'rgba(240,192,64,0.25)';
-        setTimeout(() => { cell.style.background = 'transparent'; }, 1200);
-      });
-    }
-  });
-  // Also flash the summary card
-  const summary = document.getElementById('sgbSummary');
-  if (summary) {
-    summary.style.transition = 'background 0.3s';
-    summary.style.background = 'rgba(240,192,64,0.12)';
-    setTimeout(() => { summary.style.background = 'transparent'; }, 1200);
-  }
-}
 
 // ══ MF TAB SWITCHER ══
 function switchMFTab(id, el) {
@@ -5017,6 +5135,588 @@ updateDonut = function() {
 };
 
 // All init handled by initDashboard() via window.onload
+
+// ══════════════════════════════════════════════════════
+// BROKER INTEGRATION
+// ══════════════════════════════════════════════════════
+
+const BROKER_META = {
+  hdfc_securities: {
+    name: 'HDFC Securities',
+    desc: 'InvestRight API — free for individual clients',
+    authUrl: 'https://developer.hdfcsec.com/oapi/v1/login',
+    authParams: (apiKey, redirect) => `?api_key=${apiKey}&redirect_uri=${encodeURIComponent(redirect)}`,
+    setupHint: `<strong>Setup:</strong> Create app at <a href="https://developer.hdfcsec.com" target="_blank" style="color:var(--blue);">developer.hdfcsec.com</a> → Set redirect URL to <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:0.68rem;">${location.origin}/auth/callback</code> → Add <code>HDFC_API_KEY</code> & <code>HDFC_API_SECRET</code> in Netlify env vars.`,
+    codeParam: 'code', // URL param name for auth code
+  },
+  zerodha: {
+    name: 'Zerodha (Kite Connect)',
+    desc: 'Free personal API — holdings, positions, funds (no market data)',
+    authUrl: 'https://kite.zerodha.com/connect/login',
+    authParams: (apiKey, redirect) => `?api_key=${apiKey}&v=3`,
+    setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Netlify env vars.`,
+    codeParam: 'request_token',
+  },
+  angel_one: {
+    name: 'Angel One (SmartAPI)',
+    desc: 'Completely free API — orders, holdings, data included',
+    authUrl: null, // Angel One uses TOTP, not OAuth redirect
+    setupHint: `<strong>Setup:</strong> Get SmartAPI key at <a href="https://smartapi.angelone.in" target="_blank" style="color:var(--blue);">smartapi.angelone.in</a> → Add <code>ANGEL_API_KEY</code> & <code>ANGEL_CLIENT_ID</code> in Netlify env vars. Login uses TOTP (no redirect).`,
+    codeParam: 'totp',
+  },
+  upstox: {
+    name: 'Upstox v2',
+    desc: 'Free basic API — holdings, positions, funds',
+    authUrl: 'https://api.upstox.com/v2/login/authorization/dialog',
+    authParams: (apiKey, redirect) => `?client_id=${apiKey}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code`,
+    setupHint: `<strong>Setup:</strong> Create app at <a href="https://account.upstox.com/developer/apps" target="_blank" style="color:var(--blue);">Upstox Developer</a> → Add <code>UPSTOX_API_KEY</code> & <code>UPSTOX_API_SECRET</code> in Netlify env vars.`,
+    codeParam: 'code',
+  },
+  groww: {
+    name: 'Groww',
+    desc: 'API for holdings and portfolio tracking',
+    authUrl: null,
+    setupHint: `<strong>Setup:</strong> Groww API access may require contacting their developer support. Add <code>GROWW_API_KEY</code> & <code>GROWW_API_SECRET</code> in Netlify env vars.`,
+    codeParam: 'code',
+  },
+  dhan: { name: 'Dhan (DhanHQ)', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
+  fyers: { name: 'Fyers v3', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
+  shoonya: { name: 'Shoonya (Finvasia)', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
+};
+
+// Session state for broker
+let brokerSession = {
+  broker: null,
+  token: null,
+  holdings: [],
+  funds: null,
+  lastFetched: null,
+};
+try { 
+  const saved = JSON.parse(sessionStorage.getItem('mypf_broker_session') || 'null');
+  if (saved) brokerSession = saved;
+} catch(e) {}
+
+function saveBrokerSession() {
+  sessionStorage.setItem('mypf_broker_session', JSON.stringify(brokerSession));
+}
+
+// Detect if running on Netlify (has functions available)
+function isOnNetlify() {
+  return location.hostname.includes('netlify.app') || location.hostname.includes('netlify.com') || location.hostname === 'localhost';
+}
+
+function getFunctionsBase() {
+  return '/.netlify/functions';
+}
+
+// Called when user selects a broker from dropdown
+function onBrokerSelect() {
+  const sel = document.getElementById('brokerSelect').value;
+  const panel = document.getElementById('brokerInfoPanel');
+  const hint = document.getElementById('brokerSetupHint');
+  const nameEl = document.getElementById('brokerInfoName');
+  const descEl = document.getElementById('brokerInfoDesc');
+  const loginBtn = document.getElementById('brokerLoginBtn');
+  const notice = document.getElementById('brokerSelfHostNotice');
+
+  if (!sel) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  const meta = BROKER_META[sel];
+  panel.style.display = 'block';
+  nameEl.textContent = meta.name;
+  descEl.textContent = meta.desc;
+  hint.innerHTML = meta.setupHint;
+
+  // Show self-host notice if not on Netlify
+  notice.style.display = isOnNetlify() ? 'none' : 'block';
+
+  // If already connected to this broker, show disconnect
+  if (brokerSession.broker === sel && brokerSession.token) {
+    updateBrokerUI('connected');
+  } else {
+    updateBrokerUI('disconnected');
+  }
+
+  // Save last selected broker
+  localStorage.setItem('mypf_broker_selected', sel);
+}
+
+function updateBrokerUI(state) {
+  const loginBtn = document.getElementById('brokerLoginBtn');
+  const disconnectBtn = document.getElementById('brokerDisconnectBtn');
+  const fetchBtn = document.getElementById('brokerFetchBtn');
+  const fundsBtn = document.getElementById('brokerFundsBtn');
+  const statusEl = document.getElementById('brokerStatus');
+
+  if (state === 'connected') {
+    loginBtn.style.display = 'none';
+    disconnectBtn.style.display = 'inline-block';
+    fetchBtn.disabled = false;
+    fundsBtn.disabled = false;
+    statusEl.innerHTML = '🟢 Connected';
+    statusEl.style.background = 'rgba(76,217,100,0.15)';
+    statusEl.style.color = 'var(--green)';
+  } else if (state === 'loading') {
+    loginBtn.disabled = true;
+    loginBtn.textContent = '⏳ Authenticating…';
+    statusEl.innerHTML = '🟡 Connecting…';
+    statusEl.style.background = 'rgba(240,192,64,0.15)';
+    statusEl.style.color = 'var(--yellow)';
+  } else {
+    loginBtn.style.display = 'inline-block';
+    loginBtn.disabled = false;
+    loginBtn.textContent = '🔐 Login & Connect';
+    disconnectBtn.style.display = 'none';
+    fetchBtn.disabled = true;
+    fundsBtn.disabled = true;
+    statusEl.innerHTML = 'Not connected';
+    statusEl.style.background = 'var(--s3)';
+    statusEl.style.color = 'var(--text3)';
+  }
+}
+
+// OAuth login flow
+function brokerLogin() {
+  const broker = document.getElementById('brokerSelect').value;
+  if (!broker) return alert('Please select a broker first');
+
+  const meta = BROKER_META[broker];
+  
+  // For brokers without OAuth redirect (Angel One uses TOTP)
+  if (!meta.authUrl) {
+    promptManualToken(broker);
+    return;
+  }
+
+  updateBrokerUI('loading');
+
+  // Store which broker we're logging into (for callback handling)
+  sessionStorage.setItem('mypf_broker_pending', broker);
+
+  // Build OAuth URL — api_key comes from server-side env var
+  // We need to ask the server what the login URL is, since the API key is stored there
+  // For now, redirect to a known pattern
+  const redirectUri = location.origin + '/auth/callback';
+  
+  // Open broker login in a popup or redirect
+  const authUrl = meta.authUrl + (meta.authParams ? meta.authParams('', redirectUri) : '');
+  
+  // Since the API key is server-side, we call our function to get the auth URL
+  fetch(getFunctionsBase() + '/broker-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ broker, action: 'get_auth_url', redirect_uri: redirectUri }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.auth_url) {
+      window.location.href = data.auth_url;
+    } else {
+      // Fallback — prompt for auth code manually
+      promptManualToken(broker);
+    }
+  })
+  .catch(err => {
+    console.warn('Auth URL fetch failed, using manual flow:', err);
+    promptManualToken(broker);
+  });
+}
+
+// Manual token entry (fallback / for TOTP-based brokers)
+function promptManualToken(broker) {
+  const meta = BROKER_META[broker];
+  const token = prompt(
+    `${meta.name} — Enter your access token / auth code:\n\n` +
+    `Get this from your broker's developer portal or OAuth flow.\n` +
+    `For Zerodha: request_token from the redirect URL\n` +
+    `For Angel One: your TOTP code`
+  );
+  
+  if (!token) {
+    updateBrokerUI('disconnected');
+    return;
+  }
+
+  updateBrokerUI('loading');
+
+  // Exchange the code/token for an access token via our Netlify function
+  fetch(getFunctionsBase() + '/broker-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ broker, code: token, redirect_uri: location.origin + '/auth/callback' }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.access_token) {
+      brokerSession.broker = broker;
+      brokerSession.token = data.access_token;
+      saveBrokerSession();
+      updateBrokerUI('connected');
+      document.getElementById('brokerFetchStatus').textContent = 'Authenticated! Click Fetch Holdings.';
+    } else if (data.error) {
+      alert('Auth failed: ' + data.error + (data.details ? '\n' + JSON.stringify(data.details) : ''));
+      updateBrokerUI('disconnected');
+    } else {
+      // Maybe the token is already an access token (direct entry)
+      brokerSession.broker = broker;
+      brokerSession.token = token;
+      saveBrokerSession();
+      updateBrokerUI('connected');
+      document.getElementById('brokerFetchStatus').textContent = 'Token set! Try Fetch Holdings.';
+    }
+  })
+  .catch(err => {
+    // If function call fails, assume direct token
+    console.warn('Auth exchange failed, using token directly:', err);
+    brokerSession.broker = broker;
+    brokerSession.token = token;
+    saveBrokerSession();
+    updateBrokerUI('connected');
+    document.getElementById('brokerFetchStatus').textContent = 'Token set (direct). Try Fetch Holdings.';
+  });
+}
+
+// Handle OAuth callback (check URL for auth code on page load)
+function handleBrokerCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const pendingBroker = sessionStorage.getItem('mypf_broker_pending');
+  
+  if (!pendingBroker) return;
+
+  const meta = BROKER_META[pendingBroker];
+  if (!meta) return;
+
+  const code = params.get(meta.codeParam) || params.get('code') || params.get('request_token');
+  if (!code) return;
+
+  // Clean URL
+  window.history.replaceState({}, document.title, window.location.pathname);
+  sessionStorage.removeItem('mypf_broker_pending');
+
+  // Switch to broker tab
+  gotoPage('broker', null);
+  document.getElementById('brokerSelect').value = pendingBroker;
+  onBrokerSelect();
+  
+  // Exchange code for token
+  updateBrokerUI('loading');
+  fetch(getFunctionsBase() + '/broker-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ broker: pendingBroker, code, redirect_uri: location.origin + '/auth/callback' }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.access_token) {
+      brokerSession.broker = pendingBroker;
+      brokerSession.token = data.access_token;
+      saveBrokerSession();
+      updateBrokerUI('connected');
+      document.getElementById('brokerFetchStatus').textContent = '✅ Authenticated! Fetching holdings…';
+      fetchBrokerHoldings(); // Auto-fetch on successful auth
+    } else {
+      alert('Token exchange failed: ' + (data.error || 'Unknown error'));
+      updateBrokerUI('disconnected');
+    }
+  })
+  .catch(err => {
+    alert('Auth callback error: ' + err.message);
+    updateBrokerUI('disconnected');
+  });
+}
+
+function brokerDisconnect() {
+  if (!confirm('Disconnect from ' + (BROKER_META[brokerSession.broker]?.name || 'broker') + '?')) return;
+  brokerSession = { broker: null, token: null, holdings: [], funds: null, lastFetched: null };
+  saveBrokerSession();
+  updateBrokerUI('disconnected');
+  document.getElementById('brokerHoldingsTbody').innerHTML = 
+    '<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">Connect a broker above to fetch your holdings</td></tr>';
+  document.getElementById('brokerSummary').innerHTML = 'No holdings fetched yet.';
+  document.getElementById('brokerFundsInfo').innerHTML = 'Connect a broker to view available funds.';
+  document.getElementById('brokerFetchStatus').textContent = '';
+}
+
+// Fetch holdings via Netlify Function proxy
+async function fetchBrokerHoldings() {
+  if (!brokerSession.broker || !brokerSession.token) {
+    alert('Please connect a broker first');
+    return;
+  }
+
+  const btn = document.getElementById('brokerFetchBtn');
+  const status = document.getElementById('brokerFetchStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ Fetching…';
+  status.textContent = 'Fetching holdings from ' + BROKER_META[brokerSession.broker].name + '…';
+
+  try {
+    const res = await fetch(getFunctionsBase() + '/broker-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        broker: brokerSession.broker,
+        endpoint: 'holdings',
+        token: brokerSession.token,
+      }),
+    });
+    const result = await res.json();
+
+    if (result.status === 200 || result.data) {
+      const holdings = normalizeHoldings(brokerSession.broker, result.data);
+      brokerSession.holdings = holdings;
+      brokerSession.lastFetched = new Date().toISOString();
+      saveBrokerSession();
+      renderBrokerHoldings(holdings);
+      const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+      status.innerHTML = `✅ <span style="color:var(--green);">${holdings.length} holdings fetched</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
+    } else {
+      status.innerHTML = `<span style="color:var(--red);">⚠ Error: ${result.error || 'Fetch failed'}</span>`;
+      if (result.status === 401) {
+        status.innerHTML += ' <span style="color:var(--text3);font-size:0.65rem;">— Token may have expired. Reconnect.</span>';
+      }
+    }
+  } catch (err) {
+    status.innerHTML = `<span style="color:var(--red);">⚠ Network error: ${err.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ Fetch Holdings';
+  }
+}
+
+// Normalize holdings from different broker formats to common format
+function normalizeHoldings(broker, data) {
+  try {
+    switch (broker) {
+      case 'hdfc_securities':
+        return (data?.data || data || []).map(h => ({
+          symbol: h.tradingSymbol || h.symbol || '—',
+          name: h.companyName || h.name || h.tradingSymbol || '—',
+          qty: parseFloat(h.quantity || h.qty || 0),
+          avgPrice: parseFloat(h.averagePrice || h.avgPrice || 0),
+          currentPrice: parseFloat(h.lastTradedPrice || h.ltp || h.currentPrice || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: parseFloat(h.pnl || h.profitLoss || 0),
+        }));
+      case 'zerodha':
+        return (data?.data || data || []).map(h => ({
+          symbol: h.tradingsymbol || '—',
+          name: h.instrument_token ? h.tradingsymbol : '—',
+          qty: parseFloat(h.quantity || 0),
+          avgPrice: parseFloat(h.average_price || 0),
+          currentPrice: parseFloat(h.last_price || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: parseFloat(h.pnl || 0),
+        }));
+      case 'angel_one':
+        return (data?.data || data || []).map(h => ({
+          symbol: h.tradingsymbol || h.symbolname || '—',
+          name: h.symbolname || h.tradingsymbol || '—',
+          qty: parseFloat(h.quantity || h.t1quantity || 0),
+          avgPrice: parseFloat(h.averageprice || 0),
+          currentPrice: parseFloat(h.ltp || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: parseFloat(h.profitandloss || 0),
+        }));
+      case 'upstox':
+        return (data?.data || data || []).map(h => ({
+          symbol: h.trading_symbol || h.tradingsymbol || '—',
+          name: h.company_name || h.trading_symbol || '—',
+          qty: parseFloat(h.quantity || 0),
+          avgPrice: parseFloat(h.average_price || 0),
+          currentPrice: parseFloat(h.last_price || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: parseFloat(h.pnl || 0),
+        }));
+      case 'groww':
+        return (data?.data || data || []).map(h => ({
+          symbol: h.symbol || h.tradingSymbol || '—',
+          name: h.companyName || h.symbol || '—',
+          qty: parseFloat(h.quantity || 0),
+          avgPrice: parseFloat(h.avgPrice || h.averagePrice || 0),
+          currentPrice: parseFloat(h.currentPrice || h.ltp || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: parseFloat(h.pnl || 0),
+        }));
+      default:
+        return (Array.isArray(data) ? data : data?.data || []).map(h => ({
+          symbol: h.symbol || h.tradingSymbol || h.tradingsymbol || '—',
+          name: h.name || h.companyName || h.symbol || '—',
+          qty: parseFloat(h.quantity || h.qty || 0),
+          avgPrice: parseFloat(h.averagePrice || h.average_price || h.avgPrice || 0),
+          currentPrice: parseFloat(h.lastPrice || h.last_price || h.ltp || h.currentPrice || 0),
+          exchange: h.exchange || 'NSE',
+          type: 'equity',
+          broker,
+          pnl: 0,
+        }));
+    }
+  } catch (e) {
+    console.error('Holdings normalization error:', e);
+    return [];
+  }
+}
+
+function renderBrokerHoldings(holdings) {
+  const tbody = document.getElementById('brokerHoldingsTbody');
+  
+  if (!holdings.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">No holdings found in your account</td></tr>';
+    document.getElementById('brokerSummary').innerHTML = 'No holdings found.';
+    return;
+  }
+
+  let totalInvested = 0, totalCurrent = 0, totalPnl = 0;
+
+  tbody.innerHTML = holdings.map(h => {
+    const invested = h.qty * h.avgPrice;
+    const current = h.qty * (h.currentPrice || h.avgPrice);
+    const pnl = h.currentPrice ? (current - invested) : h.pnl;
+    const pnlPct = invested > 0 ? ((pnl / invested) * 100).toFixed(1) : 0;
+    totalInvested += invested;
+    totalCurrent += current;
+    totalPnl += pnl;
+
+    return `<tr>
+      <td style="font-weight:700;color:var(--blue);">${h.symbol}</td>
+      <td style="font-size:0.75rem;color:var(--text2);">${h.name}</td>
+      <td class="mono">${h.qty}</td>
+      <td class="mono">₹${h.avgPrice.toLocaleString('en-IN', {maximumFractionDigits:2})}</td>
+      <td class="mono">₹${invested.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+      <td class="mono">${h.currentPrice ? '₹'+h.currentPrice.toLocaleString('en-IN',{maximumFractionDigits:2}) : '<span style="color:var(--text3);">—</span>'}</td>
+      <td class="mono" style="color:var(--green);">₹${current.toLocaleString('en-IN', {maximumFractionDigits:0})}</td>
+      <td class="mono" style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}₹${Math.abs(pnl).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+      <td class="mono" style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}${pnlPct}%</td>
+    </tr>`;
+  }).join('');
+
+  // Summary
+  const totalPnlPct = totalInvested > 0 ? ((totalPnl / totalInvested) * 100).toFixed(1) : 0;
+  document.getElementById('brokerSummary').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">
+      <div style="padding:14px;background:var(--s3);border-radius:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Holdings</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text1);">${holdings.length}</div>
+      </div>
+      <div style="padding:14px;background:var(--s3);border-radius:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Invested</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text1);">₹${totalInvested.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+      </div>
+      <div style="padding:14px;background:var(--s3);border-radius:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Current Value</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--green);">₹${totalCurrent.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+      </div>
+      <div style="padding:14px;background:var(--s3);border-radius:10px;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Total P&L</div>
+        <div style="font-size:1.1rem;font-weight:800;color:${totalPnl>=0?'var(--green)':'var(--red)'};">${totalPnl>=0?'+':''}₹${Math.abs(totalPnl).toLocaleString('en-IN',{maximumFractionDigits:0})} (${totalPnlPct}%)</div>
+      </div>
+    </div>`;
+}
+
+// Fetch funds/margins
+async function fetchBrokerFunds() {
+  if (!brokerSession.broker || !brokerSession.token) return;
+
+  const btn = document.getElementById('brokerFundsBtn');
+  const info = document.getElementById('brokerFundsInfo');
+  btn.disabled = true;
+  btn.textContent = '⏳ Fetching…';
+
+  try {
+    const res = await fetch(getFunctionsBase() + '/broker-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        broker: brokerSession.broker,
+        endpoint: 'funds',
+        token: brokerSession.token,
+      }),
+    });
+    const result = await res.json();
+
+    if (result.data) {
+      brokerSession.funds = result.data;
+      saveBrokerSession();
+      renderBrokerFunds(result.data);
+    } else {
+      info.innerHTML = `<span style="color:var(--red);">⚠ ${result.error || 'Could not fetch funds'}</span>`;
+    }
+  } catch (err) {
+    info.innerHTML = `<span style="color:var(--red);">⚠ Error: ${err.message}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⟳ Fetch Funds';
+  }
+}
+
+function renderBrokerFunds(data) {
+  const info = document.getElementById('brokerFundsInfo');
+  // Try to extract common fields from the response
+  const d = data?.data || data;
+  
+  if (typeof d === 'object' && d !== null) {
+    const available = d.availablecash || d.available?.cash || d.net || d.equity?.available?.live_balance || '—';
+    const used = d.utiliseddebits || d.utilised?.debits || d.used || d.equity?.utilised?.exposure || '—';
+    
+    info.innerHTML = `
+      <div style="display:flex;gap:20px;flex-wrap:wrap;">
+        <div style="padding:12px 18px;background:var(--s3);border-radius:10px;flex:1;min-width:140px;">
+          <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Available Cash</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--green);">₹${typeof available === 'number' ? available.toLocaleString('en-IN') : available}</div>
+        </div>
+        <div style="padding:12px 18px;background:var(--s3);border-radius:10px;flex:1;min-width:140px;">
+          <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;margin-bottom:4px;">Used Margin</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--amber);">₹${typeof used === 'number' ? used.toLocaleString('en-IN') : used}</div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text3);margin-top:8px;">Raw data available in console for debugging: <code>brokerSession.funds</code></div>`;
+  } else {
+    info.innerHTML = `<pre style="font-size:0.72rem;color:var(--text2);overflow-x:auto;max-height:200px;">${JSON.stringify(d, null, 2)}</pre>`;
+  }
+}
+
+// Restore broker state on page load
+function initBrokerTab() {
+  // Check for OAuth callback
+  handleBrokerCallback();
+  
+  // Restore last selected broker
+  const lastBroker = localStorage.getItem('mypf_broker_selected');
+  if (lastBroker) {
+    const sel = document.getElementById('brokerSelect');
+    if (sel) {
+      sel.value = lastBroker;
+      onBrokerSelect();
+    }
+  }
+
+  // If we have a session, restore UI
+  if (brokerSession.broker && brokerSession.token) {
+    const sel = document.getElementById('brokerSelect');
+    if (sel) sel.value = brokerSession.broker;
+    onBrokerSelect();
+    // Re-render cached holdings
+    if (brokerSession.holdings?.length) {
+      renderBrokerHoldings(brokerSession.holdings);
+      const ts = brokerSession.lastFetched ? new Date(brokerSession.lastFetched).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+      document.getElementById('brokerFetchStatus').innerHTML = `✅ <span style="color:var(--green);">${brokerSession.holdings.length} holdings (cached)</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
+    }
+  }
+}
 
 // ══════════════════════════════════════════════════════
 // SETTINGS PAGE
