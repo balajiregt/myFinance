@@ -2315,6 +2315,10 @@ function switchDpTab(id, el) {
 
 // ══ SALARY ══
 function initDashboard() {
+  // ── CRITICAL: Handle broker OAuth callback FIRST before anything else ──
+  // This must run before other init code that might crash on null configs
+  try { handleBrokerCallback(); } catch(e) { console.error('Broker callback error:', e); }
+
   // Salary & savings %
   if (state.salary)     document.getElementById('salaryIn').value    = state.salary;
   if (state.savingsPct) document.getElementById('savingsPct').value  = state.savingsPct;
@@ -2968,18 +2972,23 @@ function updateSSHeader() {
   const ss = getSS();
   const titleEl = document.getElementById('ssCompanyTitle');
   const subEl   = document.getElementById('ssSubtitle');
-  if (titleEl) titleEl.textContent = ss.company + ' Sharesave';
+  if (!ss.configured) {
+    if (titleEl) titleEl.textContent = 'Company Share Plan';
+    if (subEl)   subEl.textContent   = 'Configure your scheme below to get started';
+    return;
+  }
+  if (titleEl) titleEl.textContent = (ss.company || 'Company') + ' Share Plan';
   if (subEl)   subEl.textContent   = ss.options + ' options · Strike ₹' + ss.strike.toLocaleString('en-IN')
     + ' · ₹' + ss.monthly.toLocaleString('en-IN') + '/month'
-    + ' · Matures ' + ss.maturity.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+    + (ss.maturity ? ' · Matures ' + ss.maturity.toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '');
   // Also update chipSS on overview
   const chipSS = document.getElementById('chipSS');
-  if (chipSS) chipSS.textContent = '₹\u202f' + ss.monthly.toLocaleString('en-IN');
+  if (chipSS) chipSS.textContent = ss.monthly > 0 ? '₹\u202f' + ss.monthly.toLocaleString('en-IN') : '₹\u202f—';
 }
 
 function onSalaryChange() {
   state.salary = parseFloat(document.getElementById('salaryIn').value) || 0;
-  state.savingsPct = parseFloat(document.getElementById('savingsPct').value) || 15;
+  state.savingsPct = parseFloat(document.getElementById('savingsPct').value) || 0;
   const pct = state.savingsPct / 100;
   const ssMonthly = getSS().monthly; // dynamic — from config
 
@@ -3014,7 +3023,7 @@ function onSalaryChange() {
 
 function saveSalary() {
   state.salary = parseFloat(document.getElementById('salaryIn').value) || 0;
-  state.savingsPct = parseFloat(document.getElementById('savingsPct').value) || 15;
+  state.savingsPct = parseFloat(document.getElementById('savingsPct').value) || 0;
   onSalaryChange(); save();
 }
 
@@ -5335,44 +5344,37 @@ const BROKER_META = {
   hdfc_securities: {
     name: 'HDFC Securities',
     desc: 'InvestRight API — free for individual clients',
-    authUrl: 'https://developer.hdfcsec.com/oapi/v1/login',
-    authParams: (apiKey, redirect) => `?api_key=${apiKey}&redirect_uri=${encodeURIComponent(redirect)}`,
+    // Auth URL built server-side in broker-auth.js (API key never reaches browser)
+    hasOAuth: true,
     setupHint: `<strong>Setup:</strong> Create app at <a href="https://developer.hdfcsec.com" target="_blank" style="color:var(--blue);">developer.hdfcsec.com</a> → Set redirect URL to <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:0.68rem;">${location.origin}/auth/callback</code> → Add <code>HDFC_API_KEY</code> & <code>HDFC_API_SECRET</code> in Netlify env vars.`,
-    codeParam: 'code', // URL param name for auth code
   },
   zerodha: {
     name: 'Zerodha (Kite Connect)',
     desc: 'Free personal API — holdings, positions, funds (no market data)',
-    authUrl: 'https://kite.zerodha.com/connect/login',
-    authParams: (apiKey, redirect) => `?api_key=${apiKey}&v=3`,
+    hasOAuth: true,
     setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Netlify env vars.`,
-    codeParam: 'request_token',
   },
   angel_one: {
     name: 'Angel One (SmartAPI)',
     desc: 'Completely free API — orders, holdings, data included',
-    authUrl: null, // Angel One uses TOTP, not OAuth redirect
+    hasOAuth: false, // Uses TOTP, not OAuth redirect
     setupHint: `<strong>Setup:</strong> Get SmartAPI key at <a href="https://smartapi.angelone.in" target="_blank" style="color:var(--blue);">smartapi.angelone.in</a> → Add <code>ANGEL_API_KEY</code> & <code>ANGEL_CLIENT_ID</code> in Netlify env vars. Login uses TOTP (no redirect).`,
-    codeParam: 'totp',
   },
   upstox: {
     name: 'Upstox v2',
     desc: 'Free basic API — holdings, positions, funds',
-    authUrl: 'https://api.upstox.com/v2/login/authorization/dialog',
-    authParams: (apiKey, redirect) => `?client_id=${apiKey}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code`,
+    hasOAuth: true,
     setupHint: `<strong>Setup:</strong> Create app at <a href="https://account.upstox.com/developer/apps" target="_blank" style="color:var(--blue);">Upstox Developer</a> → Add <code>UPSTOX_API_KEY</code> & <code>UPSTOX_API_SECRET</code> in Netlify env vars.`,
-    codeParam: 'code',
   },
   groww: {
     name: 'Groww',
     desc: 'API for holdings and portfolio tracking',
-    authUrl: null,
+    hasOAuth: false,
     setupHint: `<strong>Setup:</strong> Groww API access may require contacting their developer support. Add <code>GROWW_API_KEY</code> & <code>GROWW_API_SECRET</code> in Netlify env vars.`,
-    codeParam: 'code',
   },
-  dhan: { name: 'Dhan (DhanHQ)', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
-  fyers: { name: 'Fyers v3', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
-  shoonya: { name: 'Shoonya (Finvasia)', desc: 'Coming soon', authUrl: null, setupHint: 'Coming soon — check back later.', codeParam: '' },
+  dhan: { name: 'Dhan (DhanHQ)', desc: 'Coming soon', hasOAuth: false, setupHint: 'Coming soon — check back later.' },
+  fyers: { name: 'Fyers v3', desc: 'Coming soon', hasOAuth: false, setupHint: 'Coming soon — check back later.' },
+  shoonya: { name: 'Shoonya (Finvasia)', desc: 'Coming soon', hasOAuth: false, setupHint: 'Coming soon — check back later.' },
 };
 
 // Session state for broker
@@ -5478,7 +5480,7 @@ function brokerLogin() {
   const meta = BROKER_META[broker];
   
   // For brokers without OAuth redirect (Angel One uses TOTP)
-  if (!meta.authUrl) {
+  if (!meta.hasOAuth) {
     promptManualToken(broker);
     return;
   }
@@ -5488,13 +5490,8 @@ function brokerLogin() {
   // Store which broker we're logging into (for callback handling)
   sessionStorage.setItem('mypf_broker_pending', broker);
 
-  // Build OAuth URL — api_key comes from server-side env var
-  // We need to ask the server what the login URL is, since the API key is stored there
-  // For now, redirect to a known pattern
+  // Ask server for OAuth URL (API key stays server-side, never reaches browser)
   const redirectUri = location.origin + '/auth/callback';
-  
-  // Open broker login in a popup or redirect
-  const authUrl = meta.authUrl + (meta.authParams ? meta.authParams('', redirectUri) : '');
   
   // Since the API key is server-side, we call our function to get the auth URL
   fetch(getFunctionsBase() + '/broker-auth', {
@@ -5585,48 +5582,95 @@ function handleBrokerCallback() {
   const params = new URLSearchParams(window.location.search);
   const pendingBroker = sessionStorage.getItem('mypf_broker_pending');
   
-  if (!pendingBroker) return;
+  // Debug: log param NAMES only (not values) for security
+  if (params.toString()) {
+    console.log('[broker-callback] URL param keys:', Array.from(params.keys()));
+    console.log('[broker-callback] Pending broker:', pendingBroker);
+  }
 
-  const meta = BROKER_META[pendingBroker];
-  if (!meta) return;
+  if (!pendingBroker) {
+    // Even without pending broker, check if we have auth params — user might have refreshed
+    if (params.has('code') || params.has('request_token') || params.has('auth_code') || params.has('token')) {
+      console.warn('[broker-callback] Auth params found but no pending broker. Param keys:', Array.from(params.keys()));
+      // Try to recover from localStorage
+      const lastBroker = localStorage.getItem('mypf_broker_selected');
+      if (lastBroker) {
+        console.log('[broker-callback] Recovering with last selected broker:', lastBroker);
+        sessionStorage.setItem('mypf_broker_pending', lastBroker);
+        // Re-run with recovered broker
+        handleBrokerCallback();
+      }
+    }
+    return;
+  }
 
-  const code = params.get(meta.codeParam) || params.get('code') || params.get('request_token');
-  if (!code) return;
+  // Try ALL common auth code parameter names
+  const code = params.get('code') || params.get('request_token') || params.get('auth_code') || 
+               params.get('token') || params.get('access_token') || params.get('requestToken') ||
+               params.get('authCode');
+  
+  if (!code) {
+    console.warn('[broker-callback] No auth code found in URL. Param keys:', Array.from(params.keys()));
+    // Check if HDFC returned the token directly (some brokers do this)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hashToken = hashParams.get('access_token') || hashParams.get('token');
+    if (hashToken) {
+      console.log('[broker-callback] Found token in URL hash');
+      completeAuth(pendingBroker, hashToken, true);
+      return;
+    }
+    sessionStorage.removeItem('mypf_broker_pending');
+    return;
+  }
 
-  // Clean URL
+  console.log('[broker-callback] Auth code received, length:', code.length);
+
+  // Clean URL immediately
   window.history.replaceState({}, document.title, window.location.pathname);
   sessionStorage.removeItem('mypf_broker_pending');
 
-  // Switch to broker tab
-  gotoPage('broker', null);
-  document.getElementById('brokerSelect').value = pendingBroker;
-  onBrokerSelect();
-  
-  // Exchange code for token
-  updateBrokerUI('loading');
-  fetch(getFunctionsBase() + '/broker-auth', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ broker: pendingBroker, code, redirect_uri: location.origin + '/auth/callback' }),
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.access_token) {
-      brokerSession.broker = pendingBroker;
-      brokerSession.token = data.access_token;
-      saveBrokerSession();
-      updateBrokerUI('connected');
-      document.getElementById('brokerFetchStatus').textContent = '✅ Authenticated! Fetching holdings…';
-      fetchBrokerHoldings(); // Auto-fetch on successful auth
-    } else {
-      alert('Token exchange failed: ' + (data.error || 'Unknown error'));
-      updateBrokerUI('disconnected');
-    }
-  })
-  .catch(err => {
-    alert('Auth callback error: ' + err.message);
-    updateBrokerUI('disconnected');
-  });
+  // Switch to broker tab FIRST, before async operations
+  setTimeout(() => {
+    gotoPage('broker', null);
+    const sel = document.getElementById('brokerSelect');
+    if (sel) { sel.value = pendingBroker; onBrokerSelect(); }
+    
+    // Exchange code for token
+    updateBrokerUI('loading');
+    document.getElementById('brokerFetchStatus').textContent = '🔄 Exchanging auth code for access token…';
+    
+    fetch(getFunctionsBase() + '/broker-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ broker: pendingBroker, code, redirect_uri: location.origin + '/auth/callback' }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      console.log('[broker-callback] Token exchange:', data.access_token ? 'SUCCESS' : 'FAILED', data.error || '');
+      if (data.access_token) {
+        completeAuth(pendingBroker, data.access_token, false);
+      } else {
+        // Token exchange failed — maybe the code IS the token (HDFC sometimes returns token directly)
+        console.warn('[broker-callback] No access_token in response, trying code as direct token');
+        completeAuth(pendingBroker, code, true);
+      }
+    })
+    .catch(err => {
+      console.error('[broker-callback] Token exchange error:', err);
+      // Use code as direct token as last resort
+      completeAuth(pendingBroker, code, true);
+    });
+  }, 100);
+}
+
+function completeAuth(broker, token, isDirect) {
+  brokerSession.broker = broker;
+  brokerSession.token = token;
+  saveBrokerSession();
+  updateBrokerUI('connected');
+  const label = isDirect ? 'Token set (direct)' : '✅ Authenticated';
+  document.getElementById('brokerFetchStatus').textContent = label + ' — fetching holdings…';
+  fetchBrokerHoldings(); // Auto-fetch on successful auth
 }
 
 function brokerDisconnect() {
@@ -5891,7 +5935,7 @@ function renderBrokerFunds(data) {
           <div style="font-size:1rem;font-weight:800;color:var(--amber);">₹${typeof used === 'number' ? used.toLocaleString('en-IN') : used}</div>
         </div>
       </div>
-      <div style="font-size:0.68rem;color:var(--text3);margin-top:8px;">Raw data available in console for debugging: <code>brokerSession.funds</code></div>`;
+      <div style="font-size:0.68rem;color:var(--text3);margin-top:8px;">Full response details available for debugging in browser DevTools.</div>`;
   } else {
     info.innerHTML = `<pre style="font-size:0.72rem;color:var(--text2);overflow-x:auto;max-height:200px;">${JSON.stringify(d, null, 2)}</pre>`;
   }
@@ -5899,8 +5943,7 @@ function renderBrokerFunds(data) {
 
 // Restore broker state on page load
 function initBrokerTab() {
-  // Check for OAuth callback
-  handleBrokerCallback();
+  // OAuth callback already handled in initDashboard (runs first)
   
   // Restore last selected broker
   const lastBroker = localStorage.getItem('mypf_broker_selected');

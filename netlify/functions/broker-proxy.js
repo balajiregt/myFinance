@@ -143,8 +143,10 @@ function buildAuthHeaders(broker, token) {
 }
 
 function corsHeaders() {
+  // Restrict CORS to our own domain — prevents other sites from calling our broker proxy
+  const allowedOrigin = process.env.URL || 'https://finfolio-app.netlify.app';
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
