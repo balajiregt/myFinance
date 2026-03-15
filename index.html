@@ -225,6 +225,7 @@ nav {
 .tile-source.src-broker { background: rgba(74,158,255,0.15); color: var(--blue); }
 .tile-source.src-manual { background: rgba(160,160,192,0.12); color: var(--text3); }
 .tile-source.src-stale  { background: rgba(240,192,64,0.15); color: var(--yellow); }
+.tile-source.src-both   { background: rgba(62,207,142,0.15); color: var(--green); }
 
 /* ── NET WORTH HERO ── */
 .nw-hero {
@@ -1327,6 +1328,34 @@ select option { background: var(--s2); }
     </div>
   </div>
 
+  <!-- BROKER-SYNCED MF HOLDINGS (only visible when broker mode ON and MF data exists) -->
+  <div id="mfBrokerSection" style="display:none;margin-bottom:20px;">
+    <div class="card" style="border:1px solid rgba(74,158,255,0.2);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div class="card-hdr" style="margin-bottom:0;color:var(--blue);">🔄 Broker-Synced Funds</div>
+        <span style="font-size:0.68rem;padding:3px 10px;border-radius:12px;background:rgba(74,158,255,0.12);color:var(--blue);font-weight:600;">AUTO · from HDFC</span>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text3);margin-bottom:12px;">
+        These funds are fetched from your broker. Values update when you click "Fetch Holdings" in the Broker tab. You cannot edit these — they reflect your actual demat holdings.
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Fund Name</th><th>ISIN</th><th>Units</th><th>Avg Price</th><th>Invested</th><th>Current Price</th><th>Current Value</th><th>P&L</th></tr></thead>
+          <tbody id="mfBrokerTbody">
+            <tr><td colspan="8" style="color:var(--text3);text-align:center;padding:16px;">No broker MF data yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="mfBrokerSummary" style="margin-top:10px;font-size:0.78rem;color:var(--text3);"></div>
+    </div>
+  </div>
+
+  <!-- MANUAL MF SECTION HEADER (only shows when broker mode is ON) -->
+  <div id="mfManualHeader" style="display:none;margin-bottom:12px;">
+    <div style="font-size:0.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;">✏️ Manually Tracked Funds</div>
+    <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;">Track SIPs and funds not in your demat (direct MF platforms, etc.)</div>
+  </div>
+
   <!-- DIP ALERTS -->
   <div id="mfAlertBox" style="display:none;margin-bottom:16px;"></div>
 
@@ -2150,8 +2179,30 @@ select option { background: var(--s2); }
     </div>
   </div>
 
-  <!-- ── DATA SOURCE PREFERENCES ── -->
+  <!-- ── FEATURE TOGGLES ── -->
   <div style="margin-bottom:28px;">
+    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">🔌 Feature Toggles</div>
+    <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:700;font-size:0.88rem;color:var(--text1);">Broker Integration</div>
+          <div style="font-size:0.72rem;color:var(--text3);margin-top:3px;line-height:1.5;">
+            Enable to connect your demat account, fetch live holdings, and sync with Overview.<br>
+            <strong>Disable</strong> if you're using the standalone HTML file without Netlify — hides the Broker tab and Stocks tile.
+          </div>
+        </div>
+        <label style="position:relative;display:inline-block;width:52px;height:28px;flex-shrink:0;cursor:pointer;">
+          <input type="checkbox" id="toggleBrokerMode" onchange="onBrokerModeToggle()" style="opacity:0;width:0;height:0;">
+          <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:var(--s3);border-radius:14px;transition:0.3s;border:1px solid var(--border);"></span>
+          <span id="toggleBrokerKnob" style="position:absolute;top:3px;left:3px;width:22px;height:22px;background:var(--text3);border-radius:50%;transition:0.3s;"></span>
+        </label>
+      </div>
+      <div id="brokerModeMsg" style="font-size:0.72rem;margin-top:10px;min-height:16px;"></div>
+    </div>
+  </div>
+
+  <!-- ── DATA SOURCE PREFERENCES ── -->
+  <div id="dataSourcePrefsSection" style="margin-bottom:28px;">
     <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">🔄 Data Source Preferences</div>
     <div style="font-size:0.78rem;color:var(--text3);margin-bottom:16px;padding:10px 14px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15);border-radius:8px;">
       When broker data is available, choose which source the <strong style="color:var(--text2);">Overview</strong> uses for each asset class. Broker data is always live; manual entry is your fallback.
@@ -3034,17 +3085,19 @@ function updateDonut() {
     const el = document.getElementById(id);
     if (!el) return;
     if (stale) { el.className = 'tile-source src-stale'; el.textContent = 'STALE'; }
+    else if (type === 'both') { el.className = 'tile-source src-both'; el.textContent = 'BROKER + MANUAL'; }
     else if (type === 'broker') { el.className = 'tile-source src-broker'; el.textContent = 'BROKER'; }
     else { el.className = 'tile-source src-manual'; el.textContent = 'MANUAL'; }
   };
 
-  // ── Classify broker holdings ──
-  const classified = classifyBrokerHoldings();
+  // ── Classify broker holdings (only if broker mode is ON) ──
+  const brokerOn = isBrokerMode();
+  const classified = brokerOn ? classifyBrokerHoldings() : { stocks:[], mf:[], sgb:[], etf:[], bonds:[], other:[] };
   const brokerStocksV = classified.stocks.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
   const brokerMfV     = classified.mf.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
   const brokerSgbV    = classified.sgb.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
   const brokerEtfV    = classified.etf.reduce((s, h) => s + h.qty * (h.currentPrice || h.avgPrice), 0);
-  const hasBrokerData = brokerSession.holdings?.length > 0;
+  const hasBrokerData = brokerOn && brokerSession.holdings?.length > 0;
   const brokerStale   = hasBrokerData && brokerSession.lastFetched &&
     (Date.now() - new Date(brokerSession.lastFetched).getTime() > 24 * 60 * 60 * 1000);
 
@@ -3077,17 +3130,24 @@ function updateDonut() {
   // Stocks: always broker (no manual tab for stocks)
   const stocksV = Math.round(brokerStocksV + brokerEtfV);
 
-  // MF: broker first (if available and not manual_only), else manual
+  // MF: COMBINE broker + manual (dedup by ISIN to avoid double-counting)
+  // Broker MFs and manual MFs are typically different (broker = demat, manual = direct MF platforms/SIPs)
+  // If user explicitly chooses manual_only, skip broker MF entirely
   let mfV, mfSource;
-  if (mfPref === 'manual_only' || !hasBrokerData || brokerMfV === 0) {
+  if (mfPref === 'manual_only' || !brokerOn) {
     mfV = manualMfV; mfSource = 'manual';
-  } else {
+  } else if (hasBrokerData && brokerMfV > 0 && manualMfV > 0) {
+    // Both sources have data — combine them (no ISIN overlap expected between demat MF and direct MF)
+    mfV = Math.round(brokerMfV) + manualMfV; mfSource = 'broker';
+  } else if (hasBrokerData && brokerMfV > 0) {
     mfV = Math.round(brokerMfV); mfSource = 'broker';
+  } else {
+    mfV = manualMfV; mfSource = 'manual';
   }
 
-  // SGB: broker first, else manual
+  // SGB: broker first, else manual (SGBs rarely in broker API, usually manual)
   let goldV, goldSource;
-  if (sgbPref === 'manual_only' || !hasBrokerData || brokerSgbV === 0) {
+  if (sgbPref === 'manual_only' || !brokerOn || !hasBrokerData || brokerSgbV === 0) {
     goldV = manualGoldV; goldSource = 'manual';
   } else {
     goldV = Math.round(brokerSgbV); goldSource = 'broker';
@@ -3116,13 +3176,18 @@ function updateDonut() {
   if (hasBrokerData) {
     document.getElementById('tile-stocks-sub').textContent = classified.stocks.length + ' stocks' + (classified.etf.length ? ' + ' + classified.etf.length + ' ETFs' : '');
   }
-  if (mfSource === 'broker') {
+  if (mfSource === 'broker' && manualMfV > 0 && brokerMfV > 0) {
+    document.getElementById('tile-mf-sub').textContent = 'Broker + Manual combined';
+  } else if (mfSource === 'broker') {
     document.getElementById('tile-mf-sub').textContent = classified.mf.length + ' funds via broker';
   }
 
+  // Source badge for MF: show "BOTH" when combined
+  const mfBadgeType = (mfSource === 'broker' && manualMfV > 0 && brokerMfV > 0) ? 'both' : mfSource;
+
   // ── Source badges ──
   srcBadge('tile-src-stocks', 'broker', brokerStale && stocksV > 0);
-  srcBadge('tile-src-mf', mfSource, brokerStale && mfSource === 'broker');
+  srcBadge('tile-src-mf', mfBadgeType, brokerStale && mfSource === 'broker');
   srcBadge('tile-src-gold', goldSource, brokerStale && goldSource === 'broker');
   srcBadge('tile-src-fd', 'manual', false);
   srcBadge('tile-src-rd', 'manual', false);
@@ -6021,6 +6086,9 @@ function initBrokerTab() {
 
   // Restore source preferences in Settings
   restoreSourcePrefs();
+
+  // Apply broker mode toggle (show/hide broker-related UI)
+  applyBrokerMode();
 }
 
 // ── Data Source Preferences ──
@@ -6043,6 +6111,102 @@ function restoreSourcePrefs() {
     if (mfEl && prefs.mf) mfEl.value = prefs.mf;
     if (sgbEl && prefs.sgb) sgbEl.value = prefs.sgb;
   } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════
+// BROKER MODE TOGGLE
+// ══════════════════════════════════════════════════════
+
+function isBrokerMode() {
+  return localStorage.getItem('mypf_broker_mode') === 'on';
+}
+
+function onBrokerModeToggle() {
+  const on = document.getElementById('toggleBrokerMode')?.checked;
+  localStorage.setItem('mypf_broker_mode', on ? 'on' : 'off');
+  applyBrokerMode();
+  const msg = document.getElementById('brokerModeMsg');
+  if (msg) {
+    msg.textContent = on ? '✅ Broker features enabled' : '✅ Broker features disabled — standalone mode';
+    msg.style.color = 'var(--green)';
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  }
+}
+
+function applyBrokerMode() {
+  const on = isBrokerMode();
+  const cb = document.getElementById('toggleBrokerMode');
+  const knob = document.getElementById('toggleBrokerKnob');
+  if (cb) cb.checked = on;
+  if (knob) {
+    knob.style.left = on ? '27px' : '3px';
+    knob.style.background = on ? 'var(--blue)' : 'var(--text3)';
+    const track = knob.parentElement?.querySelector('span');
+    if (track) track.style.background = on ? 'rgba(74,158,255,0.2)' : 'var(--s3)';
+  }
+  // Nav: show/hide Broker tab
+  document.querySelectorAll('.ntab').forEach(t => {
+    if (t.textContent.includes('Broker')) t.style.display = on ? '' : 'none';
+  });
+  // Overview: show/hide Stocks tile and source badges
+  const stocksTile = document.querySelector('[onclick*="broker"]');
+  if (stocksTile) stocksTile.style.display = on ? '' : 'none';
+  document.querySelectorAll('.tile-source').forEach(el => el.style.display = on ? '' : 'none');
+  // Settings: show/hide data source prefs
+  const dsSection = document.getElementById('dataSourcePrefsSection');
+  if (dsSection) dsSection.style.display = on ? '' : 'none';
+  // MF tab: show/hide broker-synced section
+  const mfBrokerSection = document.getElementById('mfBrokerSection');
+  const mfManualHeader = document.getElementById('mfManualHeader');
+  if (mfBrokerSection) mfBrokerSection.style.display = on ? '' : 'none';
+  if (mfManualHeader) mfManualHeader.style.display = on ? '' : 'none';
+  if (on) renderBrokerMFSection();
+  updateDonut();
+}
+
+function renderBrokerMFSection() {
+  const tbody = document.getElementById('mfBrokerTbody');
+  const summary = document.getElementById('mfBrokerSummary');
+  const section = document.getElementById('mfBrokerSection');
+  if (!tbody || !section) return;
+  const classified = classifyBrokerHoldings();
+  const brokerMFs = classified.mf;
+  if (!brokerMFs.length) {
+    section.style.display = isBrokerMode() && brokerSession.holdings?.length ? 'block' : 'none';
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:16px;">No mutual funds found in broker holdings</td></tr>';
+    if (summary) summary.textContent = '';
+    return;
+  }
+  section.style.display = '';
+  let totalInvested = 0, totalCurrent = 0;
+  tbody.innerHTML = brokerMFs.map(h => {
+    const invested = Math.round(h.qty * h.avgPrice);
+    const current = Math.round(h.qty * (h.currentPrice || h.avgPrice));
+    const pnl = current - invested;
+    const pnlPct = invested > 0 ? ((pnl / invested) * 100).toFixed(1) : 0;
+    totalInvested += invested;
+    totalCurrent += current;
+    return `<tr>
+      <td style="font-weight:600;color:var(--blue);font-size:0.78rem;">${h.name}</td>
+      <td style="font-size:0.72rem;color:var(--text3);">${h.isin || '—'}</td>
+      <td class="mono">${h.qty}</td>
+      <td class="mono">₹${h.avgPrice.toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
+      <td class="mono">₹${invested.toLocaleString('en-IN')}</td>
+      <td class="mono">₹${(h.currentPrice||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
+      <td class="mono" style="color:var(--green);">₹${current.toLocaleString('en-IN')}</td>
+      <td class="mono" style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}₹${Math.abs(pnl).toLocaleString('en-IN')} (${pnlPct}%)</td>
+    </tr>`;
+  }).join('');
+  const totalPnl = totalCurrent - totalInvested;
+  const totalPnlPct = totalInvested > 0 ? ((totalPnl / totalInvested) * 100).toFixed(1) : 0;
+  if (summary) {
+    summary.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.78rem;">
+      <span>Broker MFs: <strong>${brokerMFs.length}</strong></span>
+      <span>Invested: <strong>₹${totalInvested.toLocaleString('en-IN')}</strong></span>
+      <span>Current: <strong style="color:var(--green);">₹${totalCurrent.toLocaleString('en-IN')}</strong></span>
+      <span>P&L: <strong style="color:${totalPnl>=0?'var(--green)':'var(--red)'};">${totalPnl>=0?'+':''}₹${Math.abs(totalPnl).toLocaleString('en-IN')} (${totalPnlPct}%)</strong></span>
+    </div>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════
