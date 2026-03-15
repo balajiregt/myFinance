@@ -5,22 +5,28 @@
 
 const BROKER_AUTH_CONFIG = {
   hdfc_securities: {
-    tokenUrl: 'https://developer.hdfcsec.com/oapi/v1/token',
-    buildTokenRequest: (code, redirectUri) => ({
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-        client_id: process.env.HDFC_API_KEY || '',
-        client_secret: process.env.HDFC_API_SECRET || '',
-      }).toString(),
-    }),
+    // HDFC uses: POST /oapi/v1/access-token?api_key=XXX&request_token=XXX
+    // Body: { "apiSecret": "XXX" }
+    // Returns: { accessToken: "eyJ..." }
+    tokenUrl: 'https://developer.hdfcsec.com/oapi/v1/access-token',
+    buildTokenRequest: (code, redirectUri) => {
+      const apiKey = process.env.HDFC_API_KEY || '';
+      const apiSecret = process.env.HDFC_API_SECRET || '';
+      const url = `https://developer.hdfcsec.com/oapi/v1/access-token?api_key=${apiKey}&request_token=${code}`;
+      return {
+        _fullUrl: url, // Custom field — handler uses this instead of tokenUrl
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        },
+        body: JSON.stringify({ apiSecret }),
+      };
+    },
     parseToken: (data) => ({
-      access_token: data.access_token,
-      expires_in: data.expires_in,
-      token_type: data.token_type || 'Bearer',
+      access_token: data.accessToken || data.access_token,
+      expires_in: 86400,
+      token_type: 'raw', // HDFC uses raw token, not "Bearer" prefix
     }),
   },
   zerodha: {
@@ -188,9 +194,13 @@ exports.handler = async (event) => {
     const siteUrl = redirect_uri || process.env.URL || 'http://localhost:8888';
     const reqOpts = config.buildTokenRequest(code, siteUrl + '/auth/callback');
 
-    console.log(`[broker-auth] Exchanging token for ${broker}`);
+    // Some brokers (HDFC) need the full URL with query params
+    const fetchUrl = reqOpts._fullUrl || config.tokenUrl;
+    delete reqOpts._fullUrl; // Clean up before passing to fetch
 
-    const response = await fetch(config.tokenUrl, reqOpts);
+    console.log(`[broker-auth] Exchanging token for ${broker} → ${fetchUrl.split('?')[0]}`);
+
+    const response = await fetch(fetchUrl, reqOpts);
     const data = await response.json();
 
     if (!response.ok) {

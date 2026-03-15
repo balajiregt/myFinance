@@ -6,10 +6,12 @@ const BROKER_CONFIG = {
   hdfc_securities: {
     name: 'HDFC Securities',
     baseUrl: 'https://developer.hdfcsec.com/oapi/v1',
+    // HDFC requires ?api_key= on every request
+    appendApiKey: true,
     endpoints: {
       holdings: { method: 'GET', path: '/portfolio/holdings' },
       positions: { method: 'GET', path: '/portfolio/positions' },
-      funds: { method: 'GET', path: '/funds' },
+      funds: { method: 'GET', path: '/funds-and-margins' },
       profile: { method: 'GET', path: '/user/profile' },
     },
   },
@@ -82,16 +84,23 @@ exports.handler = async (event) => {
       return respond(400, { error: `Unknown endpoint: ${endpoint}. Supported: ${Object.keys(config.endpoints).join(', ')}` });
     }
 
-    // Build the request to the broker API
-    const url = config.baseUrl + ep.path;
+    // Build the request URL
+    let url = config.baseUrl + ep.path;
+    // HDFC requires ?api_key= on every API request
+    if (config.appendApiKey) {
+      const apiKey = process.env.HDFC_API_KEY || '';
+      url += (url.includes('?') ? '&' : '?') + `api_key=${apiKey}`;
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
       ...buildAuthHeaders(broker, token),
       ...(extra_headers || {}),
     };
 
-    console.log(`[broker-proxy] ${broker} → ${ep.method} ${url}`);
+    console.log(`[broker-proxy] ${broker} → ${ep.method} ${url.split('?')[0]}`);
 
     const response = await fetch(url, {
       method: ep.method,
@@ -122,7 +131,8 @@ exports.handler = async (event) => {
 function buildAuthHeaders(broker, token) {
   switch (broker) {
     case 'hdfc_securities':
-      return { 'Authorization': `Bearer ${token}` };
+      // HDFC uses raw accessToken in Authorization header (no "Bearer" prefix)
+      return { 'Authorization': token };
     case 'zerodha':
       return { 'Authorization': `token ${process.env.ZERODHA_API_KEY}:${token}` };
     case 'groww':

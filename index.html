@@ -645,9 +645,9 @@ select option { background: var(--s2); }
   <div class="g3">
     <div class="card-sm">
       <div class="card-hdr">Diversification Score</div>
-      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:2rem;color:var(--green)">78<span style="font-size:1rem;color:var(--text3)">/100</span></div>
-      <div style="font-size:0.78rem;color:var(--text2);margin-top:4px;">Good — 5 asset classes, all distinct</div>
-      <div class="pbar" style="margin-top:10px;"><div class="pbar-fill" style="width:78%;background:var(--green);"></div></div>
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:2rem;" id="divScoreColor"><span id="divScore">—</span><span style="font-size:1rem;color:var(--text3)">/100</span></div>
+      <div style="font-size:0.78rem;color:var(--text2);margin-top:4px;" id="divScoreMsg">Add your holdings to see score</div>
+      <div class="pbar" style="margin-top:10px;"><div class="pbar-fill" id="divScoreBar" style="width:0%;background:var(--text3);"></div></div>
     </div>
     <div class="card-sm">
       <div class="card-hdr">Risk Balance</div>
@@ -3176,6 +3176,51 @@ function updateDonut() {
   // Post Office tile (updated via separate function but sync pct here)
   const tilePo = document.getElementById('tile-pct-po');
   if (tilePo) tilePo.textContent = realTotal > 0 ? pct(poV) + ' of portfolio' : '—% of portfolio';
+
+  // ── Diversification Score (dynamic) ──
+  // Score based on: number of active asset classes, balance between them, and total coverage
+  const assetValues = [stocksV, mfV, goldV, fdV, rdV, ssV, poV];
+  const activeClasses = assetValues.filter(v => v > 0).length;
+  const totalClasses = assetValues.length; // 7
+
+  let divScore = 0;
+  if (realTotal > 0 && activeClasses > 0) {
+    // Component 1: Number of asset classes (0-40 points) — more classes = better
+    const classPts = Math.min(40, Math.round((activeClasses / totalClasses) * 40));
+
+    // Component 2: Balance / concentration risk (0-40 points)
+    // Herfindahl index: lower = more diversified
+    const weights = assetValues.map(v => v / realTotal);
+    const hhi = weights.reduce((s, w) => s + w * w, 0); // 0 to 1, lower is better
+    // Perfect balance across N classes = 1/N, single class = 1
+    const minHHI = 1 / activeClasses;
+    const balancePts = Math.round((1 - (hhi - minHHI) / (1 - minHHI + 0.001)) * 40);
+
+    // Component 3: Asset type coverage (0-20 points) — bonus for having equity + debt + commodity
+    const hasEquity = (stocksV + mfV + ssV) > 0;
+    const hasDebt = (fdV + rdV + poV) > 0;
+    const hasCommodity = goldV > 0;
+    const coveragePts = (hasEquity ? 8 : 0) + (hasDebt ? 7 : 0) + (hasCommodity ? 5 : 0);
+
+    divScore = Math.min(100, Math.max(0, classPts + balancePts + coveragePts));
+  }
+
+  // Determine color and message
+  let scoreColor, scoreMsg;
+  if (divScore >= 80) { scoreColor = 'var(--green)'; scoreMsg = 'Excellent — well diversified across asset types'; }
+  else if (divScore >= 60) { scoreColor = 'var(--green)'; scoreMsg = `Good — ${activeClasses} asset classes active`; }
+  else if (divScore >= 40) { scoreColor = 'var(--yellow)'; scoreMsg = `Fair — consider adding more asset classes (${activeClasses}/${totalClasses})`; }
+  else if (divScore > 0) { scoreColor = 'var(--amber)'; scoreMsg = `Concentrated — only ${activeClasses} asset class${activeClasses>1?'es':''}. Diversify more.`; }
+  else { scoreColor = 'var(--text3)'; scoreMsg = 'Add your holdings to see score'; }
+
+  const divScoreEl = document.getElementById('divScore');
+  const divColorEl = document.getElementById('divScoreColor');
+  const divMsgEl = document.getElementById('divScoreMsg');
+  const divBarEl = document.getElementById('divScoreBar');
+  if (divScoreEl) divScoreEl.textContent = divScore > 0 ? divScore : '—';
+  if (divColorEl) divColorEl.style.color = scoreColor;
+  if (divMsgEl) divMsgEl.textContent = scoreMsg;
+  if (divBarEl) { divBarEl.style.width = divScore + '%'; divBarEl.style.background = scoreColor; }
 }
 
 // ── Classify broker holdings into asset types ──
@@ -5745,16 +5790,22 @@ function normalizeHoldings(broker, data) {
   try {
     switch (broker) {
       case 'hdfc_securities':
+        // HDFC response: { status:"success", data: [{ security_id, exchange, company_name, isin, quantity, average_price, close_price, ... }] }
         return (data?.data || data || []).map(h => ({
-          symbol: h.tradingSymbol || h.symbol || '—',
-          name: h.companyName || h.name || h.tradingSymbol || '—',
-          qty: parseFloat(h.quantity || h.qty || 0),
-          avgPrice: parseFloat(h.averagePrice || h.avgPrice || 0),
-          currentPrice: parseFloat(h.lastTradedPrice || h.ltp || h.currentPrice || 0),
+          symbol: h.security_id || h.isin || '—',
+          name: h.company_name || h.security_id || '—',
+          qty: parseFloat(h.quantity || 0),
+          avgPrice: parseFloat(h.average_price || 0),
+          currentPrice: parseFloat(h.close_price || h.average_price || 0),
           exchange: h.exchange || 'NSE',
           type: 'equity',
           broker,
-          pnl: parseFloat(h.pnl || h.profitLoss || 0),
+          isin: h.isin || '',
+          investedValue: parseFloat(h.investment_value || 0),
+          sector: h.sector_name || '',
+          pnl: h.close_price && h.average_price && h.quantity
+            ? Math.round((h.close_price - h.average_price) * h.quantity)
+            : parseFloat(h.realised || 0),
         }));
       case 'zerodha':
         return (data?.data || data || []).map(h => ({
