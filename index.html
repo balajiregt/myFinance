@@ -4071,10 +4071,14 @@ async function runMFAnalysis() {
     </div></div>`;
   const setStep = t => { const el = document.getElementById('mfStep'); if(el) el.textContent = t; };
 
-  // ── Step 1: Live NAVs — only for selected portfolio funds ──
+  // ── Step 1: Live NAVs — for selected portfolio funds + broker MFs ──
   const portfolioFunds = state.selectedMFs.map(r => MF_RECS.find(f => f.rank === r)).filter(Boolean);
-  if (!portfolioFunds.length) {
-    output.innerHTML = `<div class="warn">No funds in your portfolio. Go to <strong>Discover Funds</strong> to add funds first.</div>`;
+  
+  // Also include broker-synced MFs if broker mode is ON
+  const brokerMFs = isBrokerMode() ? classifyBrokerHoldings().mf : [];
+  
+  if (!portfolioFunds.length && !brokerMFs.length) {
+    output.innerHTML = `<div class="warn">No funds in your portfolio. Go to <strong>Discover Funds</strong> to add funds manually, or connect a broker in the <strong>Broker tab</strong> to fetch your demat MF holdings.</div>`;
     panel.style.display = 'block';
     btn.disabled = false; btn.querySelector('span:last-child').textContent = 'AI Quarterly Review';
     return;
@@ -4131,6 +4135,82 @@ async function runMFAnalysis() {
   Holding: Invested ₹${invested.toLocaleString('en-IN')} | Value ₹${currentVal.toLocaleString('en-IN')} | P&L ₹${pnl.toLocaleString('en-IN')}`;
   }).join('\n\n');
 
+  // Broker-synced MFs context (if any) — enrich with live NAV from AMFI
+  let brokerFundsBlock = '';
+  if (brokerMFs.length) {
+    setStep('Step 1b/3 — Fetching live NAVs for broker MFs via AMFI…');
+    const brokerNavData = {};
+    
+    // Resolve ISIN → scheme code → live NAV for each broker MF
+    await Promise.all(brokerMFs.map(async (h) => {
+      const isin = h.isin || '';
+      const name = h.name || '';
+      if (!isin && !name) return;
+      try {
+        // Search by fund name on mfapi.in
+        const searchTerm = name.split(' - ')[0].trim().substring(0, 40); // First part of name
+        const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(searchTerm)}`);
+        if (!searchRes.ok) return;
+        const schemes = await searchRes.json();
+        
+        // Find matching scheme — prefer ISIN match, fallback to name match
+        let schemeCode = null;
+        if (Array.isArray(schemes) && schemes.length) {
+          // Try to get details and match ISIN
+          for (const s of schemes.slice(0, 5)) {
+            try {
+              const detailRes = await fetch(`https://api.mfapi.in/mf/${s.schemeCode}/latest`);
+              if (!detailRes.ok) continue;
+              const detail = await detailRes.json();
+              if (detail.meta?.isin_growth === isin || detail.meta?.isin_div_reinvestment === isin) {
+                schemeCode = s.schemeCode;
+                const nav = parseFloat(detail.data?.[0]?.nav);
+                if (nav) brokerNavData[isin] = { schemeCode, nav, schemeName: detail.meta?.scheme_name };
+                break;
+              }
+            } catch(e) {}
+          }
+          // Fallback: use first result if no ISIN match
+          if (!schemeCode && schemes[0]) {
+            schemeCode = schemes[0].schemeCode;
+            try {
+              const navRes = await fetch(`https://api.mfapi.in/mf/${schemeCode}`);
+              const navData = await navRes.json();
+              const nav = parseFloat(navData.data?.[0]?.nav);
+              const nav1m = parseFloat(navData.data?.[22]?.nav);
+              const nav3m = parseFloat(navData.data?.[66]?.nav);
+              const nav1y = parseFloat(navData.data?.[252]?.nav);
+              if (nav) brokerNavData[isin || name] = {
+                schemeCode, nav, schemeName: navData.meta?.scheme_name,
+                ret1m: nav1m > 0 ? (((nav-nav1m)/nav1m)*100).toFixed(1) : 'N/A',
+                ret3m: nav3m > 0 ? (((nav-nav3m)/nav3m)*100).toFixed(1) : 'N/A',
+                ret1y: nav1y > 0 ? (((nav-nav1y)/nav1y)*100).toFixed(1) : 'N/A',
+              };
+            } catch(e) {}
+          }
+        }
+      } catch(e) { console.warn('AMFI lookup failed for', name, e.message); }
+    }));
+
+    // Cache resolved scheme codes for future use
+    localStorage.setItem('mypf_broker_mf_schemes', JSON.stringify(brokerNavData));
+
+    brokerFundsBlock = '\n\n── BROKER-SYNCED MUTUAL FUNDS (from demat + live AMFI NAV) ──\n' + brokerMFs.map((h, i) => {
+      const invested = Math.round(h.qty * h.avgPrice);
+      const liveData = brokerNavData[h.isin || h.name];
+      const liveNav = liveData?.nav || h.currentPrice || 0;
+      const current = Math.round(h.qty * liveNav);
+      const pnl = current - invested;
+      const pnlPct = invested > 0 ? ((pnl / invested) * 100).toFixed(1) : 0;
+      return `Broker Fund ${i+1}: ${h.name}
+  ISIN: ${h.isin || 'N/A'} | AMFI Scheme: ${liveData?.schemeCode || 'Not found'}
+  Units: ${h.qty} | Avg Price: ₹${h.avgPrice.toFixed(2)}
+  Live NAV (AMFI): ₹${liveNav.toFixed(2)} | Broker Close: ₹${(h.currentPrice||0).toFixed(2)}
+  Returns — 1M: ${liveData?.ret1m||'N/A'}% | 3M: ${liveData?.ret3m||'N/A'}% | 1Y: ${liveData?.ret1y||'N/A'}%
+  Invested: ₹${invested.toLocaleString('en-IN')} | Current Value: ₹${current.toLocaleString('en-IN')} | P&L: ₹${pnl.toLocaleString('en-IN')} (${pnlPct}%)`;
+    }).join('\n\n');
+  }
+
   setStep('Step 3/3 — Claude is running the quarterly review…');
 
   // ── CRITICAL: Ask Claude to return structured JSON verdicts + narrative ──
@@ -4148,6 +4228,7 @@ INVESTOR PROFILE:
 
 LIVE FUND DATA (from AMFI right now):
 ${fundsBlock}
+${brokerFundsBlock}
 
 RESPOND IN TWO PARTS:
 
@@ -6296,21 +6377,29 @@ function renderBrokerMFSection() {
     return;
   }
   section.style.display = '';
+  
+  // Try to use cached AMFI scheme data for live NAV
+  let cachedSchemes = {};
+  try { cachedSchemes = JSON.parse(localStorage.getItem('mypf_broker_mf_schemes') || '{}'); } catch(e) {}
+  
   let totalInvested = 0, totalCurrent = 0;
   tbody.innerHTML = brokerMFs.map(h => {
     const invested = Math.round(h.qty * h.avgPrice);
-    const current = Math.round(h.qty * (h.currentPrice || h.avgPrice));
+    const liveData = cachedSchemes[h.isin || h.name];
+    const liveNav = liveData?.nav || h.currentPrice || h.avgPrice;
+    const current = Math.round(h.qty * liveNav);
     const pnl = current - invested;
     const pnlPct = invested > 0 ? ((pnl / invested) * 100).toFixed(1) : 0;
     totalInvested += invested;
     totalCurrent += current;
+    const navSource = liveData?.nav ? '<span style="color:var(--green);font-size:0.6rem;">AMFI LIVE</span>' : '<span style="color:var(--text3);font-size:0.6rem;">broker close</span>';
     return `<tr>
       <td style="font-weight:600;color:var(--blue);font-size:0.78rem;">${h.name}</td>
       <td style="font-size:0.72rem;color:var(--text3);">${h.isin || '—'}</td>
       <td class="mono">${h.qty}</td>
       <td class="mono">₹${h.avgPrice.toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
       <td class="mono">₹${invested.toLocaleString('en-IN')}</td>
-      <td class="mono">₹${(h.currentPrice||0).toLocaleString('en-IN',{maximumFractionDigits:2})}</td>
+      <td class="mono">₹${liveNav.toLocaleString('en-IN',{maximumFractionDigits:2})} ${navSource}</td>
       <td class="mono" style="color:var(--green);">₹${current.toLocaleString('en-IN')}</td>
       <td class="mono" style="color:${pnl>=0?'var(--green)':'var(--red)'};">${pnl>=0?'+':''}₹${Math.abs(pnl).toLocaleString('en-IN')} (${pnlPct}%)</td>
     </tr>`;
@@ -6318,12 +6407,78 @@ function renderBrokerMFSection() {
   const totalPnl = totalCurrent - totalInvested;
   const totalPnlPct = totalInvested > 0 ? ((totalPnl / totalInvested) * 100).toFixed(1) : 0;
   if (summary) {
-    summary.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.78rem;">
+    summary.innerHTML = `<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:0.78rem;align-items:center;">
       <span>Broker MFs: <strong>${brokerMFs.length}</strong></span>
       <span>Invested: <strong>₹${totalInvested.toLocaleString('en-IN')}</strong></span>
       <span>Current: <strong style="color:var(--green);">₹${totalCurrent.toLocaleString('en-IN')}</strong></span>
       <span>P&L: <strong style="color:${totalPnl>=0?'var(--green)':'var(--red)'};">${totalPnl>=0?'+':''}₹${Math.abs(totalPnl).toLocaleString('en-IN')} (${totalPnlPct}%)</strong></span>
+      <button onclick="fetchBrokerMFLiveNav()" style="padding:4px 12px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.25);border-radius:6px;color:var(--green);font-weight:600;cursor:pointer;font-size:0.7rem;">⟳ Fetch Live NAV</button>
+      <span id="brokerMfNavStatus" style="font-size:0.65rem;color:var(--text3);"></span>
     </div>`;
+  }
+}
+
+// Fetch live NAV from AMFI for broker-synced MFs
+async function fetchBrokerMFLiveNav() {
+  const status = document.getElementById('brokerMfNavStatus');
+  if (status) status.textContent = 'Fetching from AMFI…';
+  
+  const classified = classifyBrokerHoldings();
+  const brokerMFs = classified.mf;
+  const navData = {};
+
+  for (const h of brokerMFs) {
+    const isin = h.isin || '';
+    const name = h.name || '';
+    if (!name) continue;
+    try {
+      const searchTerm = name.split(' - ')[0].trim().substring(0, 40);
+      const searchRes = await fetch(`https://api.mfapi.in/mf/search?q=${encodeURIComponent(searchTerm)}`);
+      if (!searchRes.ok) continue;
+      const schemes = await searchRes.json();
+      if (!Array.isArray(schemes) || !schemes.length) continue;
+
+      // Try to match by ISIN first
+      let matched = false;
+      for (const s of schemes.slice(0, 5)) {
+        try {
+          const dRes = await fetch(`https://api.mfapi.in/mf/${s.schemeCode}/latest`);
+          if (!dRes.ok) continue;
+          const d = await dRes.json();
+          if (d.meta?.isin_growth === isin || d.meta?.isin_div_reinvestment === isin) {
+            navData[isin] = { schemeCode: s.schemeCode, nav: parseFloat(d.data?.[0]?.nav), schemeName: d.meta?.scheme_name };
+            matched = true;
+            break;
+          }
+        } catch(e) {}
+      }
+
+      // Fallback: use first search result and get full history
+      if (!matched && schemes[0]) {
+        try {
+          const navRes = await fetch(`https://api.mfapi.in/mf/${schemes[0].schemeCode}`);
+          const nd = await navRes.json();
+          const nav = parseFloat(nd.data?.[0]?.nav);
+          const nav1m = parseFloat(nd.data?.[22]?.nav);
+          const nav3m = parseFloat(nd.data?.[66]?.nav);
+          const nav1y = parseFloat(nd.data?.[252]?.nav);
+          if (nav) navData[isin || name] = {
+            schemeCode: schemes[0].schemeCode, nav, schemeName: nd.meta?.scheme_name,
+            ret1m: nav1m > 0 ? (((nav-nav1m)/nav1m)*100).toFixed(1) : 'N/A',
+            ret3m: nav3m > 0 ? (((nav-nav3m)/nav3m)*100).toFixed(1) : 'N/A',
+            ret1y: nav1y > 0 ? (((nav-nav1y)/nav1y)*100).toFixed(1) : 'N/A',
+          };
+        } catch(e) {}
+      }
+    } catch(e) { console.warn('AMFI lookup failed for', name); }
+  }
+
+  localStorage.setItem('mypf_broker_mf_schemes', JSON.stringify(navData));
+  renderBrokerMFSection();
+  updateDonut();
+  if (status) {
+    const count = Object.keys(navData).length;
+    status.textContent = count > 0 ? `✅ ${count} NAVs updated from AMFI` : '⚠ Could not resolve fund NAVs';
   }
 }
 
