@@ -695,62 +695,165 @@ select option { background: var(--s2); }
   <div id="ssConfigCard" style="display:none;margin-bottom:20px;background:rgba(232,146,58,0.04);border:1.5px solid rgba(232,146,58,0.2);border-radius:16px;padding:20px 24px;">
     <div style="font-weight:700;font-size:0.85rem;color:var(--amber);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
       ⚙️ Scheme Configuration
-      <span style="font-size:0.7rem;color:var(--text3);font-weight:400;">— edit these if you have a different sharesave scheme</span>
+      <span style="font-size:0.7rem;color:var(--text3);font-weight:400;">— configure your company share plan</span>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px;">
+    <!-- PLAN TYPE SELECTOR -->
+    <div style="margin-bottom:16px;">
+      <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Plan Type</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ssPlanTypePicker">
+        <button class="prov-btn active" data-type="espp" onclick="selectPlanType('espp',this)" style="font-size:0.75rem;padding:6px 14px;">💼 ESPP / ShareSave</button>
+        <button class="prov-btn" data-type="rsu" onclick="selectPlanType('rsu',this)" style="font-size:0.75rem;padding:6px 14px;">🎁 RSU (Free Shares)</button>
+        <button class="prov-btn" data-type="esop" onclick="selectPlanType('esop',this)" style="font-size:0.75rem;padding:6px 14px;">📊 ESOP (Options)</button>
+        <button class="prov-btn" data-type="bonus" onclick="selectPlanType('bonus',this)" style="font-size:0.75rem;padding:6px 14px;">🎯 Bonus / Ad-hoc Grants</button>
+      </div>
+    </div>
 
+    <!-- COMMON FIELDS (all plan types) -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Company Name</div>
         <input type="text" id="ssCfgCompany" placeholder="e.g. Infosys"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'Cabinet Grotesk',sans-serif;">
       </div>
-
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Stock Ticker</div>
         <input type="text" id="ssCfgTicker" placeholder="e.g. INFY"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;text-transform:uppercase;">
       </div>
-
       <div>
-        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Strike Price (₹)</div>
-        <input type="number" id="ssCfgStrike" placeholder="e.g. 1500" step="0.01"
-          style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--amber);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
-      </div>
-
-      <div>
-        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Number of Options</div>
-        <input type="number" id="ssCfgOptions" placeholder="e.g. 158" min="1"
+        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Total Shares / Options</div>
+        <input type="number" id="ssCfgOptions" placeholder="e.g. 100" min="1"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
       </div>
-
-      <div>
-        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Monthly Deduction (₹)</div>
-        <input type="number" id="ssCfgMonthly" placeholder="e.g. 10000" min="1"
-          style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
-      </div>
-
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Grant Date</div>
         <input type="date" id="ssCfgGrant"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
       </div>
+    </div>
 
+    <!-- ESPP/SHARESAVE SPECIFIC FIELDS -->
+    <div id="ssFieldsESPP" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
+      <div>
+        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Strike Price (₹)</div>
+        <input type="number" id="ssCfgStrike" placeholder="e.g. 1500" step="0.01"
+          style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--amber);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
+      </div>
+      <div>
+        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Monthly Deduction (₹)</div>
+        <input type="number" id="ssCfgMonthly" placeholder="e.g. 10000" min="0"
+          style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
+      </div>
       <div>
         <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Maturity Date</div>
         <input type="date" id="ssCfgMaturity"
           style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
       </div>
+    </div>
 
-      <div>
-        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Savings Target (%)</div>
-        <div style="display:flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
-          <input type="number" id="ssCfgSavingsPct" min="1" max="80" step="1" placeholder="15"
-            style="width:100%;background:transparent;border:none;color:var(--yellow);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;font-weight:800;">
-          <span style="color:var(--yellow);font-weight:700;">%</span>
+    <!-- RSU SPECIFIC FIELDS -->
+    <div id="ssFieldsRSU" style="display:none;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Vesting Schedule</div>
+          <select id="ssCfgVesting" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;">
+            <option value="4y-cliff">4 years with 1-year cliff (25% per year)</option>
+            <option value="4y-equal">4 years equal (25% per year, no cliff)</option>
+            <option value="3y-equal">3 years equal (33% per year)</option>
+            <option value="2y-equal">2 years equal (50% per year)</option>
+            <option value="immediate">Immediate (100% on grant)</option>
+            <option value="custom">Custom schedule</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Grant Price (₹) <span style="color:var(--text3);font-size:0.5rem;">(price at grant, for P&L calc)</span></div>
+          <input type="number" id="ssCfgGrantPrice" placeholder="e.g. 0 for free" step="0.01" value="0"
+            style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
         </div>
       </div>
+      <div style="font-size:0.72rem;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:rgba(62,207,142,0.06);border-radius:8px;">
+        💡 RSU = company gives you shares for free. No monthly deduction. Shares vest (unlock) over time per the vesting schedule.
+      </div>
+    </div>
 
+    <!-- ESOP SPECIFIC FIELDS -->
+    <div id="ssFieldsESOP" style="display:none;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Exercise Price (₹)</div>
+          <input type="number" id="ssCfgExercisePrice" placeholder="e.g. 500" step="0.01"
+            style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--amber);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
+        </div>
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Vesting Schedule</div>
+          <select id="ssCfgESOPVesting" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.85rem;">
+            <option value="4y-cliff">4 years with 1-year cliff</option>
+            <option value="4y-equal">4 years equal</option>
+            <option value="3y-equal">3 years equal</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Expiry Date</div>
+          <input type="date" id="ssCfgExpiry"
+            style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;">
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:rgba(74,158,255,0.06);border-radius:8px;">
+        💡 ESOP = right to buy shares at exercise price. Profit = current price - exercise price. Must exercise before expiry.
+      </div>
+    </div>
+
+    <!-- BONUS/AD-HOC FIELDS -->
+    <div id="ssFieldsBonus" style="display:none;">
+      <div style="font-size:0.72rem;color:var(--text3);margin-bottom:14px;padding:8px 12px;background:rgba(240,192,64,0.06);border-radius:8px;">
+        💡 Bonus/Ad-hoc = company grants shares at various times without employee contribution. Use the "Total Shares" field above for your total accumulated shares. Set Grant Date to earliest grant. Strike = ₹0 for free shares.
+      </div>
+    </div>
+
+    <!-- DIVIDEND CONFIG (all plan types) -->
+    <div style="margin-bottom:14px;padding:14px;background:var(--s3);border-radius:10px;">
+      <div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">💰 Dividend Configuration</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+        <div>
+          <div style="font-size:0.58rem;color:var(--text3);margin-bottom:4px;">Quarterly Dividend ($/share)</div>
+          <input type="number" id="ssCfgDivQuarterly" placeholder="e.g. 0.33" step="0.01" min="0"
+            style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--yellow);font-size:0.82rem;outline:none;font-family:'JetBrains Mono',monospace;">
+        </div>
+        <div>
+          <div style="font-size:0.58rem;color:var(--text3);margin-bottom:4px;">Currency</div>
+          <select id="ssCfgDivCurrency" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.82rem;">
+            <option value="USD">USD ($)</option>
+            <option value="INR">INR (₹)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:0.58rem;color:var(--text3);margin-bottom:4px;">Frequency</div>
+          <select id="ssCfgDivFreq" style="width:100%;background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:0.82rem;">
+            <option value="quarterly">Quarterly</option>
+            <option value="semi-annual">Semi-Annual</option>
+            <option value="annual">Annual</option>
+            <option value="none">No Dividend</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVINGS TARGET -->
+    <div style="margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;">
+        <div>
+          <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px;">Savings Target (%)</div>
+          <div style="display:flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
+            <input type="number" id="ssCfgSavingsPct" min="1" max="80" step="1" placeholder="15"
+              style="width:100%;background:transparent;border:none;color:var(--yellow);font-size:0.88rem;outline:none;font-family:'JetBrains Mono',monospace;font-weight:800;">
+            <span style="color:var(--yellow);font-weight:700;">%</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Computed preview -->
@@ -946,8 +1049,8 @@ select option { background: var(--s2); }
 
   <div class="detail-panel" style="margin-bottom:18px;">
     <div class="dp-tabs">
-      <button class="dp-tab active" onclick="switchDpTab('fd',this)">Fixed Deposits</button>
-      <button class="dp-tab" onclick="switchDpTab('rd',this)">Recurring Deposits</button>
+      <button class="dp-tab active" onclick="switchDpTab('fd',this)">HDFC Fixed Deposits</button>
+      <button class="dp-tab" onclick="switchDpTab('rd',this)">Canara Recurring Deposits</button>
       <button class="dp-tab" onclick="switchDpTab('rates',this)">Best Rates Today</button>
     </div>
     <div class="dp-content">
@@ -2309,6 +2412,7 @@ try { poSchemes = JSON.parse(localStorage.getItem('mypf_po') || '[]'); } catch(e
 // ── SHARESAVE CONFIG — loaded from localStorage, editable in Sharesave tab ──
 function getSS() {
   const d = JSON.parse(localStorage.getItem('mypf_ss_config') || '{}');
+  const planType = d.planType         || 'espp';
   const strike   = parseFloat(d.strike)   || 0;
   const options  = parseInt(d.options)    || 0;
   const monthly  = parseFloat(d.monthly)  || 0;
@@ -2317,8 +2421,22 @@ function getSS() {
   const grant    = d.grant ? new Date(d.grant) : null;
   const maturity = d.maturity ? new Date(d.maturity) : null;
   const totalMo  = (grant && maturity) ? Math.round((maturity - grant) / (1000*60*60*24*30.44)) : 0;
-  const principal = monthly * totalMo;
-  return { strike, options, monthly, company, ticker, grant, maturity, totalMo, principal, configured: !!(company && strike && options) };
+  const principal = planType === 'espp' ? monthly * totalMo : 0; // RSU/Bonus = free, no principal
+  // Dividend config
+  const divQuarterly = parseFloat(d.divQuarterly) || 0;
+  const divCurrency  = d.divCurrency || 'USD';
+  const divFreq      = d.divFreq || 'quarterly';
+  const divAnnual    = divFreq === 'quarterly' ? divQuarterly * 4 : divFreq === 'semi-annual' ? divQuarterly * 2 : divQuarterly;
+  // RSU/ESOP fields
+  const vesting      = d.vesting || '4y-cliff';
+  const grantPrice   = parseFloat(d.grantPrice) || 0;
+  const exercisePrice = parseFloat(d.exercisePrice) || 0;
+  const expiry       = d.expiry ? new Date(d.expiry) : null;
+  // For RSU/Bonus, strike = grantPrice (usually 0 for free shares)
+  const effectiveStrike = planType === 'rsu' || planType === 'bonus' ? grantPrice : planType === 'esop' ? exercisePrice : strike;
+  return { planType, strike: effectiveStrike, options, monthly, company, ticker, grant, maturity, totalMo, principal,
+           divQuarterly, divCurrency, divFreq, divAnnual, vesting, grantPrice, exercisePrice, expiry,
+           configured: !!(company && options) };
 }
 // Convenience aliases (lazy-evaluated each call so always fresh)
 function SS_STRIKE()    { return getSS().strike; }
@@ -2733,13 +2851,16 @@ function updateSharesave() {
     }).join('');
   }
 
-  // ── DIVIDEND CALCULATIONS ──
-  const DIV_PER_SHARE_USD = 1.32;   // annual, $0.33 × 4 quarters
-  const DIV_QUARTERLY_USD = 0.33;
+  // ── DIVIDEND CALCULATIONS (configurable) ──
+  const ssCfg = getSS();
+  const DIV_QUARTERLY_USD = ssCfg.divQuarterly || 0;
+  const DIV_PER_SHARE_USD = ssCfg.divAnnual || 0;
   const usdInr = parseFloat(localStorage.getItem('mypf_ss_usdinr')) || 91.08;
+  // If dividend currency is INR, no conversion needed
+  const divFxRate = ssCfg.divCurrency === 'INR' ? 1 : usdInr;
 
-  const divAnnualInr = Math.round(DIV_PER_SHARE_USD * SS_OPTIONS() * usdInr);
-  const divQtrInr    = Math.round(DIV_QUARTERLY_USD * SS_OPTIONS() * usdInr);
+  const divAnnualInr = Math.round(DIV_PER_SHARE_USD * SS_OPTIONS() * divFxRate);
+  const divQtrInr    = Math.round(DIV_QUARTERLY_USD * SS_OPTIONS() * divFxRate);
 
   // Quarters elapsed since grant — dynamic from config
   const ss = getSS();
@@ -2949,20 +3070,62 @@ function toggleSSConfig() {
 
 function loadSSConfigInputs() {
   const ss = getSS();
-  const fmt = d => d.toISOString().split('T')[0];
+  const fmt = d => d ? d.toISOString().split('T')[0] : '';
+  // Common fields
   document.getElementById('ssCfgCompany').value    = ss.company;
   document.getElementById('ssCfgTicker').value     = ss.ticker;
-  document.getElementById('ssCfgStrike').value     = ss.strike;
-  document.getElementById('ssCfgOptions').value    = ss.options;
-  document.getElementById('ssCfgMonthly').value    = ss.monthly;
+  document.getElementById('ssCfgOptions').value    = ss.options || '';
   document.getElementById('ssCfgGrant').value      = fmt(ss.grant);
+  // ESPP fields
+  document.getElementById('ssCfgStrike').value     = ss.strike || '';
+  document.getElementById('ssCfgMonthly').value    = ss.monthly || '';
   document.getElementById('ssCfgMaturity').value   = fmt(ss.maturity);
+  // RSU fields
+  const vestEl = document.getElementById('ssCfgVesting');
+  if (vestEl) vestEl.value = ss.vesting || '4y-cliff';
+  const gpEl = document.getElementById('ssCfgGrantPrice');
+  if (gpEl) gpEl.value = ss.grantPrice || 0;
+  // ESOP fields
+  const epEl = document.getElementById('ssCfgExercisePrice');
+  if (epEl) epEl.value = ss.exercisePrice || '';
+  const expEl = document.getElementById('ssCfgExpiry');
+  if (expEl) expEl.value = fmt(ss.expiry);
+  const esopVestEl = document.getElementById('ssCfgESOPVesting');
+  if (esopVestEl) esopVestEl.value = ss.vesting || '4y-cliff';
+  // Dividend
+  const dqEl = document.getElementById('ssCfgDivQuarterly');
+  if (dqEl) dqEl.value = ss.divQuarterly || '';
+  const dcEl = document.getElementById('ssCfgDivCurrency');
+  if (dcEl) dcEl.value = ss.divCurrency || 'USD';
+  const dfEl = document.getElementById('ssCfgDivFreq');
+  if (dfEl) dfEl.value = ss.divFreq || 'quarterly';
+  // Savings
   const savEl = document.getElementById('ssCfgSavingsPct');
-  if (savEl) savEl.value = state.savingsPct || 15;
+  if (savEl) savEl.value = state.savingsPct || '';
+  // Plan type
+  selectPlanType(ss.planType || 'espp', null);
   updateSSConfigPreview();
   // Live preview on input
-  ['ssCfgStrike','ssCfgOptions','ssCfgMonthly','ssCfgGrant','ssCfgMaturity','ssCfgSavingsPct']
+  ['ssCfgStrike','ssCfgOptions','ssCfgMonthly','ssCfgGrant','ssCfgMaturity','ssCfgSavingsPct','ssCfgDivQuarterly','ssCfgGrantPrice','ssCfgExercisePrice']
     .forEach(id => { const el = document.getElementById(id); if(el) el.oninput = updateSSConfigPreview; });
+}
+
+function selectPlanType(type, btnEl) {
+  // Update button active state
+  document.querySelectorAll('#ssPlanTypePicker .prov-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) {
+    btnEl.classList.add('active');
+  } else {
+    document.querySelectorAll('#ssPlanTypePicker .prov-btn').forEach(b => {
+      if (b.getAttribute('data-type') === type) b.classList.add('active');
+    });
+  }
+  // Show/hide plan-specific fields
+  document.getElementById('ssFieldsESPP').style.display = type === 'espp' ? 'grid' : 'none';
+  document.getElementById('ssFieldsRSU').style.display = type === 'rsu' ? 'block' : 'none';
+  document.getElementById('ssFieldsESOP').style.display = type === 'esop' ? 'block' : 'none';
+  document.getElementById('ssFieldsBonus').style.display = type === 'bonus' ? 'block' : 'none';
+  updateSSConfigPreview();
 }
 
 function updateSSConfigPreview() {
@@ -2989,14 +3152,27 @@ function updateSSConfigPreview() {
 }
 
 function saveSSConfig() {
+  const planType = document.querySelector('#ssPlanTypePicker .prov-btn.active')?.getAttribute('data-type') || 'espp';
   const cfg = {
-    company:  document.getElementById('ssCfgCompany')?.value.trim()  || '',
-    ticker:   document.getElementById('ssCfgTicker')?.value.trim().toUpperCase() || '',
-    strike:   parseFloat(document.getElementById('ssCfgStrike')?.value)   || 0,
-    options:  parseInt(document.getElementById('ssCfgOptions')?.value)    || 158,
-    monthly:  parseFloat(document.getElementById('ssCfgMonthly')?.value)  || 0,
-    grant:    document.getElementById('ssCfgGrant')?.value    || '2023-12-15',
-    maturity: document.getElementById('ssCfgMaturity')?.value || '2027-02-01',
+    planType,
+    company:       document.getElementById('ssCfgCompany')?.value.trim() || '',
+    ticker:        document.getElementById('ssCfgTicker')?.value.trim().toUpperCase() || '',
+    options:       parseInt(document.getElementById('ssCfgOptions')?.value) || 0,
+    grant:         document.getElementById('ssCfgGrant')?.value || '',
+    // ESPP fields
+    strike:        parseFloat(document.getElementById('ssCfgStrike')?.value) || 0,
+    monthly:       parseFloat(document.getElementById('ssCfgMonthly')?.value) || 0,
+    maturity:      document.getElementById('ssCfgMaturity')?.value || '',
+    // RSU fields
+    vesting:       document.getElementById('ssCfgVesting')?.value || '4y-cliff',
+    grantPrice:    parseFloat(document.getElementById('ssCfgGrantPrice')?.value) || 0,
+    // ESOP fields
+    exercisePrice: parseFloat(document.getElementById('ssCfgExercisePrice')?.value) || 0,
+    expiry:        document.getElementById('ssCfgExpiry')?.value || '',
+    // Dividend config
+    divQuarterly:  parseFloat(document.getElementById('ssCfgDivQuarterly')?.value) || 0,
+    divCurrency:   document.getElementById('ssCfgDivCurrency')?.value || 'USD',
+    divFreq:       document.getElementById('ssCfgDivFreq')?.value || 'quarterly',
   };
   const savPct = parseFloat(document.getElementById('ssCfgSavingsPct')?.value);
   if (savPct && savPct > 0) {
@@ -3084,16 +3260,36 @@ function updateSSHeader() {
     set('ssDivRemainingLabel', 'till maturity ' + fmtDate(ss.maturity));
   }
 
-  // Principal
-  set('ssPrincipalDisplay', ss.principal > 0 ? '₹' + ss.principal.toLocaleString('en-IN') : '₹ —');
+  // Principal — only for ESPP (others have no monthly deduction)
+  if (ss.planType === 'espp') {
+    set('ssPrincipalDisplay', ss.principal > 0 ? '₹' + ss.principal.toLocaleString('en-IN') : '₹ —');
+  } else {
+    set('ssPrincipalDisplay', ss.planType === 'rsu' || ss.planType === 'bonus' ? '₹0 (free shares)' : '₹ —');
+  }
 
-  // Dividend header
-  const divPerShare = 1.32; // can be made configurable later
-  const divQuarterly = 0.33;
-  set('ssDivSubHeader', '$' + divQuarterly + '/share quarterly · $' + divPerShare + '/year · ' + ss.options + ' shares');
-  set('ssDivAnnualUsd', '$' + (divPerShare * ss.options).toFixed(2));
-  set('ssDivCalcLabel', ss.options + ' × $' + divPerShare);
+  // Dividend header — now configurable
+  const currSymbol = { USD:'$', INR:'₹', GBP:'£', EUR:'€' }[ss.divCurrency] || '$';
+  const freqLabel = { quarterly:'quarterly', 'semi-annual':'semi-annually', annual:'annually', none:'none' }[ss.divFreq] || '';
+  if (ss.divQuarterly > 0 && ss.divFreq !== 'none') {
+    set('ssDivSubHeader', currSymbol + ss.divQuarterly + '/share ' + freqLabel + ' · ' + currSymbol + ss.divAnnual.toFixed(2) + '/year · ' + ss.options + ' shares');
+    set('ssDivAnnualUsd', currSymbol + (ss.divAnnual * ss.options).toFixed(2));
+    set('ssDivCalcLabel', ss.options + ' × ' + currSymbol + ss.divAnnual.toFixed(2));
+  } else {
+    set('ssDivSubHeader', 'No dividend configured — set in Scheme Configuration');
+    set('ssDivAnnualUsd', currSymbol + ' —');
+    set('ssDivCalcLabel', '—');
+  }
   set('ssOptionsLabel', ss.options + ' × price');
+
+  // Plan type badge in subtitle
+  const planLabels = { espp:'ESPP/ShareSave', rsu:'RSU', esop:'ESOP', bonus:'Bonus Shares' };
+  if (subEl && ss.configured) {
+    const planBadge = planLabels[ss.planType] || 'Share Plan';
+    subEl.textContent = planBadge + ' · ' + ss.options + (ss.planType === 'espp' ? ' options' : ' shares')
+      + (ss.strike ? ' · Strike ₹' + ss.strike.toLocaleString('en-IN') : '')
+      + (ss.monthly ? ' · ₹' + ss.monthly.toLocaleString('en-IN') + '/month' : '')
+      + (ss.maturity ? ' · Matures ' + fmtDate(ss.maturity) : '');
+  }
 
   // ChipSS on overview
   const chipSS = document.getElementById('chipSS');
