@@ -2223,7 +2223,7 @@ select option { background: var(--s2); }
     <!-- GEMINI CARD -->
     <div id="prov-card-gemini" class="prov-card" style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;display:none;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span style="font-weight:800;font-size:0.92rem;">Google Gemini 1.5 Flash</span>
+        <span style="font-weight:800;font-size:0.92rem;">Google Gemini 2.5 Flash</span>
         <span id="gemini-key-status" style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:var(--s3);color:var(--text3);">Not set</span>
         <span style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:rgba(62,207,142,0.1);color:var(--green);">Free — 1500 req/day</span>
       </div>
@@ -6724,7 +6724,7 @@ async function callAI(prompt, maxTokens) {
     const key = localStorage.getItem('mypf_gemini_key');
     if (!key) throw new Error('no_key');
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + key,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
       { method:'POST', headers:{ 'Content-Type':'application/json' },
         body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }],
           generationConfig:{ maxOutputTokens: maxTokens } }) }
