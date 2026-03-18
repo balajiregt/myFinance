@@ -523,45 +523,6 @@ select option { background: var(--s2); }
     </div>
   </div>
 
-  <!-- NIFTY LIVE STRIP -->
-  <div id="niftyLivePrice" style="font-size:0.82rem;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="fetchNiftyPrice()" title="Click to refresh">
-    <span>Nifty 50: <span style="color:var(--text2);">click to fetch live price</span></span>
-    <span style="font-size:0.65rem;color:var(--text3);">↻ via Yahoo Finance · no key needed</span>
-  </div>
-
-  <!-- SIP RHYTHM + LUMPSUM ALERT -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;" id="sipRhythmRow">
-
-    <!-- SIP DATE CARD -->
-    <div style="background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.18);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;">
-      <div style="width:44px;height:44px;border-radius:12px;background:rgba(62,207,142,0.12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
-      <div style="flex:1;">
-        <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Next SIP Date</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:0.75rem;color:var(--text2);">Every month on the</span>
-          <input type="number" id="sipDayInput" min="1" max="28" value="1"
-            style="width:46px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1rem;color:var(--green);background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);border-radius:7px;padding:3px 7px;text-align:center;"
-            oninput="updateSIPTracker()" title="Change your SIP date">
-          <span style="font-size:0.75rem;color:var(--text2);">of the month</span>
-        </div>
-        <div id="sipCountdown" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.88rem;color:var(--green);margin-top:4px;">— days away</div>
-        <div id="sipAction" style="font-size:0.7rem;color:var(--text3);margin-top:2px;"></div>
-      </div>
-    </div>
-
-    <!-- LUMPSUM TRIGGER CARD -->
-    <div id="lumpsumAlertCard" style="background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.18);border-radius:14px;padding:14px 18px;display:flex;align-items:center;gap:14px;">
-      <div style="width:44px;height:44px;border-radius:12px;background:rgba(74,158,255,0.12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;" id="lumpsumIcon">💤</div>
-      <div style="flex:1;">
-        <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Lumpsum Trigger</div>
-        <div id="lumpsumStatus" style="font-weight:700;font-size:0.88rem;color:var(--text2);">Watching market…</div>
-        <div id="lumpsumDetail" style="font-size:0.72rem;color:var(--text3);margin-top:3px;line-height:1.5;">Fetch Nifty price to check dip trigger</div>
-        <div id="lumpsumAction" style="font-size:0.72rem;color:var(--blue);margin-top:4px;font-weight:600;"></div>
-      </div>
-    </div>
-
-  </div>
-
   <!-- ASSET TILES -->
   <div class="asset-tiles">
     <div class="asset-tile" style="--tile-color:var(--c-stocks)" onclick="gotoPage('broker', null)">
@@ -1481,69 +1442,9 @@ select option { background: var(--s2); }
   <div class="detail-panel" style="margin-bottom:20px;">
     <div class="dp-tabs">
       <button class="dp-tab active" onclick="switchMFTab('picks',this)">💡 Fund Picks</button>
-      <button class="dp-tab" onclick="switchMFTab('invest',this)">➕ Log Investment</button>
       <button class="dp-tab" onclick="switchMFTab('nav',this)">🔄 Update NAV</button>
     </div>
     <div class="dp-content">
-
-      <!-- LOG INVESTMENT TAB -->
-      <div id="mftab-invest" class="dp-panel">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;">
-          <div style="grid-column:1/-1;">
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund</label>
-            <select id="mfLogFundSel" style="width:100%;" onchange="toggleCustomFund()">
-              <!-- portfolio funds populated by JS -->
-            </select>
-          </div>
-          <!-- Custom fund fields (shown when "Add custom fund" selected) -->
-          <div id="mfCustomFundFields" style="display:none;grid-column:1/-1;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:10px;">
-              <div>
-                <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Fund Name</label>
-                <input type="text" id="mfCustomName" placeholder="e.g. Axis Small Cap Fund - Direct Growth" style="width:100%;">
-              </div>
-              <div>
-                <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">ISIN / Scheme Code</label>
-                <input type="text" id="mfCustomISIN" placeholder="e.g. INF846K01EW2 or 120503" style="width:100%;">
-              </div>
-              <div style="grid-column:1/-1;font-size:0.62rem;color:var(--text3);">
-                💡 ISIN helps fetch live NAV from AMFI. Find it on your broker app or amfiindia.com
-              </div>
-            </div>
-          </div>
-          <div>
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Investment Type</label>
-            <select id="mfLogType" style="width:100%;">
-              <option value="SIP">SIP (Monthly)</option>
-              <option value="Lumpsum">Lumpsum</option>
-              <option value="Step-up">Step-up SIP</option>
-              <option value="Top-up">Top-up</option>
-            </select>
-          </div>
-          <div>
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Amount (₹)</label>
-            <input type="number" id="mfLogAmt" placeholder="e.g. 5000">
-          </div>
-          <div>
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">NAV at Purchase (₹)</label>
-            <input type="number" id="mfLogNav" placeholder="e.g. 95.42" step="0.01">
-          </div>
-          <div>
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Date</label>
-            <input type="date" id="mfLogDate">
-          </div>
-          <div>
-            <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Note (optional)</label>
-            <input type="text" id="mfLogNote" placeholder="e.g. Market dip lumpsum">
-          </div>
-          <div style="grid-column:1/-1;">
-            <button class="btn btn-green" onclick="addMFLog()" style="width:100%;padding:11px;">+ Log Investment</button>
-          </div>
-        </div>
-        <div class="info" style="margin-top:14px;font-size:0.8rem;">
-          💡 <strong>Where to find NAV:</strong> Check your broker app (Zerodha / Groww) or <strong>amfiindia.com</strong> for the exact NAV on your purchase date.
-        </div>
-      </div>
 
       <!-- UPDATE NAV TAB -->
       <div id="mftab-nav" class="dp-panel">
@@ -1676,111 +1577,84 @@ select option { background: var(--s2); }
 <div id="page-planner" class="page">
 <div class="wrap">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
     <div>
       <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Monthly Investment Planner</div>
-      <div style="font-size:0.83rem;color:var(--text2);margin-top:2px;">AI analyses live Indian market conditions and recommends your strategy</div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div style="font-size:0.72rem;color:var(--text3);" id="aiLastUpdated"></div>
-      <button onclick="runAIAnalysis()" id="aiAnalyseBtn" style="background:linear-gradient(135deg,var(--green),#00a87a);color:#000;border:none;border-radius:10px;padding:10px 20px;font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;">
-        ✦ Analyse Market Now
-      </button>
+      <div style="font-size:0.83rem;color:var(--text2);margin-top:2px;">Set your strategy · SIP allocation · Use ✨ AI bubble for market analysis</div>
     </div>
   </div>
 
-  <!-- API KEY — managed in Settings -->
-  <div id="apiKeyBanner" class="warn" style="margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap;">
-    <span style="flex:1;font-size:0.82rem;">🔑 Claude API key not set. Add it in Settings to enable AI analysis.</span>
-    <button onclick="gotoPage('settings', document.querySelector('.ntab:last-child'))"
-      style="padding:8px 16px;background:var(--amber);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;white-space:nowrap;">
-      ⚙️ Go to Settings
-    </button>
-  </div>
-
-  <!-- AI ANALYSIS PANEL (Monthly Planner) -->
-  <div id="aiPlannerPanel" style="margin-bottom:20px;">
-    <div style="background:linear-gradient(135deg,rgba(62,207,142,0.05),var(--s1));border:1.5px solid rgba(62,207,142,0.15);border-radius:18px;overflow:hidden;">
-      <div style="padding:16px 20px;border-bottom:1px solid rgba(62,207,142,0.1);display:flex;align-items:center;gap:10px;">
-        <div style="width:28px;height:28px;border-radius:8px;background:rgba(62,207,142,0.15);display:flex;align-items:center;justify-content:center;font-size:0.85rem;">✦</div>
-        <div style="font-weight:700;font-size:0.9rem;">AI Market Analysis</div>
-        <div id="aiStatusBadge" style="margin-left:auto;font-size:0.7rem;padding:3px 10px;border-radius:20px;background:var(--s3);color:var(--text3);">Ready</div>
-      </div>
-      <div id="aiOutput" style="padding:18px 20px;">
-        <div style="color:var(--text3);font-size:0.85rem;line-height:1.7;">
-          Click <strong style="color:var(--green);">✦ Analyse Market Now</strong> to get a live AI-powered assessment of current Indian market conditions — Nifty 50 trend, valuations, FII/DII flows, sector momentum, and a personalised recommendation on whether to do full SIP, add lumpsum, or switch to crash mode this month.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- STRATEGY CARDS (updated by AI) -->
-  <div class="card-hdr" style="margin-bottom:12px;">Recommended Strategy <span id="aiStratSource" style="font-family:'Instrument Sans',sans-serif;font-weight:500;font-size:0.75rem;color:var(--text3);text-transform:none;letter-spacing:normal;"></span></div>
-  <div class="strat-row">
-    <div class="strat-card" id="sc-normal" onclick="setStrat('normal')">
-      <div class="strat-icon">🔄</div>
-      <div class="strat-name">Regular SIP</div>
-      <div class="strat-desc">Market fairly valued. Deploy planned SIP amounts. No extra action needed.</div>
-    </div>
-    <div class="strat-card" id="sc-dip" onclick="setStrat('dip')">
-      <div class="strat-icon">📉</div>
-      <div class="strat-name">Dip + SIP</div>
-      <div class="strat-desc">Market dipped 5–15%. SIP continues + deploy lumpsum into top conviction fund.</div>
-    </div>
-    <div class="strat-card" id="sc-crash" onclick="setStrat('crash')">
-      <div class="strat-icon">🔥</div>
-      <div class="strat-name">Crash Mode</div>
-      <div class="strat-desc">20%+ fall. Pause SIPs. Deploy full savings allocation as one focused lumpsum.</div>
-    </div>
-  </div>
-  <div id="stratMsg" class="info" style="margin-bottom:20px;"></div>
-
-  <!-- MOOD (kept as manual override) -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-    <div class="card-hdr" style="margin-bottom:0;">Market Mood <span style="font-size:0.7rem;color:var(--text3);text-transform:none;letter-spacing:normal;font-weight:500;">(override manually if needed)</span></div>
-  </div>
-  <div class="mood-row">
-    <div class="mood-btn" id="mb-bull" onclick="setMood('bull')"><div class="mb-emoji">🚀</div><div class="mb-label">Euphoric</div><div class="mb-sub">P/E &gt;24</div></div>
-    <div class="mood-btn" id="mb-fair" onclick="setMood('fair')"><div class="mb-emoji">😐</div><div class="mb-label">Fair Value</div><div class="mb-sub">P/E 18–22</div></div>
-    <div class="mood-btn active" id="mb-slight" onclick="setMood('slight')"><div class="mb-emoji">😬</div><div class="mb-label">Slight Dip</div><div class="mb-sub">5–10% off</div></div>
-    <div class="mood-btn" id="mb-dip" onclick="setMood('dip')"><div class="mb-emoji">📉</div><div class="mb-label">Correction</div><div class="mb-sub">10–20% off</div></div>
-    <div class="mood-btn" id="mb-crash" onclick="setMood('crash')"><div class="mb-emoji">💥</div><div class="mb-label">Crash</div><div class="mb-sub">20%+ off</div></div>
-  </div>
-  <div id="moodMsg" style="margin-bottom:20px;"></div>
-
-  <!-- ALLOCATION TABLE -->
-  <div class="card-hdr" style="margin-bottom:12px;">This Month's Allocation</div>
+  <!-- ALLOCATION SUMMARY -->
+  <div class="card-hdr" style="margin-bottom:12px;">This Month's Budget</div>
   <div class="card" style="margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;"><span id="paPctLabel">—%</span> Total</div><div id="pa15" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--yellow)">₹ —</div></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;"><span id="paPctLabel">—%</span> Savings Target</div><div id="pa15" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--yellow)">₹ —</div></div>
       <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">SIP Pool</div><div id="paSIP" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--green)">₹ —</div></div>
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Lumpsum Reserve</div><div id="paLump" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--blue)">₹ —</div></div>
       <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Deployed This Month</div><div id="paDeployed" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--amber)">₹ 0</div></div>
     </div>
-    <table id="planTable">
-      <thead><tr><th>Fund</th><th>Role</th><th style="text-align:center;">SIP Alloc %</th><th>SIP Amount</th><th>Mode</th><th>Lumpsum (if dip)</th></tr></thead>
-      <tbody id="planTbody"></tbody>
-    </table>
   </div>
 
-  <!-- LOG -->
-  <div class="card-hdr" style="margin-bottom:12px;">4. Log This Month's Investments</div>
-  <div class="card">
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:flex-end;">
-      <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Fund</label><select id="logFund" style="min-width:200px;"></select></div>
-      <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Amount (₹)</label><input type="number" id="logAmt" placeholder="Amount" style="width:120px;"></div>
-      <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Type</label>
-        <select id="logType">
-          <option value="SIP">SIP</option>
+  <!-- LOG INVESTMENT (moved from MF tab — primary action) -->
+  <div class="card-hdr" style="margin-bottom:12px;">📝 Log Investment</div>
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;">
+      <div style="grid-column:1/-1;">
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund</label>
+        <select id="mfLogFundSel" style="width:100%;" onchange="toggleCustomFund()"></select>
+      </div>
+      <div id="mfCustomFundFields" style="display:none;grid-column:1/-1;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:10px;">
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Fund Name</label>
+            <input type="text" id="mfCustomName" placeholder="e.g. Axis Small Cap Fund - Direct Growth" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">ISIN / Scheme Code</label>
+            <input type="text" id="mfCustomISIN" placeholder="e.g. INF846K01EW2 or 120503" style="width:100%;">
+          </div>
+          <div style="grid-column:1/-1;font-size:0.62rem;color:var(--text3);">
+            💡 ISIN helps fetch live NAV from AMFI. Find it on your broker app or amfiindia.com
+          </div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Investment Type</label>
+        <select id="mfLogType" style="width:100%;">
+          <option value="SIP">SIP (Monthly)</option>
           <option value="Lumpsum">Lumpsum</option>
+          <option value="Step-up">Step-up SIP</option>
           <option value="Top-up">Top-up</option>
-          <option value="Step-up SIP">Step-up SIP</option>
         </select>
       </div>
-      <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Date</label><input type="date" id="logDate"></div>
-      <button class="btn btn-primary" onclick="addLog()" style="align-self:flex-end;">+ Log</button>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Amount (₹)</label>
+        <input type="number" id="mfLogAmt" placeholder="e.g. 5000">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">NAV at Purchase (₹)</label>
+        <input type="number" id="mfLogNav" placeholder="e.g. 95.42" step="0.01">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Date</label>
+        <input type="date" id="mfLogDate">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Note (optional)</label>
+        <input type="text" id="mfLogNote" placeholder="e.g. Market dip lumpsum">
+      </div>
+      <div style="grid-column:1/-1;">
+        <button class="btn btn-green" onclick="addMFLog()" style="width:100%;padding:11px;">+ Log Investment</button>
+      </div>
     </div>
-    <div id="logEntries"><div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged this month.</div></div>
+    <div class="info" style="margin-top:14px;font-size:0.8rem;">
+      💡 <strong>Where to find NAV:</strong> Check your broker app or <strong>amfiindia.com</strong> for the exact NAV on your purchase date.
+    </div>
+  </div>
+
+  <!-- INVESTMENT LOG HISTORY -->
+  <div class="card-hdr" style="margin-bottom:12px;">📋 Investment History</div>
+  <div class="card">
+    <div id="logEntries"><div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged yet.</div></div>
     <div id="logTotal" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
       <span style="font-size:0.82rem;color:var(--text2);">Total Deployed</span>
       <span id="logTotalVal" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);">₹0</span>
