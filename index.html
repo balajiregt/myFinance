@@ -390,6 +390,25 @@ select option { background: var(--s2); }
   .salary-banner { flex-direction: column; align-items: flex-start; }
   .salary-computed { margin-left: 0; }
 }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+/* ── AI Floating Panel ── */
+#aiFab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#a855f7,#3ecf8e); border:none; color:#fff; font-size:1.4rem; cursor:pointer; box-shadow:0 4px 20px rgba(168,85,247,0.35); z-index:999; display:flex; align-items:center; justify-content:center; transition:all 0.3s ease; }
+#aiFab:hover { transform:scale(1.1); box-shadow:0 6px 28px rgba(168,85,247,0.5); }
+#aiFab.open { border-radius:14px; }
+#aiPanel { position:fixed; bottom:0; right:0; width:100%; max-width:480px; height:85vh; max-height:85vh; background:var(--s1); border-top-left-radius:20px; border-top-right-radius:20px; border:1px solid var(--border2); border-bottom:none; z-index:998; transform:translateY(100%); transition:transform 0.35s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; box-shadow:0 -8px 40px rgba(0,0,0,0.5); }
+#aiPanel.open { transform:translateY(0); }
+#aiPanel .ai-header { padding:16px 20px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; gap:10px; }
+#aiPanel .ai-body { flex:1; overflow-y:auto; padding:16px 20px; }
+#aiPanel .ai-body::-webkit-scrollbar { width:4px; }
+#aiPanel .ai-body::-webkit-scrollbar-thumb { background:var(--s4); border-radius:4px; }
+#aiOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:997; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+#aiOverlay.open { opacity:1; pointer-events:auto; }
+.ai-mod-card { padding:12px 14px; background:var(--s2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.2s; margin-bottom:8px; }
+.ai-mod-card:hover { border-color:rgba(168,85,247,0.3); background:rgba(168,85,247,0.04); }
+@media (max-width: 600px) {
+  #aiPanel { max-width:100%; }
+  #aiFab { bottom:16px; right:16px; width:50px; height:50px; font-size:1.2rem; }
+}
 </style>
 </head>
 <body>
@@ -2473,6 +2492,7 @@ function gotoPage(id, el) {
       if (t.getAttribute('onclick') && t.getAttribute('onclick').includes("'"+id+"'")) t.classList.add('active');
     });
   }
+  if (id === 'budget' && typeof recalcBudget === 'function') recalcBudget();
 }
 
 function switchDpTab(id, el) {
@@ -4455,52 +4475,82 @@ Keep Part 2 concise — 200 words max. No generic disclaimers. Be direct.`;
     // ── Parse JSON verdicts from response ──
     let parsedVerdicts = null;
 
+    // ── Pre-clean: strip markdown code fences that Gemini often adds ──
+    let cleanText = text
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
+      .replace(/\n+/g, '\n');
+
     // ── Try to parse JSON verdicts — handles both tagged and untagged responses ──
     // Strategy 1: look for <VERDICTS>...</VERDICTS>
-    const tagMatch = text.match(/<VERDICTS>([\s\S]*?)<\/VERDICTS>/);
+    const tagMatch = cleanText.match(/<VERDICTS>([\s\S]*?)<\/VERDICTS>/);
     if (tagMatch) {
       try { parsedVerdicts = JSON.parse(tagMatch[1].trim()); } catch(e) { console.warn('Tagged parse failed', e); }
     }
+    // Strategy 1b: <VERDICTS> without closing tag (Gemini sometimes omits it)
+    if (!parsedVerdicts) {
+      const openTagMatch = cleanText.match(/<VERDICTS>\s*([\s\S]*?)(?:<\/VERDICTS>|<NARRATIVE>|$)/);
+      if (openTagMatch) {
+        let jsonStr = openTagMatch[1].trim();
+        // Find the outermost balanced { }
+        let braceCount = 0, startI = jsonStr.indexOf('{'), endI = -1;
+        if (startI >= 0) {
+          for (let i = startI; i < jsonStr.length; i++) {
+            if (jsonStr[i] === '{') braceCount++;
+            else if (jsonStr[i] === '}') { braceCount--; if (braceCount === 0) { endI = i; break; } }
+          }
+          if (endI > startI) {
+            try { parsedVerdicts = JSON.parse(jsonStr.slice(startI, endI + 1)); } catch(e) { console.warn('Open tag parse failed', e); }
+          }
+        }
+      }
+    }
     // Strategy 2: find the first {...} block that looks like our schema
     if (!parsedVerdicts) {
-      const jsonMatch = text.match(/\{[\s\S]*?"1"\s*:\s*\{[\s\S]*?"verdict"[\s\S]*?\}/);
+      const jsonMatch = cleanText.match(/\{[\s\S]*?"1"\s*:\s*\{[\s\S]*?"verdict"[\s\S]*?\}/);
       if (jsonMatch) {
-        // Find the complete balanced JSON object
-        let braceCount = 0, start = text.indexOf(jsonMatch[0].charAt(0) === '{' ? '{' : '{');
-        // Find first { that starts the verdict block
-        const startIdx = text.indexOf('"1"') - 5 > 0 ? text.lastIndexOf('{', text.indexOf('"1"')) : text.indexOf('{');
-        let endIdx = startIdx;
-        for (let i = startIdx; i < text.length; i++) {
-          if (text[i] === '{') braceCount++;
-          else if (text[i] === '}') { braceCount--; if (braceCount === 0) { endIdx = i; break; } }
+        const startIdx = cleanText.indexOf('"1"') - 5 > 0 ? cleanText.lastIndexOf('{', cleanText.indexOf('"1"')) : cleanText.indexOf('{');
+        let endIdx = startIdx, braceCount = 0;
+        for (let i = startIdx; i < cleanText.length; i++) {
+          if (cleanText[i] === '{') braceCount++;
+          else if (cleanText[i] === '}') { braceCount--; if (braceCount === 0) { endIdx = i; break; } }
         }
-        try { parsedVerdicts = JSON.parse(text.slice(startIdx, endIdx + 1)); } catch(e) { console.warn('Brace parse failed', e); }
+        try { parsedVerdicts = JSON.parse(cleanText.slice(startIdx, endIdx + 1)); } catch(e) { console.warn('Brace parse failed', e); }
       }
     }
     // Strategy 3: extract individual fund objects with regex
     if (!parsedVerdicts) {
       try {
         const obj = {};
-        const fundPattern = /"([1-5])"\s*:\s*\{([^}]+)\}/g;
+        const fundPattern = /"([1-9])"\s*:\s*\{([^}]+)\}/g;
         let m;
-        while ((m = fundPattern.exec(text)) !== null) {
+        while ((m = fundPattern.exec(cleanText)) !== null) {
           const inner = '{' + m[2] + '}';
-          // Fix any unquoted values
           const fixed = inner
             .replace(/:\s*(HOLD|WATCH|SWITCH)\b/g, ': "$1"')
             .replace(/,\s*}/g, '}');
-          try { obj[m[1]] = JSON.parse(fixed); } catch(e2) { /* skip */ }
+          try { obj[m[1]] = JSON.parse(fixed); } catch(e2) {}
         }
         if (Object.keys(obj).length > 0) parsedVerdicts = obj;
       } catch(e) { console.warn('Regex parse failed', e); }
     }
+    // Strategy 4: last resort — try parsing the entire cleaned response as JSON
+    if (!parsedVerdicts) {
+      try {
+        const fullJson = cleanText.match(/\{[\s\S]*\}/);
+        if (fullJson) parsedVerdicts = JSON.parse(fullJson[0]);
+      } catch(e) { console.warn('Full JSON parse failed', e); }
+    }
 
     // ── Remove ALL JSON from text before rendering narrative ──
-    let narrative = text
+    let narrative = cleanText
       .replace(/<VERDICTS>[\s\S]*?<\/VERDICTS>/g, '')  // remove tagged block
-      .replace(/^\s*\{[\s\S]*?"5"\s*:\s*\{[^}]*\}\s*\}/m, '')  // remove raw JSON object
+      .replace(/<VERDICTS>[\s\S]*$/g, '')  // remove open-ended VERDICTS tag (no closing)
+      .replace(/<NARRATIVE>/g, '')  // remove NARRATIVE tag
+      .replace(/<\/NARRATIVE>/g, '')
+      .replace(/^\s*\{[\s\S]*?"verdict"[\s\S]*?\}\s*\}/m, '')  // remove raw JSON object
       .replace(/^\s*[\{\}]\s*$/gm, '')  // remove lone braces on lines
-      .replace(/^\s*"[1-5]"\s*:\s*\{[^}]*\},?\s*$/gm, '')  // remove individual fund lines
+      .replace(/^\s*"[1-9]"\s*:\s*\{[^}]*\},?\s*$/gm, '')  // remove individual fund lines
       .replace(/PART\s+[12]\s*[—-].*?\n/g, '')  // remove PART 1/PART 2 headers
       .trim();
 
@@ -6899,6 +6949,368 @@ function updateSsFinnhubStatus() {
   el.style.color  = key ? 'var(--green)' : 'var(--amber)';
 }
 
+
+// ══════════════════════════════════════════════════════
+// AI ANALYSIS HUB
+// ══════════════════════════════════════════════════════
+
+function toggleAIPanel() {
+  const panel = document.getElementById('aiPanel');
+  const overlay = document.getElementById('aiOverlay');
+  const fab = document.getElementById('aiFab');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open');
+  overlay.classList.toggle('open');
+  fab.textContent = isOpen ? '✨' : '✕';
+  fab.style.borderRadius = isOpen ? '50%' : '14px';
+  if (!isOpen) initAIPage();
+}
+
+function initAIPage() {
+  // Show provider badge
+  const badge = document.getElementById('aiProviderBadge');
+  const provider = localStorage.getItem('mypf_ai_provider') || 'gemini';
+  const names = { gemini: '✨ Gemini 2.5 Flash', claude: '🤖 Claude Sonnet', groq: '⚡ Groq Llama' };
+  if (badge) badge.textContent = names[provider] || provider;
+
+  // Check API key
+  const keyMap = { gemini: 'mypf_gemini_key', claude: 'mypf_claude_key', groq: 'mypf_groq_key' };
+  const hasKey = !!localStorage.getItem(keyMap[provider] || '');
+  const warn = document.getElementById('aiKeyWarning');
+  if (warn) warn.style.display = hasKey ? 'none' : 'block';
+
+  // Show module cards, hide result
+  document.getElementById('aiModuleCards').style.display = 'block';
+  document.getElementById('aiResultPanel').style.display = 'none';
+
+  renderAIHistory();
+}
+
+const AI_MODULE_CONFIG = {
+  portfolio: {
+    icon: '📊', title: 'My Portfolio Review',
+    buildPrompt: () => {
+      const ss = getSS();
+      const salary = state.salary || 0;
+      const fds = JSON.parse(localStorage.getItem('mypf_fds') || '[]');
+      const rds = JSON.parse(localStorage.getItem('mypf_rds') || '[]');
+      const sgbs = JSON.parse(localStorage.getItem('mypf_sgb') || '[]');
+      const brokerMFs = isBrokerMode() ? classifyBrokerHoldings().mf : [];
+      const brokerStocks = isBrokerMode() ? classifyBrokerHoldings().stocks : [];
+      const manualMFs = state.selectedMFs?.map(r => MF_RECS?.find(f => f.rank === r)).filter(Boolean) || [];
+
+      // Build portfolio snapshot
+      const fdTotal = fds.reduce((s,f) => s + f.principal, 0);
+      const rdMonthly = rds.reduce((s,r) => s + r.monthly, 0);
+      const sgbTotal = sgbs.reduce((s,h) => s + (h.grams * h.buyPrice), 0);
+
+      let mfBlock = '';
+      if (brokerMFs.length) {
+        mfBlock += 'BROKER-SYNCED MUTUAL FUNDS:\n' + brokerMFs.map(h => {
+          const inv = Math.round(h.qty * h.avgPrice);
+          const cur = Math.round(h.qty * (h.currentPrice || h.avgPrice));
+          return `  - ${h.name} | Units: ${h.qty} | Invested: ₹${inv.toLocaleString('en-IN')} | Current: ₹${cur.toLocaleString('en-IN')} | P&L: ₹${(cur-inv).toLocaleString('en-IN')}`;
+        }).join('\n');
+      }
+      if (manualMFs.length) {
+        const mfLogs = JSON.parse(localStorage.getItem('mypf_mf_logs') || '[]');
+        mfBlock += '\nMANUALLY TRACKED FUNDS:\n' + manualMFs.map(f => {
+          const inv = mfLogs.filter(l => l.fundRank === f.rank).reduce((s,l) => s + l.amt, 0);
+          return `  - ${f.name} | Category: ${f.category} | Invested: ₹${inv.toLocaleString('en-IN')}`;
+        }).join('\n');
+      }
+
+      let stockBlock = '';
+      if (brokerStocks.length) {
+        stockBlock = 'STOCKS (from broker):\n' + brokerStocks.map(h => {
+          const inv = Math.round(h.qty * h.avgPrice);
+          const cur = Math.round(h.qty * (h.currentPrice || h.avgPrice));
+          return `  - ${h.name} (${h.symbol}) | Qty: ${h.qty} | Invested: ₹${inv.toLocaleString('en-IN')} | Current: ₹${cur.toLocaleString('en-IN')}`;
+        }).join('\n');
+      }
+
+      return `You are an Indian personal finance advisor. Analyse this investor's COMPLETE portfolio and give actionable advice.
+
+TODAY: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}
+SALARY: ₹${salary.toLocaleString('en-IN')}/month | Savings target: ${state.savingsPct || 0}%
+
+── PORTFOLIO SNAPSHOT ──
+
+${mfBlock || 'No mutual funds tracked yet.'}
+
+${stockBlock || ''}
+
+FIXED DEPOSITS: ${fds.length ? fds.map(f => `${f.bank||'Bank'} ₹${f.principal?.toLocaleString('en-IN')} @ ${f.rate}% for ${f.tenure}m`).join(', ') : 'None'}
+Total FD: ₹${fdTotal.toLocaleString('en-IN')}
+
+RECURRING DEPOSITS: ${rds.length ? rds.map(r => `${r.bank||'Bank'} ₹${r.monthly?.toLocaleString('en-IN')}/mo @ ${r.rate}%`).join(', ') : 'None'}
+
+SGB GOLD: ${sgbs.length ? sgbs.length + ' tranches, invested ~₹' + sgbTotal.toLocaleString('en-IN') : 'None'}
+
+SHARE PLAN: ${ss.configured ? ss.company + ' ' + ({espp:'ESPP',rsu:'RSU',esop:'ESOP',bonus:'Bonus'}[ss.planType]||'') + ' — ' + ss.options + ' shares' + (ss.monthly ? ', ₹' + ss.monthly.toLocaleString('en-IN') + '/mo' : '') : 'Not configured'}
+
+── ANALYSE & ADVISE (400-500 words) ──
+1. **Overall Allocation** — is their equity/debt/gold split healthy? Suggest ideal %
+2. **Mutual Fund Verdict** — for each MF, give: HOLD / SWITCH / WATCH with 1-line reason
+3. **What's Missing** — any gaps? (e.g. no international, no small cap, no emergency fund)
+4. **Risk Assessment** — is portfolio too conservative or aggressive for their income level?
+5. **Top 3 Actions** — specific things they should do THIS month
+6. **Estimated Net Worth** — approximate total portfolio value
+
+Be specific, use numbers, give clear verdicts. Format with bold headers.`;
+    }
+  },
+  market: {
+    icon: '📈', title: 'Market Mood Analysis',
+    buildPrompt: () => {
+      const ss = getSS();
+      return `You are an Indian stock market analyst. Provide a concise market mood analysis for TODAY (${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}).
+
+Cover these points in 300-400 words:
+1. **Nifty 50 & Sensex** — current approximate levels, PE ratio zone (cheap/fair/expensive), distance from all-time high
+2. **FII/DII Flows** — are foreign investors buying or selling? What about domestic institutions?
+3. **VIX (Volatility)** — is fear high or low?
+4. **Sector Trends** — which sectors are outperforming/underperforming (IT, banking, pharma, auto, FMCG)
+5. **Global Cues** — US Fed stance, crude oil, USD/INR trend
+6. **Overall Mood Rating** — give a score from 1-10 (1=extreme fear/crash, 5=neutral, 10=euphoria)
+7. **Action Advice** — for a retail Indian investor with monthly SIP, should they: continue SIP normally / deploy extra lumpsum / hold cash and wait?
+
+Be specific with approximate numbers. Format as readable paragraphs with bold section headers. End with a clear 1-line verdict.`;
+    }
+  },
+  lumpsum: {
+    icon: '💰', title: 'Lumpsum Timing',
+    buildPrompt: () => {
+      const fdTotal = (JSON.parse(localStorage.getItem('mypf_fds')||'[]')).reduce((s,f) => s + f.principal, 0);
+      const salary = state.salary || 0;
+      return `You are an Indian personal finance advisor. A retail investor is considering deploying a lump sum into equity mutual funds.
+
+Their context:
+- Monthly salary: ₹${salary.toLocaleString('en-IN')}
+- Existing FDs: ₹${fdTotal.toLocaleString('en-IN')}
+- Today: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}
+
+Analyse and advise in 300-400 words:
+1. **Current Market Valuation** — Nifty PE, Sensex levels, are we in expensive/fair/cheap territory?
+2. **Lumpsum vs STP** — should they deploy all at once, or stagger via Systematic Transfer Plan (STP)?
+3. **If Lumpsum** — which category of MFs? (large cap, flexi cap, aggressive hybrid?)
+4. **If Wait** — where to park money meanwhile? (liquid fund, overnight fund, FD)
+5. **Risk Warning** — what's the downside scenario in next 6 months?
+6. **Clear Verdict** — one line: "DEPLOY NOW / STP OVER 3 MONTHS / WAIT" with reasoning.
+
+Be specific for the Indian market context. Use approximate current data.`;
+    }
+  },
+  gold: {
+    icon: '🥇', title: 'Gold & Silver Outlook',
+    buildPrompt: () => {
+      const sgbTotal = (JSON.parse(localStorage.getItem('mypf_sgb')||'[]')).reduce((s,h) => s + (h.grams * h.buyPrice), 0);
+      return `You are a commodity analyst specialising in Indian gold and silver markets.
+
+Investor context:
+- Existing SGB holdings: ₹${sgbTotal.toLocaleString('en-IN')}
+- Today: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}
+
+Analyse in 300-400 words:
+1. **International Gold Price** — current USD/oz level, trend direction, is it near all-time high?
+2. **Gold in INR** — impact of rupee depreciation, import duty (currently 6% basic + 5% AIDC)
+3. **SGB Availability** — are new SGB tranches being issued by RBI? (Note: RBI hasn't issued new SGBs since Feb 2024)
+4. **Gold ETF vs SGB vs Physical** — which form is best right now?
+5. **Silver** — current silver/gold ratio, is silver undervalued relative to gold?
+6. **Portfolio Allocation** — should gold be 5%, 10%, 15% of portfolio? What makes sense now?
+7. **Verdict** — one line: "BUY MORE GOLD / HOLD CURRENT / REDUCE" with reasoning.
+
+Be specific with approximate numbers.`;
+    }
+  },
+  debt: {
+    icon: '🏦', title: 'FD vs Debt Fund Analysis',
+    buildPrompt: () => {
+      const fds = JSON.parse(localStorage.getItem('mypf_fds')||'[]');
+      const fdDetails = fds.map(f => `${f.bank||'Bank'}: ₹${f.principal?.toLocaleString('en-IN')} @ ${f.rate}% for ${f.tenure}m`).join(', ');
+      return `You are an Indian fixed-income analyst.
+
+Investor's current FDs: ${fdDetails || 'None'}
+Today: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}
+
+Analyse in 300-400 words:
+1. **Current RBI Repo Rate** — what is it? Recent rate cut/hike trend and next expected move?
+2. **Bank FD Rates** — best available rates from SBI, HDFC, ICICI, small finance banks
+3. **Debt Mutual Funds** — should investor switch from FD to debt funds? Compare short duration, corporate bond, gilt funds
+4. **Tax Angle** — FD interest taxed at slab vs debt fund LTCG after 3 years (note: indexation removed for debt funds post April 2023)
+5. **Senior Citizens** — any special FD schemes worth noting?
+6. **Verdict** — where to park safe money right now: FD / debt fund / liquid fund / overnight fund? One clear recommendation.
+
+Be specific for Indian context with current rates.`;
+    }
+  },
+  tax: {
+    icon: '📋', title: 'Tax Harvesting Ideas',
+    buildPrompt: () => {
+      const salary = state.salary || 0;
+      return `You are an Indian tax planning advisor. The current financial year is ${new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear()-1}-${new Date().getMonth() >= 3 ? new Date().getFullYear()+1 : new Date().getFullYear()}.
+
+Investor context:
+- Annual salary: ₹${(salary*12).toLocaleString('en-IN')} (approx)
+- Has: MF investments, FDs, SGB, company share plan
+- Today: ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}
+
+Advise in 300-400 words:
+1. **LTCG Harvesting** — equity gains above ₹1.25L taxed at 12.5%. Should they book profits to use the ₹1.25L exemption before March?
+2. **STCG Status** — any short-term holdings worth reviewing?
+3. **Section 80C** — is ELSS still worth it under new tax regime? Compare ELSS vs PPF vs NPS
+4. **NPS Extra** — Section 80CCD(1B) additional ₹50K deduction — worth it?
+5. **Old vs New Regime** — quick take on which is better at their salary level
+6. **Key Deadlines** — any upcoming tax-saving deadlines to watch?
+7. **Action Items** — 3-4 specific things they should do this quarter.
+
+Be specific for Indian tax law FY${new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear()-1}-${(new Date().getMonth() >= 3 ? new Date().getFullYear()+1 : new Date().getFullYear()).toString().slice(-2)}.`;
+    }
+  }
+};
+
+async function runAIModule(moduleKey) {
+  const config = AI_MODULE_CONFIG[moduleKey];
+  if (!config) return;
+
+  // Hide module cards, show result panel
+  document.getElementById('aiModuleCards').style.display = 'none';
+
+  const panel = document.getElementById('aiResultPanel');
+  const content = document.getElementById('aiResultContent');
+  const title = document.getElementById('aiResultTitle');
+  const meta = document.getElementById('aiResultMeta');
+  const icon = document.getElementById('aiResultIcon');
+
+  panel.style.display = 'block';
+  icon.textContent = config.icon;
+  title.textContent = config.title;
+  meta.textContent = 'Analysing…';
+  content.innerHTML = `<div style="text-align:center;padding:30px;"><div style="font-size:1.5rem;margin-bottom:10px;animation:spin 1s linear infinite;">🔄</div><div style="color:var(--text3);font-size:0.78rem;">Running ${config.title}…</div></div>`;
+
+  const prompt = config.buildPrompt();
+
+  try {
+    const result = await callAIProvider(prompt);
+    if (!result || result.startsWith('Error')) {
+      content.innerHTML = `<div class="warn">${result || 'AI returned no response. Check your API key.'}</div>`;
+      meta.textContent = 'Failed';
+      return;
+    }
+
+    // Render result as formatted HTML
+    const formatted = result
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text);">$1</strong>')
+      .replace(/\n\n/g, '</p><p style="margin-bottom:10px;">')
+      .replace(/\n/g, '<br>');
+    content.innerHTML = `<p style="margin-bottom:10px;">${formatted}</p>`;
+    meta.textContent = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    // Save to history
+    saveAIHistory(moduleKey, config.title, result);
+    renderAIHistory();
+
+  } catch(e) {
+    content.innerHTML = `<div class="warn">Error: ${e.message}</div>`;
+    meta.textContent = 'Failed';
+  }
+}
+
+// Generic AI provider call (reuses existing Gemini/Claude/Groq logic)
+async function callAIProvider(prompt) {
+  const provider = localStorage.getItem('mypf_ai_provider') || 'gemini';
+
+  if (provider === 'gemini') {
+    const key = localStorage.getItem('mypf_gemini_key');
+    if (!key) return 'Error: Gemini API key not set. Add it in Settings.';
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
+    );
+    const d = await res.json();
+    if (d.error) return 'Error: Gemini ' + d.error.code + ': ' + d.error.message;
+    return d.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+  }
+
+  if (provider === 'claude') {
+    const key = localStorage.getItem('mypf_claude_key');
+    if (!key) return 'Error: Claude API key not set. Add it in Settings.';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1500, messages:[{role:'user',content:prompt}] })
+    });
+    const d = await res.json();
+    if (d.error) return 'Error: Claude: ' + d.error.message;
+    return d.content?.[0]?.text || 'No response from Claude';
+  }
+
+  if (provider === 'groq') {
+    const key = localStorage.getItem('mypf_groq_key');
+    if (!key) return 'Error: Groq API key not set. Add it in Settings.';
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:1500, messages:[{role:'user',content:prompt}] })
+    });
+    const d = await res.json();
+    if (d.error) return 'Error: Groq: ' + d.error.message;
+    return d.choices?.[0]?.message?.content || 'No response from Groq';
+  }
+
+  return 'Error: Unknown AI provider';
+}
+
+function saveAIHistory(moduleKey, title, result) {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('mypf_ai_history') || '[]'); } catch(e) {}
+  history.unshift({ key: moduleKey, title, date: new Date().toISOString(), preview: result.substring(0, 200) + '…', full: result });
+  // Keep last 20
+  history = history.slice(0, 20);
+  localStorage.setItem('mypf_ai_history', JSON.stringify(history));
+}
+
+function renderAIHistory() {
+  const el = document.getElementById('aiHistoryList');
+  if (!el) return;
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('mypf_ai_history') || '[]'); } catch(e) {}
+  if (!history.length) { el.innerHTML = 'No analyses run yet. Click a card above to start.'; return; }
+  el.innerHTML = history.slice(0, 8).map((h, i) => {
+    const d = new Date(h.date);
+    const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ', ' + d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+    const icons = { portfolio:'📊', market:'📈', lumpsum:'💰', gold:'🥇', debt:'🏦', tax:'📋' };
+    return `<div onclick="showAIHistoryItem(${i})" style="padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;display:flex;gap:10px;align-items:center;">
+      <span style="font-size:1rem;">${icons[h.key]||'✨'}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.78rem;color:var(--text);">${h.title}</div>
+        <div style="font-size:0.65rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${h.preview.substring(0,80)}</div>
+      </div>
+      <div style="font-size:0.6rem;color:var(--text3);white-space:nowrap;">${dateStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function showAIHistoryItem(idx) {
+  let history = [];
+  try { history = JSON.parse(localStorage.getItem('mypf_ai_history') || '[]'); } catch(e) {}
+  const h = history[idx];
+  if (!h) return;
+  const icons = { portfolio:'📊', market:'📈', lumpsum:'💰', gold:'🥇', debt:'🏦', tax:'📋' };
+  const panel = document.getElementById('aiResultPanel');
+  document.getElementById('aiResultIcon').textContent = icons[h.key] || '✨';
+  document.getElementById('aiResultTitle').textContent = h.title;
+  document.getElementById('aiResultMeta').textContent = new Date(h.date).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  const formatted = h.full
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text);">$1</strong>')
+    .replace(/\n\n/g, '</p><p style="margin-bottom:10px;">')
+    .replace(/\n/g, '<br>');
+  document.getElementById('aiResultContent').innerHTML = `<p style="margin-bottom:10px;">${formatted}</p>`;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 // ══════════════════════════════════════════════════════
 // BUDGET PLANNER
 // ══════════════════════════════════════════════════════
@@ -7286,5 +7698,115 @@ onSalaryChange = function() {
   if (document.getElementById('page-budget')?.classList.contains('active')) recalcBudget();
 };
 </script>
+<!-- ═══ AI FLOATING BUBBLE + PANEL ═══ -->
+<div id="aiOverlay" onclick="toggleAIPanel()"></div>
+<button id="aiFab" onclick="toggleAIPanel()" title="AI Analysis">✨</button>
+
+<div id="aiPanel">
+  <div class="ai-header">
+    <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(62,207,142,0.15));display:flex;align-items:center;justify-content:center;font-size:1rem;">✨</div>
+    <div style="flex:1;">
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:0.95rem;">AI Analysis Hub</div>
+      <div style="font-size:0.65rem;color:var(--text3);" id="aiProviderBadge">Loading…</div>
+    </div>
+    <button onclick="toggleAIPanel()" style="background:none;border:none;color:var(--text3);font-size:1.3rem;cursor:pointer;padding:4px;">✕</button>
+  </div>
+
+  <div class="ai-body">
+    <!-- API key warning -->
+    <div id="aiKeyWarning" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.75rem;">
+      🔑 No AI key set. <a href="#" onclick="toggleAIPanel();gotoPage('settings',document.querySelector('.ntab:last-child'));return false;" style="color:var(--amber);font-weight:700;">Go to Settings →</a>
+    </div>
+
+    <!-- Module cards (compact) -->
+    <div id="aiModuleCards">
+      <div class="ai-mod-card" onclick="runAIModule('portfolio')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">📊</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">My Portfolio Review</div>
+            <div style="font-size:0.62rem;color:var(--text3);">MF verdicts · Broker holdings · SIP allocation</div>
+          </div>
+          <span class="badge badge-green" style="font-size:0.55rem;">Quarterly</span>
+        </div>
+      </div>
+
+      <div class="ai-mod-card" onclick="runAIModule('market')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">📈</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">Market Mood</div>
+            <div style="font-size:0.62rem;color:var(--text3);">Nifty PE · FII flows · VIX · Sector trends</div>
+          </div>
+          <span class="badge badge-blue" style="font-size:0.55rem;">On-demand</span>
+        </div>
+      </div>
+
+      <div class="ai-mod-card" onclick="runAIModule('lumpsum')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">💰</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">Lumpsum Timing</div>
+            <div style="font-size:0.62rem;color:var(--text3);">Deploy now vs STP vs wait?</div>
+          </div>
+          <span class="badge badge-amber" style="font-size:0.55rem;">On-demand</span>
+        </div>
+      </div>
+
+      <div class="ai-mod-card" onclick="runAIModule('gold')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">🥇</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">Gold & Silver Outlook</div>
+            <div style="font-size:0.62rem;color:var(--text3);">SGB · Gold price · Silver ratio</div>
+          </div>
+          <span class="badge badge-amber" style="font-size:0.55rem;">On-demand</span>
+        </div>
+      </div>
+
+      <div class="ai-mod-card" onclick="runAIModule('debt')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">🏦</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">FD vs Debt Funds</div>
+            <div style="font-size:0.62rem;color:var(--text3);">RBI rates · Tax efficiency · Best FD rates</div>
+          </div>
+          <span class="badge badge-blue" style="font-size:0.55rem;">On-demand</span>
+        </div>
+      </div>
+
+      <div class="ai-mod-card" onclick="runAIModule('tax')">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:1.1rem;">📋</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:0.82rem;">Tax Harvesting Ideas</div>
+            <div style="font-size:0.62rem;color:var(--text3);">LTCG · 80C · Old vs New regime</div>
+          </div>
+          <span class="badge badge-red" style="font-size:0.55rem;">Seasonal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result area (shown when an analysis runs) -->
+    <div id="aiResultPanel" style="display:none;margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span id="aiResultIcon" style="font-size:1.1rem;">📊</span>
+        <div style="flex:1;">
+          <div id="aiResultTitle" style="font-weight:800;font-size:0.88rem;"></div>
+          <div id="aiResultMeta" style="font-size:0.62rem;color:var(--text3);"></div>
+        </div>
+        <button onclick="document.getElementById('aiResultPanel').style.display='none';document.getElementById('aiModuleCards').style.display='block';" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;">← Back</button>
+      </div>
+      <div id="aiResultContent" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;font-size:0.78rem;line-height:1.75;color:var(--text2);"></div>
+    </div>
+
+    <!-- History -->
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:8px;">📁 Recent Analyses</div>
+      <div id="aiHistoryList" style="font-size:0.72rem;color:var(--text3);">No analyses yet. Tap a card above.</div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
