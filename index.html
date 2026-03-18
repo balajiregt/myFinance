@@ -562,18 +562,6 @@ select option { background: var(--s2); }
 
   </div>
 
-  <!-- QUARTERLY REVIEW ALERT (shows when >90 days since last Fund Picks analysis) -->
-  <div id="quarterlyReviewAlert" style="display:none;margin-bottom:14px;padding:12px 16px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.25);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <span style="font-size:1.1rem;">🔔</span>
-      <div>
-        <div style="font-weight:700;font-size:0.83rem;color:var(--yellow);">Quarterly Fund Review Due</div>
-        <div style="font-size:0.72rem;color:var(--text2);margin-top:1px;" id="quarterlyReviewMsg">Your last fund analysis was over 90 days ago.</div>
-      </div>
-    </div>
-    <button onclick="gotoPage('mf',null);setTimeout(()=>{switchMFTab('picks',document.querySelector('.dp-tab:last-child'))},200)" class="btn btn-primary" style="padding:7px 16px;font-size:0.78rem;white-space:nowrap;">Review Now →</button>
-  </div>
-
   <!-- ASSET TILES -->
   <div class="asset-tiles">
     <div class="asset-tile" style="--tile-color:var(--c-stocks)" onclick="gotoPage('broker', null)">
@@ -1503,7 +1491,25 @@ select option { background: var(--s2); }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;">
           <div style="grid-column:1/-1;">
             <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund</label>
-            <select id="mfLogFundSel" style="width:100%;"></select>
+            <select id="mfLogFundSel" style="width:100%;" onchange="toggleCustomFund()">
+              <!-- portfolio funds populated by JS -->
+            </select>
+          </div>
+          <!-- Custom fund fields (shown when "Add custom fund" selected) -->
+          <div id="mfCustomFundFields" style="display:none;grid-column:1/-1;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:10px;">
+              <div>
+                <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Fund Name</label>
+                <input type="text" id="mfCustomName" placeholder="e.g. Axis Small Cap Fund - Direct Growth" style="width:100%;">
+              </div>
+              <div>
+                <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">ISIN / Scheme Code</label>
+                <input type="text" id="mfCustomISIN" placeholder="e.g. INF846K01EW2 or 120503" style="width:100%;">
+              </div>
+              <div style="grid-column:1/-1;font-size:0.62rem;color:var(--text3);">
+                💡 ISIN helps fetch live NAV from AMFI. Find it on your broker app or amfiindia.com
+              </div>
+            </div>
           </div>
           <div>
             <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Investment Type</label>
@@ -1578,26 +1584,7 @@ select option { background: var(--s2); }
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
             <div>
               <div style="font-weight:700;font-size:0.95rem;">My Portfolio Funds</div>
-              <div style="font-size:0.75rem;color:var(--text2);margin-top:2px;">Only funds you add here are analysed · AI quarterly review writes verdicts · verdicts drive monthly lumpsum</div>
-            </div>
-            <button id="mfAnalyseBtn" onclick="runMFAnalysis()" class="btn btn-primary" style="display:flex;align-items:center;gap:8px;padding:10px 20px;font-size:0.85rem;">
-              <span id="mfAnalyseBtnIcon">✨</span>
-              <span id="mfAnalyseBtnText">AI Quarterly Review</span>
-            </button>
-          </div>
-
-          <!-- AI ANALYSIS OUTPUT -->
-          <div id="mfAnalysisPanel" style="display:none;margin-bottom:20px;">
-            <div style="background:linear-gradient(135deg,rgba(62,207,142,0.05),rgba(74,158,255,0.05));border:1px solid rgba(62,207,142,0.2);border-radius:14px;overflow:hidden;">
-              <div style="padding:12px 18px;border-bottom:1px solid rgba(62,207,142,0.15);display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <span>🤖</span>
-                  <span style="font-weight:700;font-size:0.88rem;">AI Fund Analysis</span>
-                  <span id="mfAnalysisTime" style="font-size:0.7rem;color:var(--text3);"></span>
-                </div>
-                <button onclick="document.getElementById('mfAnalysisPanel').style.display='none'" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:1rem;">✕</button>
-              </div>
-              <div id="mfAnalysisOutput" style="padding:18px 20px;"></div>
+              <div style="font-size:0.75rem;color:var(--text2);margin-top:2px;">Track your mutual fund investments · Use the ✨ AI bubble for portfolio analysis</div>
             </div>
           </div>
 
@@ -4775,38 +4762,92 @@ function renderSelectedMFs() {
 function buildMFLogFundDropdown() {
   const sel = document.getElementById('mfLogFundSel');
   if (!sel) return;
-  if (!state.selectedMFs.length) {
-    sel.innerHTML = '<option value="">No funds selected — go to Fund Picks first</option>';
-    return;
+  let options = '';
+  if (state.selectedMFs.length) {
+    options = state.selectedMFs.map(r => {
+      const f = MF_RECS.find(x => x.rank === r);
+      return `<option value="${r}">${f.name}</option>`;
+    }).join('');
   }
-  sel.innerHTML = state.selectedMFs.map(r => {
-    const f = MF_RECS.find(x => x.rank === r);
-    return `<option value="${r}">${f.name}</option>`;
-  }).join('');
+  // Add custom funds from localStorage
+  const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
+  customFunds.forEach(cf => {
+    options += `<option value="custom_${cf.id}">${cf.name} ${cf.isin ? '(' + cf.isin + ')' : ''}</option>`;
+  });
+  options += '<option value="__custom__">➕ Add a new fund (not listed above)…</option>';
+  sel.innerHTML = options;
+}
+
+function toggleCustomFund() {
+  const sel = document.getElementById('mfLogFundSel');
+  const fields = document.getElementById('mfCustomFundFields');
+  if (fields) fields.style.display = sel.value === '__custom__' ? 'block' : 'none';
 }
 
 function addMFLog() {
-  const rankVal = document.getElementById('mfLogFundSel').value;
-  const rank = parseInt(rankVal);
+  const selVal = document.getElementById('mfLogFundSel').value;
   const type = document.getElementById('mfLogType').value;
   const amt  = parseFloat(document.getElementById('mfLogAmt').value);
   const nav  = parseFloat(document.getElementById('mfLogNav').value);
   const date = document.getElementById('mfLogDate').value;
   const note = document.getElementById('mfLogNote').value.trim();
-  if (!rank || !amt || !nav || !date) { alert('Fill Fund, Amount, NAV and Date'); return; }
-  const f = MF_RECS.find(x => x.rank === rank);
+
+  let rank = null;
+  let fundName = '';
+  let customId = null;
+
+  if (selVal === '__custom__') {
+    // Custom fund entry
+    const name = document.getElementById('mfCustomName')?.value.trim();
+    const isin = document.getElementById('mfCustomISIN')?.value.trim();
+    if (!name) { alert('Enter the fund name'); return; }
+    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
+    // Save custom fund to list
+    const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
+    // Check if already exists by name
+    let existing = customFunds.find(cf => cf.name.toLowerCase() === name.toLowerCase());
+    if (!existing) {
+      existing = { id: Date.now(), name, isin: isin || '' };
+      customFunds.push(existing);
+      localStorage.setItem('mypf_custom_mfs', JSON.stringify(customFunds));
+    }
+    customId = 'custom_' + existing.id;
+    fundName = name;
+    rank = customId;
+  } else if (selVal.startsWith('custom_')) {
+    // Existing custom fund
+    customId = selVal;
+    const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
+    const cf = customFunds.find(c => 'custom_' + c.id === selVal);
+    fundName = cf ? cf.name : 'Custom Fund';
+    rank = selVal;
+    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
+  } else {
+    // Standard portfolio fund
+    rank = parseInt(selVal);
+    if (!rank || !amt || !nav || !date) { alert('Fill Fund, Amount, NAV and Date'); return; }
+    const f = MF_RECS.find(x => x.rank === rank);
+    fundName = f ? f.name : 'Unknown';
+  }
+
   const units = amt / nav;
-  mfLogs.push({ id: Date.now(), fundRank: rank, fundName: f.name, type, amt, nav, units, date, note });
+  mfLogs.push({ id: Date.now(), fundRank: rank, fundName, type, amt, nav, units, date, note });
   // Update peak NAV tracking
-  if (!mfNavs[rank]) mfNavs[rank] = { nav, updatedDate: date, peakNav: nav };
-  else if (nav > mfNavs[rank].peakNav) mfNavs[rank].peakNav = nav;
+  const navKey = rank;
+  if (!mfNavs[navKey]) mfNavs[navKey] = { nav, updatedDate: date, peakNav: nav };
+  else if (nav > mfNavs[navKey].peakNav) mfNavs[navKey].peakNav = nav;
   saveMF();
   renderMFTracker();
   renderMFSummaryStrip();
   renderSelectedMFs();
   updateDonut();
+  buildMFLogFundDropdown(); // refresh dropdown with newly added custom fund
   // Clear
   ['mfLogAmt','mfLogNav','mfLogNote'].forEach(id => document.getElementById(id).value = '');
+  if (document.getElementById('mfCustomName')) document.getElementById('mfCustomName').value = '';
+  if (document.getElementById('mfCustomISIN')) document.getElementById('mfCustomISIN').value = '';
+  document.getElementById('mfCustomFundFields').style.display = 'none';
+  document.getElementById('mfLogFundSel').value = '';
 }
 
 function delMFLog(id) {
@@ -6746,7 +6787,7 @@ const KEY_STORE = {
 };
 
 // Active AI provider — persisted
-function getAIProvider() { return localStorage.getItem('mypf_ai_provider') || 'claude'; }
+function getAIProvider() { return localStorage.getItem('mypf_ai_provider') || 'gemini'; }
 function setAIProvider(p) { localStorage.setItem('mypf_ai_provider', p); }
 
 
@@ -6984,6 +7025,18 @@ function initAIPage() {
   const hasKey = !!localStorage.getItem(keyMap[provider] || '');
   const warn = document.getElementById('aiKeyWarning');
   if (warn) warn.style.display = hasKey ? 'none' : 'block';
+
+  // Show cache age on cards
+  const cache = JSON.parse(localStorage.getItem('mypf_ai_cache') || '{}');
+  ['portfolio','market','lumpsum','gold','debt','tax'].forEach(key => {
+    const indicator = document.getElementById('aiCache_' + key);
+    if (indicator && cache[key]) {
+      const age = Date.now() - new Date(cache[key].date).getTime();
+      const ageStr = age < 3600000 ? Math.round(age/60000) + 'm ago' : age < 86400000 ? Math.round(age/3600000) + 'h ago' : Math.round(age/86400000) + 'd ago';
+      indicator.textContent = '● ' + ageStr;
+      indicator.style.display = 'block';
+    }
+  });
 }
 
 function addChatMessage(role, text, isLoading) {
@@ -7016,16 +7069,36 @@ function removeLoadingMsg() {
   if (el) el.remove();
 }
 
-async function runAIModule(moduleKey) {
+async function runAIModule(moduleKey, forceRefresh) {
   const config = AI_MODULE_CONFIG[moduleKey];
   if (!config) return;
 
-  // Add user message showing what they clicked
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    const cached = getAICachedResult(moduleKey);
+    if (cached) {
+      const cards = document.getElementById('aiModuleCards');
+      if (cards) cards.style.display = 'none';
+      const age = Date.now() - new Date(cached.date).getTime();
+      const ageStr = age < 3600000 ? Math.round(age/60000) + 'min ago' : age < 86400000 ? Math.round(age/3600000) + 'hr ago' : Math.round(age/86400000) + 'd ago';
+      addChatMessage('user', config.icon + ' ' + config.title + ' (cached)');
+      const msgDiv = addChatMessage('ai', cached.result);
+      // Add re-run button at the bottom of the cached message
+      const rerunDiv = document.createElement('div');
+      rerunDiv.style.cssText = 'margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;';
+      rerunDiv.innerHTML = `<span style="font-size:0.62rem;color:var(--text3);">Cached · ${ageStr}</span>
+        <button onclick="runAIModule('${moduleKey}', true)" style="padding:4px 12px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);border-radius:6px;color:#a855f7;font-weight:600;cursor:pointer;font-size:0.65rem;font-family:'Cabinet Grotesk',sans-serif;">⟳ Re-analyse</button>
+        <button onclick="exportAIResult('${moduleKey}')" style="padding:4px 12px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.2);border-radius:6px;color:var(--green);font-weight:600;cursor:pointer;font-size:0.65rem;font-family:'Cabinet Grotesk',sans-serif;">📥 Export</button>`;
+      msgDiv.appendChild(rerunDiv);
+      return;
+    }
+  }
+
+  // No cache or force refresh — run fresh analysis
   addChatMessage('user', config.icon + ' ' + config.title);
   addChatMessage('ai', 'Analysing…', true);
 
   const prompt = config.buildPrompt();
-  // Add system context about being a finance assistant
   const fullPrompt = 'You are an Indian personal finance AI assistant embedded in a portfolio tracker app. Be concise, specific, use numbers. Format with **bold** headers.\n\n' + prompt;
 
   try {
@@ -7037,15 +7110,35 @@ async function runAIModule(moduleKey) {
       return;
     }
 
-    addChatMessage('ai', result);
-    // Save to conversation history
+    const msgDiv = addChatMessage('ai', result);
+    // Add export button
+    const exportDiv = document.createElement('div');
+    exportDiv.style.cssText = 'margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;';
+    exportDiv.innerHTML = `<span style="font-size:0.62rem;color:var(--text3);">Just now</span>
+      <button onclick="exportAIResult('${moduleKey}')" style="padding:4px 12px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.2);border-radius:6px;color:var(--green);font-weight:600;cursor:pointer;font-size:0.65rem;font-family:'Cabinet Grotesk',sans-serif;">📥 Export</button>`;
+    msgDiv.appendChild(exportDiv);
     aiChatHistory.push({ role: 'user', content: prompt });
     aiChatHistory.push({ role: 'assistant', content: result });
+    // Cache the result
+    saveAICachedResult(moduleKey, result);
     saveAIHistory(moduleKey, config.title, result);
   } catch(e) {
     removeLoadingMsg();
     addChatMessage('ai', 'Error: ' + e.message);
   }
+}
+
+function saveAICachedResult(moduleKey, result) {
+  const cache = JSON.parse(localStorage.getItem('mypf_ai_cache') || '{}');
+  cache[moduleKey] = { result, date: new Date().toISOString() };
+  localStorage.setItem('mypf_ai_cache', JSON.stringify(cache));
+}
+
+function getAICachedResult(moduleKey) {
+  try {
+    const cache = JSON.parse(localStorage.getItem('mypf_ai_cache') || '{}');
+    return cache[moduleKey] || null;
+  } catch(e) { return null; }
 }
 
 async function sendAIChat() {
@@ -7104,6 +7197,87 @@ function clearAIChat() {
   document.getElementById('aiChatMessages').innerHTML = '';
   document.getElementById('aiModuleCards').style.display = 'block';
   aiChatHistory = [];
+}
+
+function exportAIResult(moduleKey) {
+  const cache = JSON.parse(localStorage.getItem('mypf_ai_cache') || '{}');
+  const cached = cache[moduleKey];
+  if (!cached) { alert('No cached result to export.'); return; }
+
+  const config = AI_MODULE_CONFIG[moduleKey];
+  const title = config?.title || moduleKey;
+  const date = new Date(cached.date).toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+  // Clean markdown for plain text
+  const cleanText = cached.result
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\n{3,}/g, '\n\n');
+
+  const content = `═══════════════════════════════════════
+  ${title.toUpperCase()}
+  FinFolio AI Analysis
+═══════════════════════════════════════
+Generated: ${date}
+Provider: ${(localStorage.getItem('mypf_ai_provider') || 'gemini').toUpperCase()}
+
+${cleanText}
+
+───────────────────────────────────────
+Exported from FinFolio Portfolio Tracker
+https://finfolio-app.netlify.app
+`;
+
+  downloadTextFile(content, `FinFolio_${moduleKey}_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+function exportAllAIResults() {
+  const cache = JSON.parse(localStorage.getItem('mypf_ai_cache') || '{}');
+  if (!Object.keys(cache).length) { alert('No analyses to export.'); return; }
+
+  let content = `═══════════════════════════════════════
+  FINFOLIO AI ANALYSIS REPORT
+  All Cached Insights
+═══════════════════════════════════════
+Exported: ${new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' })}
+Provider: ${(localStorage.getItem('mypf_ai_provider') || 'gemini').toUpperCase()}
+
+`;
+
+  const order = ['portfolio','market','lumpsum','gold','debt','tax'];
+  order.forEach(key => {
+    if (!cache[key]) return;
+    const config = AI_MODULE_CONFIG[key];
+    const date = new Date(cache[key].date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const cleanText = cache[key].result.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\n{3,}/g, '\n\n');
+    content += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${config?.icon || '✨'} ${(config?.title || key).toUpperCase()}
+Analysed: ${date}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${cleanText}
+
+`;
+  });
+
+  content += `───────────────────────────────────────
+Exported from FinFolio Portfolio Tracker
+https://finfolio-app.netlify.app
+`;
+
+  downloadTextFile(content, `FinFolio_AI_Report_${new Date().toISOString().slice(0,10)}.txt`);
+}
+
+function downloadTextFile(content, filename) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 const AI_MODULE_CONFIG = {
@@ -7783,6 +7957,7 @@ onSalaryChange = function() {
       <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:0.95rem;">AI Finance Assistant</div>
       <div style="font-size:0.62rem;color:var(--text3);" id="aiProviderBadge"></div>
     </div>
+    <button onclick="exportAllAIResults()" style="background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.2);color:var(--green);font-size:0.65rem;cursor:pointer;padding:4px 10px;border-radius:6px;font-family:'Cabinet Grotesk',sans-serif;font-weight:600;" title="Export all analyses">📥 Export</button>
     <button onclick="clearAIChat()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text3);font-size:0.65rem;cursor:pointer;padding:4px 10px;border-radius:6px;font-family:'Cabinet Grotesk',sans-serif;font-weight:600;" title="New chat">🗑 Clear</button>
     <button onclick="toggleAIPanel()" style="background:none;border:none;color:var(--text3);font-size:1.3rem;cursor:pointer;padding:4px;">✕</button>
   </div>
@@ -7802,36 +7977,36 @@ onSalaryChange = function() {
         <button onclick="runAIModule('portfolio')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">📊</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">Portfolio Review</div>
-          <div style="font-size:0.58rem;color:var(--text3);">All holdings · Verdicts</div>
+          <div style="font-size:0.58rem;color:var(--text3);">All holdings · Verdicts</div><div id="aiCache_portfolio" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
         <button onclick="runAIModule('market')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">📈</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">Market Mood</div>
-          <div style="font-size:0.58rem;color:var(--text3);">Nifty PE · FII · VIX</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Nifty PE · FII · VIX</div><div id="aiCache_market" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
         <button onclick="runAIModule('lumpsum')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">💰</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">Lumpsum</div>
-          <div style="font-size:0.58rem;color:var(--text3);">Timing advice</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Timing advice</div><div id="aiCache_lumpsum" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
         <button onclick="runAIModule('gold')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">🥇</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">Gold & Silver</div>
-          <div style="font-size:0.58rem;color:var(--text3);">Buy/hold/sell</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Buy/hold/sell</div><div id="aiCache_gold" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
         <button onclick="runAIModule('debt')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">🏦</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">FD vs Debt</div>
-          <div style="font-size:0.58rem;color:var(--text3);">Best rates</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Best rates</div><div id="aiCache_debt" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
         <button onclick="runAIModule('tax')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
           <div style="font-size:0.95rem;margin-bottom:4px;">📋</div>
           <div style="font-weight:700;font-size:0.72rem;color:var(--text);">Tax Harvesting</div>
-          <div style="font-size:0.58rem;color:var(--text3);">LTCG · 80C · NPS</div>
+          <div style="font-size:0.58rem;color:var(--text3);">LTCG · 80C · NPS</div><div id="aiCache_tax" style="display:none;font-size:0.5rem;color:#a855f7;margin-top:2px;"></div>
         </button>
       </div>
 
