@@ -2360,6 +2360,7 @@ function gotoPage(id, el) {
     });
   }
   if (id === 'budget' && typeof recalcBudget === 'function') recalcBudget();
+  if (id === 'planner') buildMFLogFundDropdown();
 }
 
 function switchDpTab(id, el) {
@@ -4637,18 +4638,46 @@ function buildMFLogFundDropdown() {
   const sel = document.getElementById('mfLogFundSel');
   if (!sel) return;
   let options = '';
-  if (state.selectedMFs.length) {
-    options = state.selectedMFs.map(r => {
+  
+  // 1. Portfolio picks from Discover Funds
+  if (state.selectedMFs && state.selectedMFs.length) {
+    options += '<optgroup label="📊 My Portfolio Funds">';
+    options += state.selectedMFs.map(r => {
       const f = MF_RECS.find(x => x.rank === r);
-      return `<option value="${r}">${f.name}</option>`;
-    }).join('');
+      return f ? `<option value="${r}">${f.name}</option>` : '';
+    }).filter(Boolean).join('');
+    options += '</optgroup>';
   }
-  // Add custom funds from localStorage
+  
+  // 2. Broker-synced MFs
+  if (typeof isBrokerMode === 'function' && isBrokerMode()) {
+    const brokerMFs = classifyBrokerHoldings().mf;
+    if (brokerMFs.length) {
+      options += '<optgroup label="🏦 Broker-Synced Funds">';
+      options += brokerMFs.map(h => {
+        return `<option value="broker_${h.isin || h.symbol}">${h.name}</option>`;
+      }).join('');
+      options += '</optgroup>';
+    }
+  }
+  
+  // 3. Previously added custom funds
   const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
-  customFunds.forEach(cf => {
-    options += `<option value="custom_${cf.id}">${cf.name} ${cf.isin ? '(' + cf.isin + ')' : ''}</option>`;
-  });
-  options += '<option value="__custom__">➕ Add a new fund (not listed above)…</option>';
+  if (customFunds.length) {
+    options += '<optgroup label="✏️ Custom Funds">';
+    customFunds.forEach(cf => {
+      options += `<option value="custom_${cf.id}">${cf.name} ${cf.isin ? '(' + cf.isin + ')' : ''}</option>`;
+    });
+    options += '</optgroup>';
+  }
+  
+  // 4. Add new custom fund option
+  options += '<option value="__custom__">➕ Add a new fund (not listed)…</option>';
+  
+  if (!options.includes('optgroup')) {
+    options = '<option value="" disabled selected>No funds yet — add below or pick in Mutual Funds tab</option>' + options;
+  }
+  
   sel.innerHTML = options;
 }
 
@@ -4694,6 +4723,14 @@ function addMFLog() {
     const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
     const cf = customFunds.find(c => 'custom_' + c.id === selVal);
     fundName = cf ? cf.name : 'Custom Fund';
+    rank = selVal;
+    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
+  } else if (selVal.startsWith('broker_')) {
+    // Broker-synced fund
+    const brokerMFs = classifyBrokerHoldings().mf;
+    const key = selVal.replace('broker_', '');
+    const bm = brokerMFs.find(h => (h.isin || h.symbol) === key);
+    fundName = bm ? bm.name : 'Broker Fund';
     rank = selVal;
     if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
   } else {
