@@ -394,19 +394,25 @@ select option { background: var(--s2); }
 /* ── AI Floating Panel ── */
 #aiFab { position:fixed; bottom:24px; right:24px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,#a855f7,#3ecf8e); border:none; color:#fff; font-size:1.4rem; cursor:pointer; box-shadow:0 4px 20px rgba(168,85,247,0.35); z-index:999; display:flex; align-items:center; justify-content:center; transition:all 0.3s ease; }
 #aiFab:hover { transform:scale(1.1); box-shadow:0 6px 28px rgba(168,85,247,0.5); }
-#aiFab.open { border-radius:14px; }
 #aiPanel { position:fixed; bottom:0; right:0; width:100%; max-width:480px; height:85vh; max-height:85vh; background:var(--s1); border-top-left-radius:20px; border-top-right-radius:20px; border:1px solid var(--border2); border-bottom:none; z-index:998; transform:translateY(100%); transition:transform 0.35s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; box-shadow:0 -8px 40px rgba(0,0,0,0.5); }
 #aiPanel.open { transform:translateY(0); }
-#aiPanel .ai-header { padding:16px 20px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; gap:10px; }
+#aiPanel .ai-header { padding:14px 20px; border-bottom:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; gap:10px; }
 #aiPanel .ai-body { flex:1; overflow-y:auto; padding:16px 20px; }
 #aiPanel .ai-body::-webkit-scrollbar { width:4px; }
 #aiPanel .ai-body::-webkit-scrollbar-thumb { background:var(--s4); border-radius:4px; }
+#aiPanel .ai-footer { flex-shrink:0; padding:12px 16px; border-top:1px solid var(--border); background:var(--s2); }
 #aiOverlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:997; opacity:0; pointer-events:none; transition:opacity 0.3s; }
 #aiOverlay.open { opacity:1; pointer-events:auto; }
 .ai-mod-card { padding:12px 14px; background:var(--s2); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.2s; margin-bottom:8px; }
 .ai-mod-card:hover { border-color:rgba(168,85,247,0.3); background:rgba(168,85,247,0.04); }
+#aiChatInput { width:100%; background:var(--s3); border:1px solid var(--border); border-radius:12px; padding:10px 14px; color:var(--text); font-size:0.82rem; outline:none; font-family:'Cabinet Grotesk',sans-serif; resize:none; }
+#aiChatInput:focus { border-color:rgba(168,85,247,0.4); }
+#aiChatInput::placeholder { color:var(--text3); }
+.ai-chat-msg { padding:12px 14px; border-radius:12px; margin-bottom:8px; font-size:0.78rem; line-height:1.7; }
+.ai-chat-msg.user { background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.15); color:var(--text); }
+.ai-chat-msg.ai { background:var(--s2); border:1px solid var(--border); color:var(--text2); }
 @media (max-width: 600px) {
-  #aiPanel { max-width:100%; }
+  #aiPanel { max-width:100%; height:90vh; }
   #aiFab { bottom:16px; right:16px; width:50px; height:50px; font-size:1.2rem; }
 }
 </style>
@@ -6961,29 +6967,143 @@ function toggleAIPanel() {
   const isOpen = panel.classList.contains('open');
   panel.classList.toggle('open');
   overlay.classList.toggle('open');
-  fab.textContent = isOpen ? '✨' : '✕';
+  fab.innerHTML = isOpen ? '✨' : '✕';
   fab.style.borderRadius = isOpen ? '50%' : '14px';
   if (!isOpen) initAIPage();
 }
 
+let aiChatHistory = []; // conversation history for multi-turn
+
 function initAIPage() {
-  // Show provider badge
   const badge = document.getElementById('aiProviderBadge');
   const provider = localStorage.getItem('mypf_ai_provider') || 'gemini';
   const names = { gemini: '✨ Gemini 2.5 Flash', claude: '🤖 Claude Sonnet', groq: '⚡ Groq Llama' };
   if (badge) badge.textContent = names[provider] || provider;
 
-  // Check API key
   const keyMap = { gemini: 'mypf_gemini_key', claude: 'mypf_claude_key', groq: 'mypf_groq_key' };
   const hasKey = !!localStorage.getItem(keyMap[provider] || '');
   const warn = document.getElementById('aiKeyWarning');
   if (warn) warn.style.display = hasKey ? 'none' : 'block';
+}
 
-  // Show module cards, hide result
+function addChatMessage(role, text, isLoading) {
+  const container = document.getElementById('aiChatMessages');
+  const cards = document.getElementById('aiModuleCards');
+  if (cards) cards.style.display = 'none'; // hide cards once chat starts
+
+  const div = document.createElement('div');
+  div.className = 'ai-chat-msg ' + role;
+  if (isLoading) {
+    div.id = 'aiLoadingMsg';
+    div.innerHTML = '<div style="display:flex;align-items:center;gap:8px;"><span style="animation:spin 1s linear infinite;display:inline-block;">🔄</span> <span style="color:var(--text3);">' + text + '</span></div>';
+  } else {
+    const formatted = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text);">$1</strong>')
+      .replace(/\n\n/g, '</p><p style="margin-bottom:8px;">')
+      .replace(/\n/g, '<br>');
+    div.innerHTML = role === 'user' ? text : '<p style="margin-bottom:8px;">' + formatted + '</p>';
+  }
+  container.appendChild(div);
+
+  // Scroll to bottom
+  const body = document.getElementById('aiChatBody');
+  body.scrollTop = body.scrollHeight;
+  return div;
+}
+
+function removeLoadingMsg() {
+  const el = document.getElementById('aiLoadingMsg');
+  if (el) el.remove();
+}
+
+async function runAIModule(moduleKey) {
+  const config = AI_MODULE_CONFIG[moduleKey];
+  if (!config) return;
+
+  // Add user message showing what they clicked
+  addChatMessage('user', config.icon + ' ' + config.title);
+  addChatMessage('ai', 'Analysing…', true);
+
+  const prompt = config.buildPrompt();
+  // Add system context about being a finance assistant
+  const fullPrompt = 'You are an Indian personal finance AI assistant embedded in a portfolio tracker app. Be concise, specific, use numbers. Format with **bold** headers.\n\n' + prompt;
+
+  try {
+    const result = await callAIProvider(fullPrompt);
+    removeLoadingMsg();
+
+    if (!result || result.startsWith('Error')) {
+      addChatMessage('ai', result || 'AI returned no response. Check your API key in Settings.');
+      return;
+    }
+
+    addChatMessage('ai', result);
+    // Save to conversation history
+    aiChatHistory.push({ role: 'user', content: prompt });
+    aiChatHistory.push({ role: 'assistant', content: result });
+    saveAIHistory(moduleKey, config.title, result);
+  } catch(e) {
+    removeLoadingMsg();
+    addChatMessage('ai', 'Error: ' + e.message);
+  }
+}
+
+async function sendAIChat() {
+  const input = document.getElementById('aiChatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  addChatMessage('user', text);
+  addChatMessage('ai', 'Thinking…', true);
+
+  // Build context-aware prompt with portfolio snapshot
+  const ss = getSS();
+  const salary = state.salary || 0;
+  const fds = JSON.parse(localStorage.getItem('mypf_fds') || '[]');
+  const fdTotal = fds.reduce((s,f) => s + f.principal, 0);
+  const brokerMFs = isBrokerMode() ? classifyBrokerHoldings().mf : [];
+
+  let context = `You are an Indian personal finance AI assistant. Be concise (200-300 words max), specific, use ₹ amounts. Format with **bold** for emphasis.
+
+INVESTOR CONTEXT:
+- Salary: ₹${salary.toLocaleString('en-IN')}/month
+- FDs: ₹${fdTotal.toLocaleString('en-IN')}
+- Broker MFs: ${brokerMFs.length ? brokerMFs.map(h => h.name.split(' - ')[0]).join(', ') : 'None'}
+- Share Plan: ${ss.configured ? ss.company + ' ' + ss.planType.toUpperCase() : 'None'}
+- Today: ${new Date().toLocaleDateString('en-IN')}`;
+
+  // Include last few turns for multi-turn context
+  const recentTurns = aiChatHistory.slice(-6);
+  if (recentTurns.length) {
+    context += '\n\nCONVERSATION SO FAR:\n' + recentTurns.map(t => (t.role === 'user' ? 'User: ' : 'Assistant: ') + t.content.substring(0, 300)).join('\n');
+  }
+
+  context += '\n\nUSER QUESTION: ' + text;
+
+  try {
+    const result = await callAIProvider(context);
+    removeLoadingMsg();
+
+    if (!result || result.startsWith('Error')) {
+      addChatMessage('ai', result || 'No response. Check your API key.');
+      return;
+    }
+
+    addChatMessage('ai', result);
+    aiChatHistory.push({ role: 'user', content: text });
+    aiChatHistory.push({ role: 'assistant', content: result });
+  } catch(e) {
+    removeLoadingMsg();
+    addChatMessage('ai', 'Error: ' + e.message);
+  }
+}
+
+function clearAIChat() {
+  document.getElementById('aiChatMessages').innerHTML = '';
   document.getElementById('aiModuleCards').style.display = 'block';
-  document.getElementById('aiResultPanel').style.display = 'none';
-
-  renderAIHistory();
+  aiChatHistory = [];
 }
 
 const AI_MODULE_CONFIG = {
@@ -7168,53 +7288,6 @@ Be specific for Indian tax law FY${new Date().getMonth() >= 3 ? new Date().getFu
     }
   }
 };
-
-async function runAIModule(moduleKey) {
-  const config = AI_MODULE_CONFIG[moduleKey];
-  if (!config) return;
-
-  // Hide module cards, show result panel
-  document.getElementById('aiModuleCards').style.display = 'none';
-
-  const panel = document.getElementById('aiResultPanel');
-  const content = document.getElementById('aiResultContent');
-  const title = document.getElementById('aiResultTitle');
-  const meta = document.getElementById('aiResultMeta');
-  const icon = document.getElementById('aiResultIcon');
-
-  panel.style.display = 'block';
-  icon.textContent = config.icon;
-  title.textContent = config.title;
-  meta.textContent = 'Analysing…';
-  content.innerHTML = `<div style="text-align:center;padding:30px;"><div style="font-size:1.5rem;margin-bottom:10px;animation:spin 1s linear infinite;">🔄</div><div style="color:var(--text3);font-size:0.78rem;">Running ${config.title}…</div></div>`;
-
-  const prompt = config.buildPrompt();
-
-  try {
-    const result = await callAIProvider(prompt);
-    if (!result || result.startsWith('Error')) {
-      content.innerHTML = `<div class="warn">${result || 'AI returned no response. Check your API key.'}</div>`;
-      meta.textContent = 'Failed';
-      return;
-    }
-
-    // Render result as formatted HTML
-    const formatted = result
-      .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text);">$1</strong>')
-      .replace(/\n\n/g, '</p><p style="margin-bottom:10px;">')
-      .replace(/\n/g, '<br>');
-    content.innerHTML = `<p style="margin-bottom:10px;">${formatted}</p>`;
-    meta.textContent = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
-
-    // Save to history
-    saveAIHistory(moduleKey, config.title, result);
-    renderAIHistory();
-
-  } catch(e) {
-    content.innerHTML = `<div class="warn">Error: ${e.message}</div>`;
-    meta.textContent = 'Failed';
-  }
-}
 
 // Generic AI provider call (reuses existing Gemini/Claude/Groq logic)
 async function callAIProvider(prompt) {
@@ -7703,107 +7776,80 @@ onSalaryChange = function() {
 <button id="aiFab" onclick="toggleAIPanel()" title="AI Analysis">✨</button>
 
 <div id="aiPanel">
+  <!-- HEADER -->
   <div class="ai-header">
     <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(62,207,142,0.15));display:flex;align-items:center;justify-content:center;font-size:1rem;">✨</div>
     <div style="flex:1;">
-      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:0.95rem;">AI Analysis Hub</div>
-      <div style="font-size:0.65rem;color:var(--text3);" id="aiProviderBadge">Loading…</div>
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:0.95rem;">AI Finance Assistant</div>
+      <div style="font-size:0.62rem;color:var(--text3);" id="aiProviderBadge"></div>
     </div>
+    <button onclick="clearAIChat()" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text3);font-size:0.65rem;cursor:pointer;padding:4px 10px;border-radius:6px;font-family:'Cabinet Grotesk',sans-serif;font-weight:600;" title="New chat">🗑 Clear</button>
     <button onclick="toggleAIPanel()" style="background:none;border:none;color:var(--text3);font-size:1.3rem;cursor:pointer;padding:4px;">✕</button>
   </div>
 
-  <div class="ai-body">
+  <!-- BODY: quick actions + chat messages -->
+  <div class="ai-body" id="aiChatBody">
     <!-- API key warning -->
     <div id="aiKeyWarning" style="display:none;margin-bottom:12px;padding:10px 14px;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.75rem;">
       🔑 No AI key set. <a href="#" onclick="toggleAIPanel();gotoPage('settings',document.querySelector('.ntab:last-child'));return false;" style="color:var(--amber);font-weight:700;">Go to Settings →</a>
     </div>
 
-    <!-- Module cards (compact) -->
+    <!-- Quick analysis cards (shown by default, hide when chat starts) -->
     <div id="aiModuleCards">
-      <div class="ai-mod-card" onclick="runAIModule('portfolio')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">📊</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">My Portfolio Review</div>
-            <div style="font-size:0.62rem;color:var(--text3);">MF verdicts · Broker holdings · SIP allocation</div>
-          </div>
-          <span class="badge badge-green" style="font-size:0.55rem;">Quarterly</span>
-        </div>
+      <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:8px;">Quick Analysis</div>
+
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        <button onclick="runAIModule('portfolio')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">📊</div>
+          <div style="font-weight:700;font-size:0.72rem;">Portfolio Review</div>
+          <div style="font-size:0.58rem;color:var(--text3);">All holdings · Verdicts</div>
+        </button>
+        <button onclick="runAIModule('market')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">📈</div>
+          <div style="font-weight:700;font-size:0.72rem;">Market Mood</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Nifty PE · FII · VIX</div>
+        </button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
+        <button onclick="runAIModule('lumpsum')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">💰</div>
+          <div style="font-weight:700;font-size:0.72rem;">Lumpsum</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Timing advice</div>
+        </button>
+        <button onclick="runAIModule('gold')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">🥇</div>
+          <div style="font-weight:700;font-size:0.72rem;">Gold & Silver</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Buy/hold/sell</div>
+        </button>
+        <button onclick="runAIModule('debt')" class="ai-mod-card" style="flex:1;min-width:100px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">🏦</div>
+          <div style="font-weight:700;font-size:0.72rem;">FD vs Debt</div>
+          <div style="font-size:0.58rem;color:var(--text3);">Best rates</div>
+        </button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+        <button onclick="runAIModule('tax')" class="ai-mod-card" style="flex:1;min-width:140px;margin-bottom:0;padding:10px 12px;text-align:left;">
+          <div style="font-size:0.95rem;margin-bottom:4px;">📋</div>
+          <div style="font-weight:700;font-size:0.72rem;">Tax Harvesting</div>
+          <div style="font-size:0.58rem;color:var(--text3);">LTCG · 80C · NPS</div>
+        </button>
       </div>
 
-      <div class="ai-mod-card" onclick="runAIModule('market')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">📈</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">Market Mood</div>
-            <div style="font-size:0.62rem;color:var(--text3);">Nifty PE · FII flows · VIX · Sector trends</div>
-          </div>
-          <span class="badge badge-blue" style="font-size:0.55rem;">On-demand</span>
-        </div>
-      </div>
-
-      <div class="ai-mod-card" onclick="runAIModule('lumpsum')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">💰</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">Lumpsum Timing</div>
-            <div style="font-size:0.62rem;color:var(--text3);">Deploy now vs STP vs wait?</div>
-          </div>
-          <span class="badge badge-amber" style="font-size:0.55rem;">On-demand</span>
-        </div>
-      </div>
-
-      <div class="ai-mod-card" onclick="runAIModule('gold')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">🥇</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">Gold & Silver Outlook</div>
-            <div style="font-size:0.62rem;color:var(--text3);">SGB · Gold price · Silver ratio</div>
-          </div>
-          <span class="badge badge-amber" style="font-size:0.55rem;">On-demand</span>
-        </div>
-      </div>
-
-      <div class="ai-mod-card" onclick="runAIModule('debt')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">🏦</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">FD vs Debt Funds</div>
-            <div style="font-size:0.62rem;color:var(--text3);">RBI rates · Tax efficiency · Best FD rates</div>
-          </div>
-          <span class="badge badge-blue" style="font-size:0.55rem;">On-demand</span>
-        </div>
-      </div>
-
-      <div class="ai-mod-card" onclick="runAIModule('tax')">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:1.1rem;">📋</span>
-          <div style="flex:1;">
-            <div style="font-weight:700;font-size:0.82rem;">Tax Harvesting Ideas</div>
-            <div style="font-size:0.62rem;color:var(--text3);">LTCG · 80C · Old vs New regime</div>
-          </div>
-          <span class="badge badge-red" style="font-size:0.55rem;">Seasonal</span>
-        </div>
+      <div style="text-align:center;padding:10px 0;font-size:0.68rem;color:var(--text3);">
+        — or type any finance question below —
       </div>
     </div>
 
-    <!-- Result area (shown when an analysis runs) -->
-    <div id="aiResultPanel" style="display:none;margin-top:12px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <span id="aiResultIcon" style="font-size:1.1rem;">📊</span>
-        <div style="flex:1;">
-          <div id="aiResultTitle" style="font-weight:800;font-size:0.88rem;"></div>
-          <div id="aiResultMeta" style="font-size:0.62rem;color:var(--text3);"></div>
-        </div>
-        <button onclick="document.getElementById('aiResultPanel').style.display='none';document.getElementById('aiModuleCards').style.display='block';" style="background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;">← Back</button>
-      </div>
-      <div id="aiResultContent" style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;font-size:0.78rem;line-height:1.75;color:var(--text2);"></div>
-    </div>
+    <!-- Chat messages area -->
+    <div id="aiChatMessages"></div>
+  </div>
 
-    <!-- History -->
-    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px;">
-      <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:8px;">📁 Recent Analyses</div>
-      <div id="aiHistoryList" style="font-size:0.72rem;color:var(--text3);">No analyses yet. Tap a card above.</div>
+  <!-- FOOTER: chat input (always visible) -->
+  <div class="ai-footer">
+    <div style="display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="aiChatInput" rows="1" placeholder="Ask anything about your portfolio, markets, tax…"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIChat();}"></textarea>
+      <button onclick="sendAIChat()" style="flex-shrink:0;width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#3ecf8e);border:none;color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Send">↑</button>
     </div>
   </div>
 </div>
