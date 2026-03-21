@@ -1,179 +1,348 @@
-# 💰 myFinance — Personal Portfolio Tracker
+# ₹ FinFolio — Complete Indian Portfolio Tracker
 
-A **self-hostable, single-file portfolio tracker** for Indian investors. Track Mutual Funds, Stocks, SGBs, Fixed Deposits, and company share plans — all from one dashboard with live price feeds.
+**Self-hosted, single-file, privacy-first portfolio tracker for Indian investors.**
 
-🔗 **Live Demo**: [your-site.netlify.app](https://your-site.netlify.app)
+Track Stocks, Mutual Funds, FDs, RDs, SGB Gold, Physical Gold, Post Office schemes, Company Share Plans (ESPP/RSU/ESOP), and more — all from one dashboard with AI-powered insights.
 
----
-
-## ✨ Features
-
-### Works Offline (Tier 1 — No Setup)
-- **Mutual Funds** — Auto-fetch NAV from AMFI API (free, no key needed)
-- **SGB Gold** — Live 24K gold price via international spot rate + forex conversion
-- **Nifty 50** — Live index price for lumpsum trigger alerts
-- **Company Shares** — Configurable ESPP/ShareSave/RSU tracker
-- **Fixed Deposits & Recurring Deposits** — Interest calculator
-- **Portfolio Donut** — Visual allocation breakdown
-- All data stored in `localStorage` — nothing leaves your browser
-
-### With Broker API (Tier 2 — Self-Host on Netlify)
-- **HDFC Securities** — Fetch live holdings, positions, funds
-- **Zerodha Kite** — Coming soon
-- **Angel One** — Coming soon
-- **Groww** — Coming soon
-- **Upstox** — Coming soon
-
-> Broker integration requires deploying to Netlify (free tier) and configuring your broker API credentials.
+> **Self-hosted means YOU own it.** Fork this repo, deploy to your own Netlify/Vercel, and all data stays in your browser. No shared servers, no tracking, no accounts.
 
 ---
 
-## 🚀 Quick Start
+## Why FinFolio?
 
-### Option A: Just Use It (No Setup)
-1. Download `index.html`
-2. Open in any browser
-3. Start adding your holdings manually
-4. MF NAVs and Gold prices fetch automatically
+| Problem | FinFolio Solution |
+|---------|-------------------|
+| Groww/Zerodha only show what you buy through them | Tracks ALL assets — broker, manual, physical |
+| INDMoney wants your bank login | Zero server-side data — 100% localStorage |
+| No app tracks physical gold in your bank locker | Physical gold tracker with storage locations + photo links |
+| Can't see FDs, SGB, PPF, and stocks in one view | Unified dashboard with allocation donut + net worth |
+| Generic "AI insights" from blog articles | AI assistant trained on YOUR actual portfolio data |
+| Tied to one platform | Single HTML file — fork it, modify it, it's yours |
 
-### Option B: Deploy to Netlify (Enables Broker Integration)
+---
 
-#### 1. Fork & Clone
+## Features
+
+### Dashboard & Overview
+- Real-time net worth calculation across all asset classes
+- Allocation donut chart with diversification score
+- Source badges: BROKER (auto-fetched) / MANUAL (user-entered)
+- Responsive dark theme
+
+### Asset Trackers
+
+| Asset Class | Features |
+|------------|----------|
+| **Stocks** | Auto-fetched from broker, live price via Finnhub |
+| **Mutual Funds** | Broker-synced + manual entry, live NAV from AMFI, fund discovery with curated picks, custom fund entry with ISIN |
+| **Fixed Deposits** | Multiple banks, maturity countdown, interest calc, bank name field |
+| **Recurring Deposits** | Monthly tracking, maturity projection, multi-bank |
+| **SGB Gold** | Tranche-based, live gold price (international spot → INR), 2.5% annual interest calc |
+| **Physical Gold** | Jewellery/coins/bars with weight, purity (14K-24K), storage location (bank locker/home/worn daily), photo links |
+| **Post Office** | PPF, SSY, NSC, MIS — with maturity and interest tracking |
+| **Company Shares** | ESPP/ShareSave, RSU, ESOP, Bonus — configurable dividends (USD/INR/GBP/EUR), vesting schedules |
+| **Budget** | Income/expense tracking, needs vs wants, savings rate |
+
+### Broker Integration
+- **HDFC Securities** — OAuth login, auto-fetch demat holdings
+- Holdings auto-classified: Stocks vs MF vs SGB vs ETF
+- API keys stored server-side only (Netlify Functions)
+- Token in sessionStorage (clears on tab close)
+
+### AI Finance Assistant (✨ floating bubble)
+
+Available on every page with 6 one-click analyses + free-text chat:
+
+| Module | What It Does |
+|--------|-------------|
+| 📊 Portfolio Review | Analyses all holdings, gives verdicts, allocation advice |
+| 📈 Market Mood | Nifty PE, FII/DII flows, VIX, sector trends, mood score |
+| 💰 Lumpsum Timing | Deploy now vs STP vs wait — based on valuations |
+| 🥇 Gold & Silver | SGB outlook, gold price trend, buy/hold/reduce |
+| 🏦 FD vs Debt Funds | RBI rates, best FD rates, tax efficiency comparison |
+| 📋 Tax Harvesting | LTCG harvesting, 80C, NPS, old vs new regime |
+
+- Results cached locally — instant replay without re-running
+- Export analyses as `.txt` files
+- Multi-provider: Gemini 2.5 Flash (free) / Claude / Groq
+
+### Monthly Investment Planner
+- Log SIP/lumpsum investments with fund selector
+- Custom fund entry (any fund not in curated list) with ISIN tracking
+- Dropdown shows: Portfolio picks + Broker-synced MFs + Custom funds
+- Investment history tracking
+
+---
+
+## Self-Hosting Guide
+
+### Option A: Just Open the HTML (No Broker, No Deploy)
+
+```bash
+git clone https://github.com/balajiregt/myFinance.git
+open myFinance/index.html
+```
+
+Everything works except broker integration: MF NAVs, gold prices, SGB, FD/RD, physical gold, post office, share plans, budget, and AI analysis (with your own Gemini key).
+
+### Option B: Deploy to Netlify (Enables Broker API)
+
+#### Step 1: Fork & Clone
+
 ```bash
 git clone https://github.com/balajiregt/myFinance.git
 cd myFinance
 ```
 
-#### 2. Deploy to Netlify
-- Go to [app.netlify.app](https://app.netlify.app)
-- Click **"Add new site"** → **"Import an existing project"**
-- Connect your GitHub repo (`balajiregt/myFinance`)
-- Deploy settings:
-  - **Build command**: *(leave empty)*
-  - **Publish directory**: `.`
-- Click **Deploy**
+#### Step 2: Deploy to Netlify
 
-#### 3. Configure Broker API (Example: HDFC Securities)
+1. Go to [app.netlify.com](https://app.netlify.com)
+2. Click **"Add new site"** → **"Import an existing project"**
+3. Connect your GitHub fork
+4. Deploy settings:
+   - **Build command**: *(leave empty)*
+   - **Publish directory**: `.`
+5. Click **Deploy**
 
-**Step 1**: Create API credentials at [developer.hdfcsec.com](https://developer.hdfcsec.com)
-- Login with your HDFC Securities account
-- Go to **Apps** → **Create New App**
-- **App Name**: `myFinance`
-- **Redirect URL**: `https://YOUR-SITE.netlify.app/auth/callback`
-- Note your **API Key** and **API Secret**
+#### Step 3: Configure Broker (HDFC Securities)
 
-**Step 2**: Add environment variables in Netlify
-- Go to **Site Settings** → **Environment Variables**
-- Add:
-  | Key | Value |
-  |-----|-------|
-  | `HDFC_API_KEY` | Your HDFC API Key |
-  | `HDFC_API_SECRET` | Your HDFC API Secret |
+**Create API credentials:**
+1. Go to [developer.hdfcsec.com](https://developer.hdfcsec.com)
+2. Login → **Apps** → **Create New App**
+3. Set **Redirect URL** to: `https://YOUR-SITE.netlify.app/auth/callback`
+4. Note your **API Key** and **API Secret**
 
-**Step 3**: Redeploy
-- Go to **Deploys** → **Trigger deploy** → **Deploy site**
+**Add environment variables in Netlify:**
 
-**Step 4**: Use it
-- Open your site → Go to **Broker** tab
-- Select **HDFC Securities** → Click **Connect**
-- Login with HDFC credentials → Holdings auto-populate!
+Go to Site Settings → Environment Variables → Add:
+
+| Key | Value |
+|-----|-------|
+| `HDFC_API_KEY` | Your API Key |
+| `HDFC_API_SECRET` | Your API Secret |
+
+**Redeploy**, then go to **Broker** tab → Select HDFC → Connect.
+
+### Option C: Deploy to Vercel
+
+```bash
+npm i -g vercel
+cd myFinance
+vercel
+```
+
+Note: Broker integration requires adapting Netlify Functions to Vercel Serverless Functions (in `/api` directory).
+
+### Option D: Deploy to GitHub Pages (Static Only)
+
+1. Fork the repo
+2. Go to Settings → Pages → Source: `main` branch
+3. Your site is live at `https://yourusername.github.io/myFinance`
+
+No broker integration (no serverless functions), but everything else works.
 
 ---
 
-## 🔧 Supported Brokers & Setup
+## Configure AI Provider
 
-| Broker | Status | Env Variables Needed |
-|--------|--------|---------------------|
-| HDFC Securities | ✅ Ready | `HDFC_API_KEY`, `HDFC_API_SECRET` |
-| Zerodha Kite | 🔜 Coming | `ZERODHA_API_KEY`, `ZERODHA_API_SECRET` |
-| Angel One | 🔜 Coming | `ANGEL_API_KEY`, `ANGEL_CLIENT_ID` |
-| Groww | 🔜 Coming | `GROWW_API_KEY`, `GROWW_API_SECRET` |
-| Upstox | 🔜 Coming | `UPSTOX_API_KEY`, `UPSTOX_API_SECRET` |
+Go to **Settings** tab in the app → **AI Provider** section:
 
-Want to add a broker? See [Contributing](#contributing).
+| Provider | Cost | Setup |
+|----------|------|-------|
+| **Gemini 2.5 Flash** (recommended) | Free — 1500 req/day | Get key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Claude Sonnet** | Paid — $3/$15 per M tokens | Get key at [console.anthropic.com](https://console.anthropic.com) |
+| **Groq Llama** | Free — rate limited | Get key at [console.groq.com](https://console.groq.com) |
+
+Paste your key in Settings → Save. The ✨ AI bubble is now active on every page.
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 myFinance/
-├── index.html              # The entire app — single file
-├── netlify.toml            # Netlify config (functions + redirects)
-├── netlify/
-│   └── functions/
-│       ├── broker-auth.js  # OAuth token exchange (server-side)
-│       └── broker-proxy.js # API proxy to broker endpoints
-└── README.md
+├── index.html                    # The entire app (~8,000 lines, single file)
+├── netlify.toml                  # Netlify config: functions dir, OAuth redirect, security headers
+├── package.json                  # Project metadata
+├── .gitignore
+├── README.md
+└── netlify/
+    └── functions/
+        ├── broker-auth.js        # OAuth token exchange (server-side, keys never in browser)
+        └── broker-proxy.js       # API proxy to broker endpoints
 ```
 
 ---
 
-## 🔒 Security
+## Architecture
 
-- **API keys are NEVER in the HTML** — stored as Netlify environment variables
-- **OAuth tokens stay in-session** — stored in `sessionStorage`, cleared on tab close
-- **Netlify Functions act as a proxy** — your broker credentials never reach the browser
-- **No database, no server** — your portfolio data lives in your browser's `localStorage`
-- **Open source** — audit the code yourself
+```
+┌─────────────────────────────────────────────────────────┐
+│                    YOUR BROWSER                          │
+│  ┌──────────────────────────────────────────────────┐   │
+│  │              index.html (the entire app)          │   │
+│  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐    │   │
+│  │  │Overview│ │  Gold  │ │   MF   │ │ Budget │    │   │
+│  │  └────────┘ └────────┘ └────────┘ └────────┘    │   │
+│  │         ┌──────────────────────┐                  │   │
+│  │         │  ✨ AI Floating Bubble │                │   │
+│  │         └──────────────────────┘                  │   │
+│  │                    │                              │   │
+│  │            localStorage                           │   │
+│  │     (ALL your data stays here)                    │   │
+│  └──────────────────────────────────────────────────┘   │
+│                    │                                     │
+│         Direct API calls (from browser):                │
+│         ├── AMFI (MF NAV) — free, no key                │
+│         ├── Gold API (spot price) — free                 │
+│         ├── Finnhub (stock price) — your key             │
+│         ├── Gemini/Claude/Groq (AI) — your key           │
+│         └── Forex API (USD/INR) — free                   │
+└─────────────────────────────────────────────────────────┘
+                    │
+          (Only for broker OAuth)
+                    │
+┌─────────────────────────────────────────────────────────┐
+│              NETLIFY (your own instance)                 │
+│  ┌─────────────────┐  ┌──────────────────┐              │
+│  │  broker-auth.js  │  │  broker-proxy.js  │             │
+│  │  (token exchange)│  │  (API proxy)      │             │
+│  └────────┬────────┘  └────────┬─────────┘              │
+│           │                     │                        │
+│     HDFC_API_KEY          HDFC_API_SECRET                │
+│     (env variable)        (env variable)                 │
+│     NEVER in browser      NEVER in browser               │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🆓 Free APIs Used (No Keys Needed)
+## Security
 
-| API | Purpose | Rate Limit |
+| Concern | How It's Handled |
+|---------|-----------------|
+| Portfolio data | 100% in browser localStorage — never sent anywhere |
+| Broker API keys | Server-side only (Netlify env vars) — never in HTML |
+| OAuth tokens | sessionStorage — cleared when tab closes |
+| AI API keys | Stored client-side, sent directly to AI provider only |
+| CORS | Restricted to your own domain |
+| Headers | HSTS, X-XSS-Protection, X-Frame-Options DENY |
+| Source code | Fully open source — audit everything |
+
+---
+
+## APIs Used
+
+### Free (No Keys Needed)
+
+| API | Purpose |
+|-----|---------|
+| [mfapi.in](https://www.mfapi.in) | Mutual Fund NAV from AMFI |
+| [gold-api.com](https://gold-api.com) | International gold spot price (USD/oz) |
+| [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api) | USD/INR forex rate |
+
+### Require Your Own Key
+
+| API | Purpose | Free Tier |
 |-----|---------|-----------|
-| [mfapi.in](https://www.mfapi.in) | Mutual Fund NAV (AMFI) | Generous |
-| [gold-api.com](https://gold-api.com) | International gold spot price | Unlimited |
-| [fawazahmed0/currency-api](https://github.com/fawazahmed0/exchange-api) | USD/INR forex rate | Unlimited |
+| [Gemini](https://aistudio.google.com/apikey) | AI analysis | 1500 req/day |
+| [Finnhub](https://finnhub.io) | Stock/share live price | 60 calls/min |
+| [HDFC Developer](https://developer.hdfcsec.com) | Broker integration | Free for clients |
 
 ---
 
-## 🤝 Contributing
+## Supported Brokers
+
+| Broker | Status | Env Variables |
+|--------|--------|---------------|
+| HDFC Securities (InvestRight) | ✅ Ready | `HDFC_API_KEY`, `HDFC_API_SECRET` |
+| Zerodha Kite | 🔜 Coming | — |
+| Angel One | 🔜 Coming | — |
+| Groww | 🔜 Coming | — |
+| Upstox | 🔜 Coming | — |
+
+---
+
+## Contributing
 
 ### Adding a New Broker
 
 1. Add broker config to `BROKER_CONFIG` in `netlify/functions/broker-proxy.js`
 2. Add auth config to `BROKER_AUTH_CONFIG` in `netlify/functions/broker-auth.js`
-3. Add a `parseHoldings()` normalizer in the frontend (in `index.html`)
+3. Add a holdings normalizer in `index.html` (see `classifyBrokerHoldings()`)
 4. Submit a PR!
 
-### Normalised Holding Format
-All brokers should map their response to this common format:
+### Normalized Holding Format
+
+All brokers should map to:
+
 ```javascript
 {
-  symbol: 'RELIANCE',        // Trading symbol
-  name: 'Reliance Industries', // Full name
-  qty: 10,                    // Quantity held
-  avgPrice: 2450.50,          // Average buy price
-  currentPrice: 2580.00,      // Current market price (if available)
-  exchange: 'NSE',            // Exchange
-  type: 'equity',             // equity | mf | bond | etf
-  broker: 'hdfc_securities',  // Broker identifier
-  isin: 'INE002A01018',       // ISIN (optional)
-  pnl: 1295.00,               // P&L (optional)
+  symbol: 'RELIANCE',
+  name: 'Reliance Industries Ltd',
+  qty: 10,
+  avgPrice: 2450.50,
+  currentPrice: 2580.00,
+  exchange: 'NSE',
+  type: 'equity',       // equity | mf | bond | etf | sgb
+  broker: 'hdfc_securities',
+  isin: 'INE002A01018',
+  pnl: 1295.00,
 }
 ```
 
 ---
 
-## 📋 Roadmap
+## Roadmap
 
-- [x] Manual portfolio entry (MF, Stocks, SGB, FD/RD)
-- [x] Live MF NAV from AMFI
-- [x] Live gold price (international spot + forex)
-- [x] Nifty 50 live price
-- [x] Company share plan tracker (ESPP/ShareSave)
-- [x] Broker API proxy (Netlify Functions)
-- [ ] HDFC Securities live holdings
+- [x] Unified overview dashboard with net worth + donut chart
+- [x] Company share plans (ESPP/RSU/ESOP/Bonus) with configurable dividends
+- [x] FD/RD tracker with multiple banks
+- [x] SGB Gold with live international price
+- [x] Physical gold tracker with storage locations + photo links
+- [x] Post Office schemes (PPF/SSY/NSC/MIS)
+- [x] Mutual Fund portfolio with curated picks + AMFI NAV
+- [x] Broker integration (HDFC Securities OAuth)
+- [x] ISIN-based fund resolution (broker ISIN → AMFI scheme code → live NAV)
+- [x] AI Finance Assistant (6 modules + chat, multi-provider)
+- [x] Monthly Investment Planner with custom fund entry
+- [x] Budget Planner
+- [x] Export AI analyses as text files
+- [x] Broker mode toggle (hide broker features for standalone use)
 - [ ] Zerodha Kite integration
 - [ ] Angel One integration
-- [ ] Gmail expense tracker (OAuth)
-- [ ] Multi-broker aggregated view
 - [ ] Export portfolio as PDF/CSV
+- [ ] Multi-device sync (optional encrypted cloud backup)
+- [ ] Mobile PWA support
 
 ---
 
-## 📄 License
+## FAQ
+
+**Q: Is my data safe?**
+All data is in your browser's localStorage. Nothing is sent to any server. The HTML file is completely static.
+
+**Q: Can I use this without deploying to Netlify?**
+Yes. Just open `index.html` in your browser. Everything works except broker integration.
+
+**Q: What happens if I clear my browser data?**
+Your portfolio data will be lost. Use Settings → Export Data to back up regularly.
+
+**Q: Can multiple people use the same deployed site?**
+Each person's data is in THEIR browser's localStorage — completely isolated. But for true privacy, each person should deploy their own instance.
+
+**Q: Is the AI analysis accurate?**
+The AI uses your real portfolio data as context but relies on the model's training knowledge for market data. Always verify specific numbers independently.
+
+**Q: Why a single HTML file?**
+Simplicity. Share via WhatsApp/email, works offline, no build tools, no dependencies, no vendor lock-in.
+
+---
+
+## License
 
 MIT — use it, fork it, share it. Your money, your data, your tracker.
+
+---
+
+**Built with ❤️ for Indian investors who want to see their COMPLETE financial picture.**
