@@ -428,7 +428,7 @@ select option { background: var(--s2); }
     <button class="ntab active" onclick="gotoPage('overview', this)">Overview</button>
     <button class="ntab" onclick="gotoPage('sharesave', this)">Sharesave</button>
     <button class="ntab" onclick="gotoPage('deposits', this)">FD / RD</button>
-    <button class="ntab" onclick="gotoPage('gold', this)">SGB Gold</button>
+    <button class="ntab" onclick="gotoPage('gold', this)">Gold</button>
     <button class="ntab" onclick="gotoPage('po', this)">Post Office</button>
     <button class="ntab" onclick="gotoPage('mf', this)">Mutual Funds</button>
     <button class="ntab" onclick="gotoPage('planner', this)">Monthly Planner</button>
@@ -1040,6 +1040,9 @@ select option { background: var(--s2); }
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Rate (%)</label><input type="number" id="fdRate" placeholder="7.10" step="0.05"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Tenure (months)</label><input type="number" id="fdTenure" placeholder="12"></div>
               <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">Start Date</label><input type="date" id="fdStart"></div>
+              <div><label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:4px;">📍 Stored At</label>
+                <select id="fdStorage" style="width:100%;"><option value="">— select —</option><option value="Bank Locker">🏦 Bank Locker</option><option value="Home Safe">🏠 Home Safe</option><option value="Digital/Online">💻 Digital/Online</option><option value="Office">🏢 Office</option><option value="Other">📦 Other</option></select>
+              </div>
             </div>
             <button class="btn btn-primary" onclick="addFD()">+ Add FD</button>
           </div>
@@ -1105,7 +1108,7 @@ select option { background: var(--s2); }
 <div class="wrap">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
     <div style="width:40px;height:40px;border-radius:12px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🥇</div>
-    <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Sovereign Gold Bonds (SGB)</div><div style="font-size:0.8rem;color:var(--text2);">RBI-backed · 2.5% p.a. guaranteed · Tax-free at maturity (8 years)</div></div>
+    <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Gold Portfolio</div><div style="font-size:0.8rem;color:var(--text2);">SGB · Physical Gold · Jewellery Tracker</div></div>
   </div>
 
   <div class="g2" style="margin-bottom:18px;">
@@ -1228,6 +1231,99 @@ select option { background: var(--s2); }
   </div>
 
   <div class="warn">⚠️ <strong>SGB issuance paused:</strong> RBI has not issued new SGBs since late 2023. You can buy existing SGBs on the secondary market (BSE/NSE) — often at a slight discount. Check with Zerodha/Groww broker.</div>
+
+  <!-- ═══ PHYSICAL GOLD TRACKER ═══ -->
+  <div style="margin-top:28px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(240,192,64,0.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💍</div>
+      <div>
+        <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1.1rem;">Physical Gold & Jewellery</div>
+        <div style="font-size:0.75rem;color:var(--text2);">Track your jewellery, coins, bars — see consolidated value</div>
+      </div>
+    </div>
+
+    <div class="g2" style="margin-bottom:16px;">
+      <!-- ADD ITEM -->
+      <div style="background:rgba(240,192,64,0.04);border:1.5px solid rgba(240,192,64,0.15);border-radius:16px;padding:18px 20px;">
+        <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">Add Gold Item</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Item Type</label>
+            <select id="pgType" style="width:100%;">
+              <option value="Chain">Chain / Necklace</option>
+              <option value="Ring">Ring</option>
+              <option value="Bracelet">Bracelet / Bangle</option>
+              <option value="Earring">Earring / Jhumka</option>
+              <option value="Pendant">Pendant</option>
+              <option value="Coin">Gold Coin</option>
+              <option value="Bar">Gold Bar / Biscuit</option>
+              <option value="Anklet">Anklet / Payal</option>
+              <option value="Nose Pin">Nose Pin / Nath</option>
+              <option value="Mangalsutra">Mangalsutra</option>
+              <option value="Waistband">Waist Chain / Oddiyanam</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Weight (grams)</label>
+            <input type="number" id="pgGrams" placeholder="e.g. 8.5" step="0.01" min="0.1"
+              style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Purity (Karat)</label>
+            <select id="pgPurity" style="width:100%;">
+              <option value="24">24K (99.9% pure)</option>
+              <option value="22" selected>22K (91.6% — most jewellery)</option>
+              <option value="18">18K (75%)</option>
+              <option value="14">14K (58.3%)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Description (optional)</label>
+            <input type="text" id="pgDesc" placeholder="e.g. Wedding chain" style="width:100%;">
+          </div>
+          <div>
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">📍 Stored At</label>
+            <select id="pgStorage" style="width:100%;">
+              <option value="Bank Locker">🏦 Bank Locker</option>
+              <option value="Home Safe">🏠 Home Safe</option>
+              <option value="Home">🏠 Home</option>
+              <option value="Parents House">👨‍👩‍👧 Parents' House</option>
+              <option value="Worn Daily">💍 Worn Daily</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </div>
+          <div style="grid-column:1/-1;">
+            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">📷 Photo Link (optional) <span style="font-size:0.55rem;color:var(--text3);">— Google Drive, Photos, or any URL</span></label>
+            <input type="url" id="pgPhotoUrl" placeholder="e.g. https://drive.google.com/file/d/..." style="width:100%;">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="addPhysicalGold()" style="width:100%;background:rgba(240,192,64,0.15);border-color:rgba(240,192,64,0.3);color:var(--yellow);">+ Add Gold Item</button>
+      </div>
+
+      <!-- SUMMARY -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px 20px;">
+        <div style="font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Physical Gold Summary</div>
+        <div id="pgSummary" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="color:var(--text3);font-size:0.82rem;">No items added yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <div style="overflow-x:auto;">
+      <table style="width:100%;">
+        <thead><tr><th>Type</th><th>Description</th><th>Weight</th><th>Purity</th><th>Pure Gold</th><th>📍 Stored At</th><th>Current Value</th><th></th></tr></thead>
+        <tbody id="pgTbody"><tr><td colspan="8" style="color:var(--text3);text-align:center;padding:20px;">No physical gold items tracked yet</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- CONSOLIDATED GOLD SUMMARY -->
+    <div id="goldConsolidated" style="margin-top:16px;padding:16px 20px;background:linear-gradient(135deg,rgba(240,192,64,0.08),rgba(240,192,64,0.02));border:1px solid rgba(240,192,64,0.2);border-radius:14px;">
+      <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">🥇 Total Gold Holdings (SGB + Physical)</div>
+      <div id="goldConsolidatedContent" style="display:flex;gap:24px;flex-wrap:wrap;font-size:0.85rem;"></div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -2361,6 +2457,7 @@ function gotoPage(id, el) {
   }
   if (id === 'budget' && typeof recalcBudget === 'function') recalcBudget();
   if (id === 'planner') buildMFLogFundDropdown();
+  if (id === 'gold' && typeof renderPhysicalGold === 'function') renderPhysicalGold();
 }
 
 function switchDpTab(id, el) {
@@ -3723,6 +3820,7 @@ function addSGBHolding() {
   state.sgb = sgbHoldings;
   localStorage.setItem('mypf_sgb_v2', JSON.stringify(sgbHoldings));
   renderSGBHoldings();
+  if (typeof renderPhysicalGold === 'function') renderPhysicalGold();
   updateDonut();
   // Reset
   document.getElementById('sgbSeries').value = '';
@@ -3789,6 +3887,90 @@ function renderSGBHoldings() {
 function loadSGBFields() { renderSGBHoldings(); }
 function saveSGB() {}
 function calcSGB() {}
+
+// ══ PHYSICAL GOLD TRACKER ══
+let physicalGold = JSON.parse(localStorage.getItem('mypf_physical_gold') || '[]');
+
+function addPhysicalGold() {
+  const type = document.getElementById('pgType').value;
+  const grams = parseFloat(document.getElementById('pgGrams').value);
+  const purity = parseInt(document.getElementById('pgPurity').value);
+  const desc = document.getElementById('pgDesc')?.value.trim() || '';
+  const storage = document.getElementById('pgStorage')?.value || '';
+  const photoUrl = document.getElementById('pgPhotoUrl')?.value.trim() || '';
+  if (!grams || grams <= 0) { alert('Enter weight in grams'); return; }
+  const pureGrams = grams * (purity / 24);
+  physicalGold.push({ id: Date.now(), type, grams, purity, pureGrams: Math.round(pureGrams * 100) / 100, desc, storage, photoUrl });
+  localStorage.setItem('mypf_physical_gold', JSON.stringify(physicalGold));
+  renderPhysicalGold();
+  updateDonut();
+  document.getElementById('pgGrams').value = '';
+  document.getElementById('pgDesc').value = '';
+  document.getElementById('pgPhotoUrl').value = '';
+}
+
+function delPhysicalGold(id) {
+  physicalGold = physicalGold.filter(g => g.id !== id);
+  localStorage.setItem('mypf_physical_gold', JSON.stringify(physicalGold));
+  renderPhysicalGold();
+  updateDonut();
+}
+
+function renderPhysicalGold() {
+  const tbody = document.getElementById('pgTbody');
+  const summary = document.getElementById('pgSummary');
+  const consolidated = document.getElementById('goldConsolidatedContent');
+  // Get current gold price per gram (from SGB section or cached)
+  const goldPricePerGram = parseFloat(document.getElementById('sgbCurrentPrice')?.textContent) || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 7500;
+
+  if (!physicalGold.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:20px;">No physical gold items tracked yet</td></tr>';
+    summary.innerHTML = '<div style="color:var(--text3);font-size:0.82rem;">No items added yet.</div>';
+  } else {
+    const typeIcons = { Chain:'📿', Ring:'💍', Bracelet:'📿', Earring:'✨', Pendant:'🔶', Coin:'🪙', Bar:'🟡', Anklet:'📿', 'Nose Pin':'💎', Mangalsutra:'📿', Waistband:'📿', Other:'🔸' };
+    const storageIcons = { 'Bank Locker':'🏦', 'Home Safe':'🏠', 'Home':'🏠', 'Parents House':'👨‍👩‍👧', 'Worn Daily':'💍', 'Other':'📦' };
+    tbody.innerHTML = physicalGold.map(g => {
+      const value = Math.round(g.pureGrams * goldPricePerGram);
+      const stIcon = storageIcons[g.storage] || '';
+      const photoLink = g.photoUrl ? `<a href="${g.photoUrl}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.65rem;text-decoration:none;">📷 View</a>` : '<span style="color:var(--text3);font-size:0.6rem;">—</span>';
+      return `<tr>
+        <td>${typeIcons[g.type]||'🔸'} ${g.type}</td>
+        <td style="font-size:0.78rem;color:var(--text2);">${g.desc || '—'} ${photoLink}</td>
+        <td class="mono">${g.grams}g</td>
+        <td>${g.purity}K</td>
+        <td class="mono" style="color:var(--yellow);">${g.pureGrams}g</td>
+        <td style="font-size:0.75rem;">${stIcon} ${g.storage || '—'}</td>
+        <td class="mono" style="color:var(--green);">₹${value.toLocaleString('en-IN')}</td>
+        <td><button onclick="delPhysicalGold(${g.id})" class="le-del">✕</button></td>
+      </tr>`;
+    }).join('');
+
+    const totalGrams = physicalGold.reduce((s, g) => s + g.grams, 0);
+    const totalPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
+    const totalValue = Math.round(totalPure * goldPricePerGram);
+    summary.innerHTML = `
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Items</span><strong>${physicalGold.length}</strong></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Total Weight</span><strong style="font-family:'JetBrains Mono',monospace;">${totalGrams.toFixed(2)}g</strong></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Pure Gold (24K equiv)</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--yellow);">${totalPure.toFixed(2)}g</strong></div>
+      <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Current Value</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--green);">₹${totalValue.toLocaleString('en-IN')}</strong></div>
+      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">@ ₹${goldPricePerGram.toLocaleString('en-IN')}/g (24K)</div>`;
+  }
+
+  // Consolidated: SGB + Physical
+  const sgbGrams = (JSON.parse(localStorage.getItem('mypf_sgb') || '[]')).reduce((s, h) => s + h.grams, 0);
+  const sgbValue = Math.round(sgbGrams * goldPricePerGram);
+  const pgPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
+  const pgValue = Math.round(pgPure * goldPricePerGram);
+  const totalGoldGrams = sgbGrams + pgPure;
+  const totalGoldValue = sgbValue + pgValue;
+
+  if (consolidated) {
+    consolidated.innerHTML = `
+      <div><div style="font-size:0.62rem;color:var(--text3);margin-bottom:2px;">SGB Gold</div><div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--yellow);">${sgbGrams.toFixed(2)}g · ₹${sgbValue.toLocaleString('en-IN')}</div></div>
+      <div><div style="font-size:0.62rem;color:var(--text3);margin-bottom:2px;">Physical Gold</div><div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--yellow);">${pgPure.toFixed(2)}g · ₹${pgValue.toLocaleString('en-IN')}</div></div>
+      <div><div style="font-size:0.62rem;color:var(--text3);margin-bottom:2px;">Total Gold</div><div style="font-family:'JetBrains Mono',monospace;font-weight:900;font-size:1.1rem;color:var(--green);">${totalGoldGrams.toFixed(2)}g · ₹${totalGoldValue.toLocaleString('en-IN')}</div></div>`;
+  }
+}
 
 // ══ MF TAB SWITCHER ══
 function switchMFTab(id, el) {
