@@ -1506,7 +1506,7 @@ select option { background: var(--s2); }
         <span style="font-size:0.68rem;padding:3px 10px;border-radius:12px;background:rgba(74,158,255,0.12);color:var(--blue);font-weight:600;">AUTO · from HDFC</span>
       </div>
       <div style="font-size:0.72rem;color:var(--text3);margin-bottom:12px;">
-        These funds are fetched from your broker. Values update when you click "Fetch Holdings" in the Broker tab. You cannot edit these — they reflect your actual demat holdings.
+        These funds are fetched from your broker. Values update when you click "Fetch Holdings" below. You cannot edit these — they reflect your actual demat holdings.
       </div>
       <div style="overflow-x:auto;">
         <table>
@@ -1517,6 +1517,64 @@ select option { background: var(--s2); }
         </table>
       </div>
       <div id="mfBrokerSummary" style="margin-top:10px;font-size:0.78rem;color:var(--text3);"></div>
+    </div>
+  </div>
+
+  <!-- BROKER HOLDINGS (moved from Broker tab) -->
+  <div id="mfBrokerHoldingsSection" style="display:none;margin-bottom:20px;">
+    <div class="card" style="margin-bottom:20px;border:1px solid rgba(74,158,255,0.15);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div class="card-hdr" style="margin-bottom:0;">📊 Broker Holdings</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span id="brokerFetchStatus" style="font-size:0.72rem;color:var(--text3);"></span>
+          <button onclick="fetchBrokerHoldings()" id="brokerFetchBtn"
+            style="padding:6px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;" disabled>
+            ⟳ Fetch Holdings
+          </button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Name</th>
+              <th>Qty</th>
+              <th>Avg Price</th>
+              <th>Invested</th>
+              <th>Current Price</th>
+              <th>Current Value</th>
+              <th>P&L</th>
+              <th>P&L %</th>
+            </tr>
+          </thead>
+          <tbody id="brokerHoldingsTbody">
+            <tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">
+              Connect a broker in the Broker tab to fetch your holdings
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;border:1px solid rgba(74,158,255,0.15);">
+      <div class="card-hdr">📈 Portfolio Summary</div>
+      <div id="brokerSummary" style="font-size:0.83rem;color:var(--text3);">
+        No holdings fetched yet. Connect your broker and click "Fetch Holdings" to see your portfolio summary.
+      </div>
+    </div>
+
+    <div class="card" style="border:1px solid rgba(74,158,255,0.15);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div class="card-hdr" style="margin-bottom:0;">💵 Funds & Margins</div>
+        <button onclick="fetchBrokerFunds()" id="brokerFundsBtn"
+          style="padding:5px 14px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.72rem;" disabled>
+          ⟳ Fetch Funds
+        </button>
+      </div>
+      <div id="brokerFundsInfo" style="font-size:0.83rem;color:var(--text3);">
+        Connect a broker to view available funds and margin details.
+      </div>
     </div>
   </div>
 
@@ -1558,18 +1616,6 @@ select option { background: var(--s2); }
       <!-- FUND PICKS TAB -->
       <div id="mftab-picks" class="dp-panel">
 
-        <!-- SUB-TABS: My Portfolio | Discover Funds -->
-        <div style="display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:0;">
-          <button id="fpSubTab-portfolio" onclick="switchFPTab('portfolio')"
-            style="padding:8px 18px;background:none;border:none;border-bottom:2px solid var(--green);color:var(--text);font-weight:700;font-size:0.82rem;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;margin-bottom:-1px;">
-            📊 My Portfolio Funds
-          </button>
-          <button id="fpSubTab-discover" onclick="switchFPTab('discover')"
-            style="padding:8px 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-weight:600;font-size:0.82rem;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;margin-bottom:-1px;">
-            🔍 Discover Funds
-          </button>
-        </div>
-
         <!-- ─── MY PORTFOLIO FUNDS ─── -->
         <div id="fpPanel-portfolio">
 
@@ -1582,7 +1628,7 @@ select option { background: var(--s2); }
 
           <!-- PORTFOLIO FUNDS — only shows added funds -->
           <div id="mfPortfolioEmpty" class="info" style="margin-bottom:16px;">
-            No funds in your portfolio yet. Use <strong>Discover Funds →</strong> to browse and add up to 5 funds.
+            No funds in your portfolio yet. Log investments using the Monthly Planner to start tracking.
           </div>
           <div id="mfRecommended"></div>
 
@@ -1598,64 +1644,6 @@ select option { background: var(--s2); }
           <div id="mfHoldingsEmpty" style="display:none;"></div>
         </div>
 
-        <!-- ─── DISCOVER FUNDS ─── -->
-        <div id="fpPanel-discover" style="display:none;">
-
-          <!-- FILTER BAR -->
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1;">
-              <button class="disc-cat active" data-cat="All" onclick="filterDiscovery('All',this)">All</button>
-              <button class="disc-cat" data-cat="Large Cap" onclick="filterDiscovery('Large Cap',this)">Large Cap</button>
-              <button class="disc-cat" data-cat="Large & Midcap" onclick="filterDiscovery('Large & Midcap',this)">Large+Mid</button>
-              <button class="disc-cat" data-cat="Flexi Cap" onclick="filterDiscovery('Flexi Cap',this)">Flexi Cap</button>
-              <button class="disc-cat" data-cat="Mid Cap" onclick="filterDiscovery('Mid Cap',this)">Mid Cap</button>
-              <button class="disc-cat" data-cat="Small Cap" onclick="filterDiscovery('Small Cap',this)">Small Cap</button>
-              <button class="disc-cat" data-cat="Index" onclick="filterDiscovery('Index',this)">Index</button>
-              <button class="disc-cat" data-cat="ELSS" onclick="filterDiscovery('ELSS',this)">ELSS</button>
-              <button class="disc-cat" data-cat="Debt" onclick="filterDiscovery('Debt',this)">Debt</button>
-              <button class="disc-cat" data-cat="Gold" onclick="filterDiscovery('Gold',this)">🥇 Gold</button>
-              <button class="disc-cat" data-cat="Silver" onclick="filterDiscovery('Silver',this)">🥈 Silver</button>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-size:0.72rem;color:var(--text3);">Sort:</span>
-              <select id="discSort" onchange="renderDiscovery()" style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text);font-size:0.78rem;outline:none;">
-                <option value="ret1y">1Y Return</option>
-                <option value="ret3y">3Y Return</option>
-                <option value="expense">Expense Ratio</option>
-                <option value="aum">AUM</option>
-              </select>
-            </div>
-            <button onclick="loadDiscoveryNAVs()" id="discFetchBtn"
-              style="padding:7px 16px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:0.78rem;font-weight:600;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;white-space:nowrap;">
-              🔄 Refresh Live Returns
-            </button>
-          </div>
-
-          <!-- STATUS -->
-          <div id="discStatus" style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;"></div>
-
-          <!-- DISCOVERY TABLE -->
-          <div style="overflow-x:auto;">
-            <table id="discTable" style="width:100%;border-collapse:collapse;">
-              <thead>
-                <tr style="border-bottom:1px solid var(--border);">
-                  <th style="text-align:left;padding:8px 12px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Fund</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Category</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">1Y Return</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">3Y Return</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Expense</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">AUM</th>
-                  <th style="padding:8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Risk</th>
-                  <th style="padding:8px 12px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Action</th>
-                </tr>
-              </thead>
-              <tbody id="discTbody">
-                <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--text3);font-size:0.83rem;">Click "Refresh Live Returns" to load current data from AMFI</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
       </div>
     </div>
   </div>
@@ -1692,21 +1680,6 @@ select option { background: var(--s2); }
       <div style="grid-column:1/-1;">
         <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund</label>
         <select id="mfLogFundSel" style="width:100%;" onchange="toggleCustomFund()"></select>
-      </div>
-      <div id="mfCustomFundFields" style="display:none;grid-column:1/-1;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px;background:rgba(168,85,247,0.04);border:1px solid rgba(168,85,247,0.15);border-radius:10px;">
-          <div>
-            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">Fund Name</label>
-            <input type="text" id="mfCustomName" placeholder="e.g. Axis Small Cap Fund - Direct Growth" style="width:100%;">
-          </div>
-          <div>
-            <label style="font-size:0.65rem;color:var(--text3);display:block;margin-bottom:4px;">ISIN / Scheme Code</label>
-            <input type="text" id="mfCustomISIN" placeholder="e.g. INF846K01EW2 or 120503" style="width:100%;">
-          </div>
-          <div style="grid-column:1/-1;font-size:0.62rem;color:var(--text3);">
-            💡 ISIN helps fetch live NAV from AMFI. Find it on your broker app or amfiindia.com
-          </div>
-        </div>
       </div>
       <div>
         <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Investment Type</label>
@@ -2046,64 +2019,9 @@ select option { background: var(--s2); }
     </div>
   </div>
 
-  <!-- FETCH HOLDINGS -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-      <div class="card-hdr" style="margin-bottom:0;">📊 Your Holdings</div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <span id="brokerFetchStatus" style="font-size:0.72rem;color:var(--text3);"></span>
-        <button onclick="fetchBrokerHoldings()" id="brokerFetchBtn"
-          style="padding:6px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;" disabled>
-          ⟳ Fetch Holdings
-        </button>
-      </div>
-    </div>
-
-    <!-- Holdings Table -->
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Symbol</th>
-            <th>Name</th>
-            <th>Qty</th>
-            <th>Avg Price</th>
-            <th>Invested</th>
-            <th>Current Price</th>
-            <th>Current Value</th>
-            <th>P&L</th>
-            <th>P&L %</th>
-          </tr>
-        </thead>
-        <tbody id="brokerHoldingsTbody">
-          <tr><td colspan="9" style="color:var(--text3);text-align:center;padding:30px;">
-            Connect a broker above to fetch your holdings
-          </td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- HOLDINGS SUMMARY -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-hdr">📈 Portfolio Summary</div>
-    <div id="brokerSummary" style="font-size:0.83rem;color:var(--text3);">
-      No holdings fetched yet. Connect your broker and click "Fetch Holdings" to see your portfolio summary.
-    </div>
-  </div>
-
-  <!-- FUNDS / MARGIN -->
-  <div class="card" style="margin-bottom:20px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-      <div class="card-hdr" style="margin-bottom:0;">💵 Funds & Margins</div>
-      <button onclick="fetchBrokerFunds()" id="brokerFundsBtn"
-        style="padding:5px 14px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:7px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.72rem;" disabled>
-        ⟳ Fetch Funds
-      </button>
-    </div>
-    <div id="brokerFundsInfo" style="font-size:0.83rem;color:var(--text3);">
-      Connect a broker to view available funds and margin details.
-    </div>
+  <!-- HOLDINGS NOTE -->
+  <div style="padding:12px 16px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15);border-radius:10px;margin-bottom:20px;font-size:0.75rem;color:var(--text3);line-height:1.6;">
+    Once connected, your broker holdings, portfolio summary, and funds info will appear in the <strong style="color:var(--blue);cursor:pointer;" onclick="showPage('mf')">Mutual Funds</strong> tab.
   </div>
 
   <!-- SUPPORTED BROKERS INFO -->
@@ -4181,194 +4099,13 @@ const MF_RECS = MF_CATALOG.filter(f => f.recommended).map((f, i) => ({
 let discCatalogNavs = {};   // schemeCode → { ret1y, ret3y, nav }
 let discActiveFilter = 'All';
 
-function switchFPTab(tab) {
-  document.getElementById('fpPanel-portfolio').style.display = tab === 'portfolio' ? 'block' : 'none';
-  document.getElementById('fpPanel-discover').style.display  = tab === 'discover'  ? 'block' : 'none';
-  const portBtn = document.getElementById('fpSubTab-portfolio');
-  const discBtn = document.getElementById('fpSubTab-discover');
-  portBtn.style.borderBottomColor = tab === 'portfolio' ? 'var(--green)' : 'transparent';
-  portBtn.style.color             = tab === 'portfolio' ? 'var(--text)'  : 'var(--text3)';
-  discBtn.style.borderBottomColor = tab === 'discover'  ? 'var(--green)' : 'transparent';
-  discBtn.style.color             = tab === 'discover'  ? 'var(--text)'  : 'var(--text3)';
-  if (tab === 'discover' && Object.keys(discCatalogNavs).length === 0) {
-    loadDiscoveryNAVs();  // auto-load on first open
-  }
-}
-
-function filterDiscovery(cat, btn) {
-  discActiveFilter = cat;
-  document.querySelectorAll('.disc-cat').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderDiscovery();
-}
-
-async function loadDiscoveryNAVs() {
-  const btn = document.getElementById('discFetchBtn');
-  const status = document.getElementById('discStatus');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching…'; }
-  if (status) status.textContent = 'Fetching live NAVs from AMFI for ' + MF_CATALOG.length + ' funds…';
-
-  // Deduplicate scheme codes
-  const codes = [...new Set(MF_CATALOG.map(f => f.schemeCode))];
-  let loaded = 0;
-
-  await Promise.all(codes.map(async code => {
-    try {
-      const r   = await fetch(`https://api.mfapi.in/mf/${code}`);
-      const d   = await r.json();
-      const nav  = parseFloat(d.data?.[0]?.nav);
-      const nav1y = parseFloat(d.data?.[252]?.nav);
-      const nav3y = parseFloat(d.data?.[756]?.nav);
-      if (!isNaN(nav)) {
-        discCatalogNavs[code] = {
-          nav,
-          ret1y: nav1y > 0 ? ((nav - nav1y) / nav1y * 100) : null,
-          ret3y: nav3y > 0 ? ((nav - nav3y) / nav3y * 100) ** (1/3) * 100 - 100 : null,  // annualised
-        };
-      }
-      loaded++;
-      if (status) status.textContent = `Fetching… ${loaded}/${codes.length} funds loaded`;
-    } catch(e) { /* skip failed */ }
-  }));
-
-  if (status) status.textContent = `✅ Live returns loaded for ${loaded}/${codes.length} funds · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
-  if (btn) { btn.disabled = false; btn.textContent = '🔄 Refresh Live Returns'; }
-  renderDiscovery();
-}
-
-function renderDiscovery() {
-  const tbody  = document.getElementById('discTbody');
-  const sort   = document.getElementById('discSort')?.value || 'ret1y';
-  if (!tbody) return;
-
-  let funds = discActiveFilter === 'All'
-    ? [...MF_CATALOG]
-    : MF_CATALOG.filter(f => f.category === discActiveFilter ||
-        (discActiveFilter === 'Index'  && f.category === 'Index') ||
-        (discActiveFilter === 'Debt'   && f.category === 'Debt') ||
-        (discActiveFilter === 'Gold'   && f.category === 'Gold') ||
-        (discActiveFilter === 'Silver' && f.category === 'Silver'));
-
-  // Attach live nav data
-  funds = funds.map(f => ({
-    ...f,
-    _ret1y: discCatalogNavs[f.schemeCode]?.ret1y ?? null,
-    _ret3y: discCatalogNavs[f.schemeCode]?.ret3y ?? null,
-  }));
-
-  // Sort
-  funds.sort((a, b) => {
-    if (sort === 'ret1y')   return (b._ret1y ?? -999) - (a._ret1y ?? -999);
-    if (sort === 'ret3y')   return (b._ret3y ?? -999) - (a._ret3y ?? -999);
-    if (sort === 'expense') return parseFloat(a.expense) - parseFloat(b.expense);
-    if (sort === 'aum')     return parseFloat(b.aum.replace(/[₹,\sCr]/g,'')) - parseFloat(a.aum.replace(/[₹,\sCr]/g,''));
-    return 0;
-  });
-
-  // Check which are in portfolio (by schemeCode match with MF_CATALOG recommended)
-  const inPortfolioCodes = new Set(
-    state.selectedMFs.map(rank => {
-      const f = MF_RECS.find(x => x.rank === rank);
-      return f?.schemeCode;
-    }).filter(Boolean)
-  );
-
-  const retCell = (val) => {
-    if (val === null) return '<span class="ret-na">—</span>';
-    const cls = val >= 0 ? 'ret-pos' : 'ret-neg';
-    return `<span class="${cls}">${val >= 0 ? '+' : ''}${val.toFixed(1)}%</span>`;
-  };
-
-  const riskColor = { 'Low':'var(--green)', 'Med':'var(--yellow)', 'Med-High':'var(--amber)', 'High':'var(--red)', 'V.High':'#ff4444' };
-
-  tbody.innerHTML = funds.map(f => {
-    const inPort = inPortfolioCodes.has(f.schemeCode);
-    const rec    = f.recommended;
-    return `<tr>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div>
-            <div style="font-weight:600;color:${f.color};margin-bottom:2px;">
-              ${f.name}
-              ${rec ? '<span style="font-size:0.6rem;background:rgba(62,207,142,0.12);color:var(--green);border-radius:4px;padding:1px 6px;margin-left:4px;font-weight:700;">★ PICKS</span>' : ''}
-            </div>
-            <div style="font-size:0.68rem;color:var(--text3);">${f.fundHouse} · ${f.role}</div>
-          </div>
-        </div>
-      </td>
-      <td><span style="font-size:0.7rem;color:var(--text2);background:var(--s3);padding:2px 8px;border-radius:4px;white-space:nowrap;">${f.category}</span></td>
-      <td>${retCell(f._ret1y)}</td>
-      <td>${retCell(f._ret3y)}</td>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--text2);">${f.expense}</td>
-      <td style="font-size:0.75rem;color:var(--text3);">${f.aum}</td>
-      <td><span style="font-size:0.7rem;font-weight:600;color:${riskColor[f.risk]||'var(--text2)'};">${f.risk}</span></td>
-      <td>
-        ${inPort
-          ? `<button onclick="removeDiscFund(${f.schemeCode})" style="padding:5px 12px;background:rgba(255,87,87,0.1);border:1px solid rgba(255,87,87,0.3);border-radius:6px;color:var(--red);font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;">✓ In Portfolio</button>`
-          : `<button onclick="addDiscFund(${f.id})" style="padding:5px 12px;background:rgba(62,207,142,0.1);border:1px solid rgba(62,207,142,0.25);border-radius:6px;color:var(--green);font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;">+ Add</button>`
-        }
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function addDiscFund(id) {
-  const fund = MF_CATALOG.find(f => f.id === id);
-  if (!fund) return;
-
-  // Check if already in portfolio by schemeCode
-  const already = MF_RECS.find(f => f.schemeCode === fund.schemeCode);
-  if (already && state.selectedMFs.includes(already.rank)) {
-    alert(`${fund.name} is already in your portfolio.`); return;
-  }
-
-  if (state.selectedMFs.length >= 5) {
-    // Offer swap
-    const names = state.selectedMFs.map(r => {
-      const f = MF_RECS.find(x => x.rank === r);
-      return `${r}: ${f?.name || '?'}`;
-    }).join('\n');
-    const choice = prompt(`You already have 5 funds. Enter the number (1-5) of the fund to replace:\n\n${names}`);
-    const rankToRemove = parseInt(choice);
-    if (!rankToRemove || !state.selectedMFs.includes(rankToRemove)) { alert('Invalid selection.'); return; }
-    state.selectedMFs = state.selectedMFs.filter(r => r !== rankToRemove);
-    // Replace the MF_RECS entry
-    const idx = MF_RECS.findIndex(f => f.rank === rankToRemove);
-    if (idx >= 0) {
-      MF_RECS[idx] = { ...fund, rank: rankToRemove, cagr3:'—', cagr5:'—', tag: MF_RECS[idx].tag, ideal: MF_RECS[idx].ideal };
-    }
-  } else {
-    // Find a free rank slot (check ALL MF_RECS, not just selectedMFs)
-    const usedRanks = new Set(MF_RECS.map(f => f.rank));
-    let newRank = 1;
-    while (usedRanks.has(newRank)) newRank++;
-    // Check if fund already in MF_RECS catalog
-    const existing = MF_RECS.find(f => f.schemeCode === fund.schemeCode);
-    if (existing) {
-      state.selectedMFs.push(existing.rank);
-    } else {
-      MF_RECS.push({ ...fund, rank: newRank, cagr3:'—', cagr5:'—', tag:'badge-blue', ideal:'20%' });
-      state.selectedMFs.push(newRank);
-    }
-  }
-
-  save(); buildMFRecs(); renderSelectedMFs(); buildPlanTable();
-  buildMFLogFundDropdown(); renderMFTracker(); renderMFNavUpdate();
-  renderDiscovery();
-
-  const status = document.getElementById('discStatus');
-  if (status) status.textContent = `✅ ${fund.name} added to your portfolio.`;
-}
-
-function removeDiscFund(schemeCode) {
-  const rec = MF_RECS.find(f => f.schemeCode === schemeCode);
-  if (rec && state.selectedMFs.includes(rec.rank)) {
-    state.selectedMFs = state.selectedMFs.filter(r => r !== rec.rank);
-    save(); buildMFRecs(); renderSelectedMFs(); buildPlanTable();
-    buildMFLogFundDropdown(); renderMFTracker(); renderMFNavUpdate();
-    renderDiscovery();
-  }
-}
+// Discovery functions removed — stubs to prevent errors
+function switchFPTab() {}
+function filterDiscovery() {}
+function loadDiscoveryNAVs() {}
+function renderDiscovery() {}
+function addDiscFund() {}
+function removeDiscFund() {}
 
 // MF investment logs: [{id, fundRank, fundName, type, amt, nav, units, date, note}]
 // mfLogs declared above
@@ -4987,21 +4724,14 @@ function buildMFLogFundDropdown() {
     options += '</optgroup>';
   }
   
-  // 4. Add new custom fund option
-  options += '<option value="__custom__">➕ Add a new fund (not listed)…</option>';
-  
   if (!options.includes('optgroup')) {
-    options = '<option value="" disabled selected>No funds yet — add below or pick in Mutual Funds tab</option>' + options;
+    options = '<option value="" disabled selected>No funds yet — connect broker or add custom funds in Settings</option>';
   }
   
   sel.innerHTML = options;
 }
 
-function toggleCustomFund() {
-  const sel = document.getElementById('mfLogFundSel');
-  const fields = document.getElementById('mfCustomFundFields');
-  if (fields) fields.style.display = sel.value === '__custom__' ? 'block' : 'none';
-}
+function toggleCustomFund() {}
 
 function addMFLog() {
   const selVal = document.getElementById('mfLogFundSel').value;
@@ -5015,25 +4745,7 @@ function addMFLog() {
   let fundName = '';
   let customId = null;
 
-  if (selVal === '__custom__') {
-    // Custom fund entry
-    const name = document.getElementById('mfCustomName')?.value.trim();
-    const isin = document.getElementById('mfCustomISIN')?.value.trim();
-    if (!name) { alert('Enter the fund name'); return; }
-    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
-    // Save custom fund to list
-    const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
-    // Check if already exists by name
-    let existing = customFunds.find(cf => cf.name.toLowerCase() === name.toLowerCase());
-    if (!existing) {
-      existing = { id: Date.now(), name, isin: isin || '' };
-      customFunds.push(existing);
-      localStorage.setItem('mypf_custom_mfs', JSON.stringify(customFunds));
-    }
-    customId = 'custom_' + existing.id;
-    fundName = name;
-    rank = customId;
-  } else if (selVal.startsWith('custom_')) {
+  if (selVal.startsWith('custom_')) {
     // Existing custom fund
     customId = selVal;
     const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
@@ -5068,18 +4780,16 @@ function addMFLog() {
   renderMFSummaryStrip();
   renderSelectedMFs();
   updateDonut();
-  buildMFLogFundDropdown(); // refresh dropdown with newly added custom fund
+  buildMFLogFundDropdown();
+  renderLogs(); // Update planner's Investment History
   // Clear
   ['mfLogAmt','mfLogNav','mfLogNote'].forEach(id => document.getElementById(id).value = '');
-  if (document.getElementById('mfCustomName')) document.getElementById('mfCustomName').value = '';
-  if (document.getElementById('mfCustomISIN')) document.getElementById('mfCustomISIN').value = '';
-  document.getElementById('mfCustomFundFields').style.display = 'none';
   document.getElementById('mfLogFundSel').value = '';
 }
 
 function delMFLog(id) {
   mfLogs = mfLogs.filter(l => l.id !== id);
-  saveMF(); renderMFTracker(); renderMFSummaryStrip(); renderSelectedMFs(); updateDonut();
+  saveMF(); renderMFTracker(); renderMFSummaryStrip(); renderSelectedMFs(); updateDonut(); renderLogs();
 }
 
 // ── TRACKER (holdings table + per-fund log) ──
@@ -6893,6 +6603,8 @@ function applyBrokerMode() {
   const mfManualHeader = document.getElementById('mfManualHeader');
   if (mfBrokerSection) mfBrokerSection.style.display = on ? '' : 'none';
   if (mfManualHeader) mfManualHeader.style.display = on ? '' : 'none';
+  const mfBrokerHoldingsSection = document.getElementById('mfBrokerHoldingsSection');
+  if (mfBrokerHoldingsSection) mfBrokerHoldingsSection.style.display = on ? '' : 'none';
   if (on) renderBrokerMFSection();
   updateDonut();
 }
