@@ -3366,7 +3366,8 @@ function updateDonut() {
   const fdV = state.fds.reduce((s,f) => s + f.principal, 0);
   const rdV = state.rds.reduce((s,r) => s + r.monthly * r.paidMonths, 0);
 
-  const curPriceGold = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || 0;
+  const cachedGoldRate = (() => { try { return JSON.parse(localStorage.getItem('mypf_gold_rate'))?.pricePerGram || 0; } catch(e) { return 0; } })();
+  const curPriceGold = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || cachedGoldRate || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 0;
   const manualGoldV = sgbHoldings.reduce((s, h) => {
     const cp = curPriceGold || h.currentPrice || h.issuePrice;
     return s + Math.round(h.grams * cp);
@@ -3405,7 +3406,7 @@ function updateDonut() {
   }
 
   // Physical gold value (pure grams × current gold price per gram)
-  const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 7500;
+  const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || cachedGoldRate || 7500;
   const physGoldV = physicalGold.reduce((s, g) => s + Math.round(g.pureGrams * pgGoldPrice), 0);
   const goldV = sgbV + physGoldV;
 
@@ -3792,6 +3793,7 @@ function applyGoldRate(pricePerGram, sourceLabel) {
   const updEl = document.getElementById('goldLastUpdated');
   if (updEl) updEl.textContent = ts;
   localStorage.setItem('mypf_gold_rate', JSON.stringify({ pricePerGram, ts, sourceLabel }));
+  localStorage.setItem('mypf_gold_price_per_gram', pricePerGram);
   renderSGBHoldings();
 }
 
@@ -3803,6 +3805,7 @@ function restoreCachedGoldRate() {
     if (priceEl && !priceEl.value) priceEl.value = cached.pricePerGram;
     const formPriceEl = document.getElementById('sgbFormCurrentPrice');
     if (formPriceEl) formPriceEl.value = Math.round(cached.pricePerGram);
+    localStorage.setItem('mypf_gold_price_per_gram', Math.round(cached.pricePerGram));
     const src = document.getElementById('goldRateSource');
     if (src) {
       src.innerHTML = `✅ <strong style="color:var(--green);">₹${Math.round(cached.pricePerGram).toLocaleString('en-IN')}/g</strong>`
@@ -3941,7 +3944,7 @@ function renderPhysicalGold() {
   const summary = document.getElementById('pgSummary');
   const consolidated = document.getElementById('goldConsolidatedContent');
   // Get current gold price per gram (from SGB section or cached)
-  const goldPricePerGram = parseFloat(document.getElementById('sgbCurrentPrice')?.textContent) || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 7500;
+  const goldPricePerGram = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || (() => { try { return JSON.parse(localStorage.getItem('mypf_gold_rate'))?.pricePerGram || 7500; } catch(e) { return 7500; } })();
 
   if (!physicalGold.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:20px;">No physical gold items tracked yet</td></tr>';
