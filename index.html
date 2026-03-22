@@ -1220,13 +1220,22 @@ select option { background: var(--s2); }
 
   <!-- ═══ PHYSICAL GOLD TRACKER ═══ -->
   <div style="margin-top:28px;">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div style="width:36px;height:36px;border-radius:10px;background:rgba(240,192,64,0.12);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💍</div>
-      <div>
+      <div style="flex:1;min-width:200px;">
         <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1.1rem;">Physical Gold & Jewellery</div>
         <div style="font-size:0.75rem;color:var(--text2);">Track your jewellery, coins, bars — see consolidated value</div>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span id="pgRateSource" style="font-size:0.72rem;color:var(--text3);"></span>
+        <button onclick="fetchLiveGoldRate()" id="pgFetchBtn"
+          style="padding:5px 12px;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.25);border-radius:7px;color:var(--yellow);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;">
+          ⟳ Fetch Gold Rates
+        </button>
+      </div>
     </div>
+    <!-- Purity-wise rate display -->
+    <div id="pgPurityRates" style="display:none;margin-bottom:14px;padding:10px 16px;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;"></div>
 
     <div class="g2" style="margin-bottom:16px;">
       <!-- ADD ITEM -->
@@ -3731,10 +3740,10 @@ async function fetchLiveGoldRate() {
         }
         if (!usdInr) usdInr = 86.5; // fallback
         const inrPerGram24K = (usdPerOz * usdInr) / 31.1035;
-        const domesticPrice = Math.round(inrPerGram24K * 1.03); // +3% duties
-        if (domesticPrice > 3000 && domesticPrice < 30000) {
+        const domesticPrice = Math.round(inrPerGram24K * 1.085); // +8.5% India duties (customs + AIDC + GST spread)
+        if (domesticPrice > 3000 && domesticPrice < 50000) {
           pricePerGram = domesticPrice;
-          sourceLabel  = `Spot Gold · $${usdPerOz.toFixed(0)}/oz · ₹${usdInr.toFixed(1)}/$ · +3% duties`;
+          sourceLabel  = `Spot Gold · $${usdPerOz.toFixed(0)}/oz · ₹${usdInr.toFixed(1)}/$ · +8.5% duties`;
           const usdOzEl  = document.getElementById('goldUsdOz');
           const usdInrEl = document.getElementById('goldUsdInr');
           if (usdOzEl)  usdOzEl.textContent = `$${usdPerOz.toFixed(2)}`;
@@ -3795,6 +3804,9 @@ function applyGoldRate(pricePerGram, sourceLabel) {
   localStorage.setItem('mypf_gold_rate', JSON.stringify({ pricePerGram, ts, sourceLabel }));
   localStorage.setItem('mypf_gold_price_per_gram', pricePerGram);
   renderSGBHoldings();
+  renderPhysicalGold();
+  updatePurityRates(pricePerGram, ts);
+  updateDonut();
 }
 
 function restoreCachedGoldRate() {
@@ -3813,7 +3825,24 @@ function restoreCachedGoldRate() {
       src.style.color = 'var(--text2)';
     }
     renderSGBHoldings();
+    renderPhysicalGold();
+    updatePurityRates(Math.round(cached.pricePerGram), cached.ts);
   } catch(e) {}
+}
+
+function updatePurityRates(price24K, ts) {
+  const rates = { '24K': price24K, '22K': Math.round(price24K * 22/24), '18K': Math.round(price24K * 18/24), '14K': Math.round(price24K * 14/24) };
+  const container = document.getElementById('pgPurityRates');
+  if (container) {
+    container.style.display = 'flex';
+    container.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;width:100%;">
+      <span style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Today's Rates</span>
+      ${Object.entries(rates).map(([k,v]) => `<span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;"><strong style="color:var(--yellow);">${k}</strong> <span style="color:var(--text1);">₹${v.toLocaleString('en-IN')}/g</span></span>`).join('')}
+      <span style="font-size:0.58rem;color:var(--text3);margin-left:auto;">${ts || ''}</span>
+    </div>`;
+  }
+  const pgSrc = document.getElementById('pgRateSource');
+  if (pgSrc) pgSrc.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${price24K.toLocaleString('en-IN')}/g</span>`;
 }
 
 function addSGBHolding() {
@@ -3954,13 +3983,14 @@ function renderPhysicalGold() {
     const storageIcons = { 'Bank Locker':'🏦', 'Home Safe':'🏠', 'Home':'🏠', 'Parents House':'👨‍👩‍👧', 'Worn Daily':'💍', 'Other':'📦' };
     tbody.innerHTML = physicalGold.map(g => {
       const value = Math.round(g.pureGrams * goldPricePerGram);
+      const rateForPurity = Math.round(goldPricePerGram * g.purity / 24);
       const stIcon = storageIcons[g.storage] || '';
       const photoLink = g.photoUrl ? `<a href="${g.photoUrl}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.65rem;text-decoration:none;">📷 View</a>` : '<span style="color:var(--text3);font-size:0.6rem;">—</span>';
       return `<tr>
         <td>${typeIcons[g.type]||'🔸'} ${g.type}</td>
         <td style="font-size:0.78rem;color:var(--text2);">${g.desc || '—'} ${photoLink}</td>
         <td class="mono">${g.grams}g</td>
-        <td>${g.purity}K</td>
+        <td>${g.purity}K <span style="font-size:0.55rem;color:var(--text3);">₹${rateForPurity.toLocaleString('en-IN')}/g</span></td>
         <td class="mono" style="color:var(--yellow);">${g.pureGrams}g</td>
         <td style="font-size:0.75rem;">${stIcon} ${g.storage || '—'}</td>
         <td class="mono" style="color:var(--green);">₹${value.toLocaleString('en-IN')}</td>
@@ -3980,7 +4010,7 @@ function renderPhysicalGold() {
   }
 
   // Consolidated: SGB + Physical
-  const sgbGrams = (JSON.parse(localStorage.getItem('mypf_sgb') || '[]')).reduce((s, h) => s + h.grams, 0);
+  const sgbGrams = (JSON.parse(localStorage.getItem('mypf_sgb_v2') || '[]')).reduce((s, h) => s + h.grams, 0);
   const sgbValue = Math.round(sgbGrams * goldPricePerGram);
   const pgPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
   const pgValue = Math.round(pgPure * goldPricePerGram);
