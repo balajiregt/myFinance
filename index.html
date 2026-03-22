@@ -4338,10 +4338,10 @@ function addDiscFund(id) {
       MF_RECS[idx] = { ...fund, rank: rankToRemove, cagr3:'—', cagr5:'—', tag: MF_RECS[idx].tag, ideal: MF_RECS[idx].ideal };
     }
   } else {
-    // Find a free rank slot
-    const usedRanks = new Set(state.selectedMFs);
+    // Find a free rank slot (check ALL MF_RECS, not just selectedMFs)
+    const usedRanks = new Set(MF_RECS.map(f => f.rank));
     let newRank = 1;
-    while (usedRanks.has(newRank) && newRank <= 5) newRank++;
+    while (usedRanks.has(newRank)) newRank++;
     // Check if fund already in MF_RECS catalog
     const existing = MF_RECS.find(f => f.schemeCode === fund.schemeCode);
     if (existing) {
@@ -5106,6 +5106,9 @@ function renderMFTracker() {
   const tbody = document.getElementById('mfHoldingsTbody');
   tbody.innerHTML = Object.values(byFund).map(fd => {
     const f = MF_RECS.find(x => x.rank === fd.rank);
+    const fColor = f?.color || 'var(--blue)';
+    const fTag = f?.tag || 'badge-blue';
+    const fCategory = f?.category || (typeof fd.rank === 'string' && fd.rank.startsWith('custom_') ? 'Custom' : typeof fd.rank === 'string' && fd.rank.startsWith('broker_') ? 'Broker' : '—');
     const navData = mfNavs[fd.rank];
     const curNav = navData ? navData.nav : null;
     const peakNav = navData ? navData.peakNav : null;
@@ -5126,8 +5129,8 @@ function renderMFTracker() {
     }
 
     return `<tr>
-      <td style="font-weight:600;color:${f.color}">${fd.name}</td>
-      <td><span class="badge ${f.tag}" style="font-size:0.62rem;">${f.type}</span></td>
+      <td style="font-weight:600;color:${fColor}">${fd.name}</td>
+      <td><span class="badge ${fTag}" style="font-size:0.62rem;">${fCategory}</span></td>
       <td class="mono">₹${fd.totalAmt.toLocaleString('en-IN')}</td>
       <td class="mono">₹${avgNav.toFixed(2)}</td>
       <td class="mono">${curNav ? '₹' + curNav.toFixed(2) : '<span style="color:var(--text3)">—</span>'}</td>
@@ -5150,7 +5153,7 @@ function renderMFTracker() {
       const typeColors = { SIP:'badge-blue', Lumpsum:'badge-amber', 'Step-up':'badge-purple', 'Top-up':'badge-green' };
       return `<tr>
         <td>${new Date(l.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
-        <td style="color:${f.color};font-weight:500">${f.name}</td>
+        <td style="color:${f?.color || 'var(--blue)'};font-weight:500">${l.fundName || f?.name || 'Unknown'}</td>
         <td><span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span></td>
         <td class="mono">₹${l.amt.toLocaleString('en-IN')}</td>
         <td class="mono">₹${l.nav.toFixed(2)}</td>
@@ -5447,10 +5450,12 @@ function delLog(id) {
 function renderLogs() {
   buildLogFundDropdown();
   const container = document.getElementById('logEntries');
-  const deployed = state.logs.reduce((s,l)=>s+l.amt,0);
+  // Show mfLogs (the actual investment entries) in the planner history
+  const allLogs = [...mfLogs, ...state.logs.map(l => ({ ...l, fundName: l.fund, fundRank: null }))];
+  const deployed = allLogs.reduce((s,l)=>s+l.amt,0);
 
-  if (!state.logs.length) {
-    container.innerHTML = '<div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged this month.</div>';
+  if (!allLogs.length) {
+    container.innerHTML = '<div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged yet.</div>';
     document.getElementById('paDeployed').textContent = '₹ 0';
     document.getElementById('logTotal').style.display = 'none';
     return;
@@ -5459,16 +5464,20 @@ function renderLogs() {
   document.getElementById('logTotalVal').textContent = '₹' + deployed.toLocaleString('en-IN');
   document.getElementById('paDeployed').textContent = '₹\u202f' + deployed.toLocaleString('en-IN');
 
-  const typeColors = { SIP:'badge-blue', Lumpsum:'badge-amber', 'Top-up':'badge-green', 'Step-up SIP':'badge-purple' };
-  container.innerHTML = state.logs.map(l => `
-    <div class="log-entry">
+  const typeColors = { SIP:'badge-blue', Lumpsum:'badge-amber', 'Top-up':'badge-green', 'Step-up':'badge-purple', 'Step-up SIP':'badge-purple' };
+  // Sort by date descending
+  allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  container.innerHTML = allLogs.map(l => {
+    const name = l.fundName || l.fund || 'Unknown';
+    const delFn = l.fundRank !== undefined && l.fundRank !== null ? `delMFLog(${l.id})` : `delLog(${l.id})`;
+    return `<div class="log-entry">
       <span class="le-date">${new Date(l.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
-      <div class="le-fund">${l.fund}<small>${l.type}</small></div>
+      <div class="le-fund">${name}<small>${l.type}</small></div>
       <span class="le-amt">₹${l.amt.toLocaleString('en-IN')}</span>
       <span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span>
-      <button class="le-del" onclick="delLog(${l.id})">✕</button>
-    </div>
-  `).join('');
+      <button class="le-del" onclick="${delFn}">✕</button>
+    </div>`;
+  }).join('');
 }
 
 // ══ SHARESAVE TIMELINE — called from initDashboard ══
