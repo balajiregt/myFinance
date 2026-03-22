@@ -543,9 +543,9 @@ select option { background: var(--s2); }
     </div>
     <div class="asset-tile" style="--tile-color:var(--c-gold)" onclick="gotoPage('gold', null)">
       <div class="tile-icon">🥇</div>
-      <div class="tile-name">SGB Gold</div>
+      <div class="tile-name">Gold</div>
       <div class="tile-val" style="color:var(--c-gold)" id="tile-gold">₹ —</div>
-      <div class="tile-sub">Sovereign Gold Bond</div>
+      <div class="tile-sub" id="tile-gold-sub">SGB + Physical</div>
       <div class="tile-pct" style="color:var(--text3)" id="tile-pct-gold">—% of portfolio</div>
       <div class="tile-source src-manual" id="tile-src-gold">MANUAL</div>
     </div>
@@ -607,7 +607,7 @@ select option { background: var(--s2); }
       <div class="donut-legend" id="donutLegend">
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-stocks)"></div><span class="dl-name">Stocks</span><span class="dl-pct" id="dl-stocks" style="color:var(--c-stocks)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-mf)"></div><span class="dl-name">Mutual Funds</span><span class="dl-pct" id="dl-mf" style="color:var(--c-mf)">—</span></div>
-        <div class="dl-item"><div class="dl-dot" style="background:var(--c-gold)"></div><span class="dl-name">SGB Gold</span><span class="dl-pct" id="dl-gold" style="color:var(--c-gold)">—</span></div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--c-gold)"></div><span class="dl-name">Gold</span><span class="dl-pct" id="dl-gold" style="color:var(--c-gold)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-fd)"></div><span class="dl-name">Fixed Deposits</span><span class="dl-pct" id="dl-fd" style="color:var(--c-fd)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-rd)"></div><span class="dl-name">Recurring Deposits</span><span class="dl-pct" id="dl-rd" style="color:var(--c-rd)">—</span></div>
         <div class="dl-item"><div class="dl-dot" style="background:var(--c-sharesave)"></div><span class="dl-name">Share Plan</span><span class="dl-pct" id="dl-ss" style="color:var(--c-sharesave)">—</span></div>
@@ -3393,12 +3393,17 @@ function updateDonut() {
   }
 
   // SGB: broker first, else manual (SGBs rarely in broker API, usually manual)
-  let goldV, goldSource;
+  let sgbV, goldSource;
   if (sgbPref === 'manual_only' || !brokerOn || !hasBrokerData || brokerSgbV === 0) {
-    goldV = manualGoldV; goldSource = 'manual';
+    sgbV = manualGoldV; goldSource = 'manual';
   } else {
-    goldV = Math.round(brokerSgbV); goldSource = 'broker';
+    sgbV = Math.round(brokerSgbV); goldSource = 'broker';
   }
+
+  // Physical gold value (pure grams × current gold price per gram)
+  const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 7500;
+  const physGoldV = physicalGold.reduce((s, g) => s + Math.round(g.pureGrams * pgGoldPrice), 0);
+  const goldV = sgbV + physGoldV;
 
   // PO value
   let poV = 0;
@@ -3427,6 +3432,14 @@ function updateDonut() {
     document.getElementById('tile-mf-sub').textContent = 'Broker + Manual combined';
   } else if (mfSource === 'broker') {
     document.getElementById('tile-mf-sub').textContent = classified.mf.length + ' funds via broker';
+  }
+  // Gold subtitle: show SGB + Physical breakdown
+  const goldSubEl = document.getElementById('tile-gold-sub');
+  if (goldSubEl) {
+    if (sgbV > 0 && physGoldV > 0) goldSubEl.textContent = `SGB ₹${fmt(sgbV)} + Physical ₹${fmt(physGoldV)}`;
+    else if (physGoldV > 0) goldSubEl.textContent = `${physicalGold.length} physical items`;
+    else if (sgbV > 0) goldSubEl.textContent = `${sgbHoldings.length} SGB tranche${sgbHoldings.length > 1 ? 's' : ''}`;
+    else goldSubEl.textContent = 'SGB + Physical';
   }
 
   // Source badge for MF: show "BOTH" when combined
