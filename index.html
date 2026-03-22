@@ -2381,9 +2381,13 @@ function save() { localStorage.setItem('mypf_v3', JSON.stringify(state)); }
 
 // ── DATA STORES (all declared early so every function can access) ──
 let fds = [];
-try { fds = JSON.parse(localStorage.getItem('mypf_fds') || '[]'); state.fds = fds; } catch(e){}
+try { fds = JSON.parse(localStorage.getItem('mypf_fds') || '[]'); } catch(e){}
+if (!fds.length && state.fds?.length) { fds = state.fds; localStorage.setItem('mypf_fds', JSON.stringify(fds)); }
+state.fds = fds;
 let rds = [];
-try { rds = JSON.parse(localStorage.getItem('mypf_rds') || '[]'); state.rds = rds; } catch(e){}
+try { rds = JSON.parse(localStorage.getItem('mypf_rds') || '[]'); } catch(e){}
+if (!rds.length && state.rds?.length) { rds = state.rds; localStorage.setItem('mypf_rds', JSON.stringify(rds)); }
+state.rds = rds;
 let sgbHoldings = [];
 try { sgbHoldings = JSON.parse(localStorage.getItem('mypf_sgb_v2') || '[]'); state.sgb = sgbHoldings; } catch(e){}
 let mfLogs = [];
