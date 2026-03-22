@@ -431,7 +431,7 @@ select option { background: var(--s2); }
     <button class="ntab" onclick="gotoPage('gold', this)">Gold</button>
     <button class="ntab" onclick="gotoPage('po', this)">Post Office</button>
     <button class="ntab" onclick="gotoPage('mf', this)">Mutual Funds</button>
-    <button class="ntab" onclick="gotoPage('planner', this)">Monthly Planner</button>
+    <button class="ntab" onclick="gotoPage('planner', this)">SIP Planner</button>
     <button class="ntab" onclick="gotoPage('budget', this)">💰 Budget</button>
     <button class="ntab" onclick="gotoPage('broker', this)">🏦 Broker</button>
     <button class="ntab" onclick="gotoPage('settings', this)">⚙️ Settings</button>
@@ -1628,7 +1628,7 @@ select option { background: var(--s2); }
 
           <!-- PORTFOLIO FUNDS — only shows added funds -->
           <div id="mfPortfolioEmpty" class="info" style="margin-bottom:16px;">
-            No funds in your portfolio yet. Log investments using the Monthly Planner to start tracking.
+            No funds in your portfolio yet. Connect a broker or add funds to start tracking.
           </div>
           <div id="mfRecommended"></div>
 
@@ -1652,76 +1652,105 @@ select option { background: var(--s2); }
 </div>
 </div>
 
-<!-- ══════════════════ MONTHLY PLANNER ══════════════════ -->
+<!-- ══════════════════ SIP PLANNER ══════════════════ -->
 <div id="page-planner" class="page">
 <div class="wrap">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+    <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,200,150,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📅</div>
     <div>
-      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Monthly Investment Planner</div>
-      <div style="font-size:0.83rem;color:var(--text2);margin-top:2px;">Set your strategy · SIP allocation · Use ✨ AI bubble for market analysis</div>
+      <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">SIP Planner</div>
+      <div style="font-size:0.8rem;color:var(--text2);">Plan your monthly SIPs · Set reminders · Track what you intend to invest</div>
     </div>
   </div>
 
-  <!-- ALLOCATION SUMMARY -->
-  <div class="card-hdr" style="margin-bottom:12px;">This Month's Budget</div>
+  <!-- SIP DAY SETTING -->
   <div class="card" style="margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;"><span id="paPctLabel">—%</span> Savings Target</div><div id="pa15" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--yellow)">₹ —</div></div>
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">SIP Pool</div><div id="paSIP" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--green)">₹ —</div></div>
-      <div><div style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Deployed This Month</div><div id="paDeployed" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.2rem;color:var(--amber)">₹ 0</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="card-hdr" style="margin-bottom:4px;">🗓️ SIP Day</div>
+        <div style="font-size:0.72rem;color:var(--text3);">Which day of the month do your SIPs execute?</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="number" id="sipDayInput" min="1" max="28" value="1" style="width:60px;text-align:center;font-weight:700;" onchange="updateSIPTracker()">
+        <div style="text-align:right;">
+          <div id="sipCountdown" style="font-weight:800;font-size:0.95rem;color:var(--green);"></div>
+          <div id="sipAction" style="font-size:0.68rem;color:var(--text3);margin-top:2px;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- LOG INVESTMENT (moved from MF tab — primary action) -->
-  <div class="card-hdr" style="margin-bottom:12px;">📝 Log Investment</div>
+  <!-- MONTHLY BUDGET OVERVIEW -->
   <div class="card" style="margin-bottom:20px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;">
-      <div style="grid-column:1/-1;">
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund</label>
-        <select id="mfLogFundSel" style="width:100%;" onchange="toggleCustomFund()"></select>
+    <div class="card-hdr" style="margin-bottom:12px;">💰 Monthly SIP Budget</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Salary</div>
+        <div id="sipPlanSalary" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;">₹0</div>
       </div>
-      <div>
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Investment Type</label>
-        <select id="mfLogType" style="width:100%;">
-          <option value="SIP">SIP (Monthly)</option>
-          <option value="Lumpsum">Lumpsum</option>
-          <option value="Step-up">Step-up SIP</option>
-          <option value="Top-up">Top-up</option>
-        </select>
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">Total SIP Plan</div>
+        <div id="sipPlanTotal" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;color:var(--green);">₹0</div>
       </div>
-      <div>
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Amount (₹)</label>
-        <input type="number" id="mfLogAmt" placeholder="e.g. 5000">
+      <div style="text-align:center;">
+        <div style="font-size:0.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;">% of Salary</div>
+        <div id="sipPlanPct" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1rem;color:var(--blue);">0%</div>
       </div>
-      <div>
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">NAV at Purchase (₹)</label>
-        <input type="number" id="mfLogNav" placeholder="e.g. 95.42" step="0.01">
-      </div>
-      <div>
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Date</label>
-        <input type="date" id="mfLogDate">
-      </div>
-      <div>
-        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Note (optional)</label>
-        <input type="text" id="mfLogNote" placeholder="e.g. Market dip lumpsum">
-      </div>
-      <div style="grid-column:1/-1;">
-        <button class="btn btn-green" onclick="addMFLog()" style="width:100%;padding:11px;">+ Log Investment</button>
-      </div>
-    </div>
-    <div class="info" style="margin-top:14px;font-size:0.8rem;">
-      💡 <strong>Where to find NAV:</strong> Check your broker app or <strong>amfiindia.com</strong> for the exact NAV on your purchase date.
     </div>
   </div>
 
-  <!-- INVESTMENT LOG HISTORY -->
-  <div class="card-hdr" style="margin-bottom:12px;">📋 Investment History</div>
+  <!-- ADD SIP PLAN -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-hdr" style="margin-bottom:12px;">+ Add SIP Plan</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;">
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Fund / Investment</label>
+        <input type="text" id="sipPlanName" placeholder="e.g. Axis Bluechip, PPF, RD" style="width:100%;">
+      </div>
+      <div>
+        <label style="font-size:0.7rem;color:var(--text3);display:block;margin-bottom:5px;">Monthly Amount (₹)</label>
+        <input type="number" id="sipPlanAmt" placeholder="e.g. 5000" style="width:100%;">
+      </div>
+      <div>
+        <button class="btn btn-green" onclick="addSIPPlan()" style="padding:10px 20px;white-space:nowrap;">+ Add</button>
+      </div>
+    </div>
+    <div style="font-size:0.68rem;color:var(--text3);margin-top:10px;">
+      Add any recurring monthly investment — MF SIPs, RD installments, PPF contributions, etc.
+    </div>
+  </div>
+
+  <!-- ACTIVE SIP PLANS TABLE -->
   <div class="card">
-    <div id="logEntries"><div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged yet.</div></div>
-    <div id="logTotal" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;">
-      <span style="font-size:0.82rem;color:var(--text2);">Total Deployed</span>
-      <span id="logTotalVal" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--green);">₹0</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div class="card-hdr" style="margin-bottom:0;">📋 My SIP Plans</div>
+      <span id="sipPlanCount" style="font-size:0.72rem;color:var(--text3);">0 active</span>
+    </div>
+    <div id="sipPlansEmpty" style="font-size:0.83rem;color:var(--text3);padding:24px 0;text-align:center;">
+      No SIP plans yet. Add your first monthly investment plan above.
+    </div>
+    <div id="sipPlansTable" style="display:none;overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Fund / Investment</th>
+            <th>Monthly Amount</th>
+            <th>Status</th>
+            <th>Started</th>
+            <th>Total Planned</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sipPlansTbody"></tbody>
+        <tfoot>
+          <tr style="font-weight:700;border-top:2px solid var(--border);">
+            <td>Total Monthly SIP</td>
+            <td id="sipPlansFooterTotal" style="font-family:'JetBrains Mono',monospace;color:var(--green);"></td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
+      </table>
     </div>
   </div>
 
@@ -2283,7 +2312,7 @@ select option { background: var(--s2); }
     <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;font-size:0.8rem;color:var(--text2);line-height:1.7;">
       <div style="font-weight:800;font-size:0.95rem;margin-bottom:6px;">My Portfolio Dashboard</div>
       A self-contained personal finance tracker — single HTML file, zero backend, all data in your browser.<br>
-      <span style="color:var(--text3);">Sharesave · FD/RD · SGB Gold · Post Office · Mutual Funds · Monthly Planner · Budget · Broker API</span><br><br>
+      <span style="color:var(--text3);">Sharesave · FD/RD · SGB Gold · Post Office · Mutual Funds · SIP Planner · Budget · Broker API</span><br><br>
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
         <div><span style="color:var(--text3);">AI model</span><br><strong>Claude Sonnet (Anthropic)</strong></div>
         <div><span style="color:var(--text3);">Price data</span><br><strong>Finnhub · AMFI · mfapi.in</strong></div>
@@ -2390,7 +2419,7 @@ function gotoPage(id, el) {
     });
   }
   if (id === 'budget' && typeof recalcBudget === 'function') recalcBudget();
-  if (id === 'planner') buildMFLogFundDropdown();
+  if (id === 'planner') { renderSIPPlans(); updateSIPTracker(); }
   if (id === 'gold' && typeof renderPhysicalGold === 'function') renderPhysicalGold();
 }
 
@@ -2540,10 +2569,7 @@ function initDashboard() {
   renderMFTracker();
   renderMFNavUpdate();
   renderMFSummaryStrip();
-  buildMFLogFundDropdown();
-  buildLogFundDropdown();
-  buildPlanTable();
-  renderLogs();
+  renderSIPPlans();
   renderPOHoldings();
   updateSharesave();
   updateDonut();
@@ -2918,7 +2944,7 @@ function checkLumpsumTrigger(currentNifty) {
     detail.textContent = `Nifty: ${currentNifty.toLocaleString('en-IN')} vs baseline ${baseline.toLocaleString('en-IN')}`;
     if (action) action.textContent = lump > 0
       ? `Deploy full lumpsum reserve ₹${lump.toLocaleString('en-IN')} → Nippon Small Cap + PPFCF`
-      : 'Switch to Crash mode in Monthly Planner → deploy everything as lumpsum';
+      : 'Consider deploying everything as lumpsum during this crash';
   } else if (dipPct >= 10) {
     card.style.background  = 'rgba(240,192,64,0.08)';
     card.style.borderColor = 'rgba(240,192,64,0.3)';
@@ -4120,11 +4146,11 @@ function saveMF() {
 
 // ── AI FUND ANALYSIS (Quarterly Review) ──
 // ══════════════════════════════════════════════════════════════════
-// VERDICT STORE — shared source of truth between Fund Picks + Planner
+// VERDICT STORE — shared source of truth for Fund Picks
 // ══════════════════════════════════════════════════════════════════
 // Schema: mypf_fund_verdicts = {
 //   verdicts: { [rank]: { verdict:'HOLD'|'WATCH'|'SWITCH', allocPct:35, dipPriority:1, reasoning:'...' } },
-//   sipFixed: true,  // SIP amounts are locked — never changed by Monthly Planner
+//   sipFixed: true,  // SIP amounts are locked
 //   reviewDate: ISO string,
 //   nextReview: ISO string (90 days later)
 // }
@@ -4186,7 +4212,7 @@ async function runMFAnalysis() {
   const key = getActiveAIKey();
   if (!key) {
     document.getElementById('apiKeyBanner').style.display = 'flex';
-    alert('Please save your Claude API key first (top of Monthly Planner tab).');
+    alert('Please save your API key first in Settings → AI Provider.');
     return;
   }
 
@@ -4356,7 +4382,7 @@ async function runMFAnalysis() {
 IMPORTANT CONTEXT — HOW THIS PORTFOLIO WORKS:
 - SIP amount (₹${mfBudget.toLocaleString('en-IN')}/month) is FIXED. It never changes. SIP runs on autopilot every month.
 - The only active decision is: (1) are these still the right funds? (2) which fund gets lumpsum when market dips?
-- Monthly Planner will read your verdicts to decide lumpsum deployment. Your verdicts are the single source of truth.
+- Your verdicts are the single source of truth for lumpsum deployment decisions.
 - Verdict hierarchy: HOLD = SIP + eligible for lumpsum on dip. WATCH = SIP continues, NO lumpsum. SWITCH = stop SIP, redirect.
 
 INVESTOR PROFILE:
@@ -4687,109 +4713,101 @@ function renderSelectedMFs() {
 }
 
 // ── LOG INVESTMENT ──
-function buildMFLogFundDropdown() {
-  const sel = document.getElementById('mfLogFundSel');
-  if (!sel) return;
-  let options = '';
-  
-  // 1. Portfolio picks from Discover Funds
-  if (state.selectedMFs && state.selectedMFs.length) {
-    options += '<optgroup label="📊 My Portfolio Funds">';
-    options += state.selectedMFs.map(r => {
-      const f = MF_RECS.find(x => x.rank === r);
-      return f ? `<option value="${r}">${f.name}</option>` : '';
-    }).filter(Boolean).join('');
-    options += '</optgroup>';
-  }
-  
-  // 2. Broker-synced MFs
-  if (typeof isBrokerMode === 'function' && isBrokerMode()) {
-    const brokerMFs = classifyBrokerHoldings().mf;
-    if (brokerMFs.length) {
-      options += '<optgroup label="🏦 Broker-Synced Funds">';
-      options += brokerMFs.map(h => {
-        return `<option value="broker_${h.isin || h.symbol}">${h.name}</option>`;
-      }).join('');
-      options += '</optgroup>';
-    }
-  }
-  
-  // 3. Previously added custom funds
-  const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
-  if (customFunds.length) {
-    options += '<optgroup label="✏️ Custom Funds">';
-    customFunds.forEach(cf => {
-      options += `<option value="custom_${cf.id}">${cf.name} ${cf.isin ? '(' + cf.isin + ')' : ''}</option>`;
-    });
-    options += '</optgroup>';
-  }
-  
-  if (!options.includes('optgroup')) {
-    options = '<option value="" disabled selected>No funds yet — connect broker or add custom funds in Settings</option>';
-  }
-  
-  sel.innerHTML = options;
+// ── SIP PLANNER (plans, not logs) ──
+let sipPlans = [];
+try { sipPlans = JSON.parse(localStorage.getItem('mypf_sip_plans') || '[]'); } catch(e){}
+
+function saveSIPPlans() {
+  localStorage.setItem('mypf_sip_plans', JSON.stringify(sipPlans));
+  scheduleSync();
 }
 
+function addSIPPlan() {
+  const name = document.getElementById('sipPlanName').value.trim();
+  const amt = parseFloat(document.getElementById('sipPlanAmt').value);
+  if (!name || !amt || amt <= 0) { alert('Enter fund name and amount'); return; }
+  sipPlans.push({ id: Date.now(), name, amount: amt, status: 'active', startDate: new Date().toISOString().slice(0,10) });
+  saveSIPPlans();
+  renderSIPPlans();
+  document.getElementById('sipPlanName').value = '';
+  document.getElementById('sipPlanAmt').value = '';
+}
+
+function toggleSIPPlan(id) {
+  const plan = sipPlans.find(p => p.id === id);
+  if (plan) plan.status = plan.status === 'active' ? 'paused' : 'active';
+  saveSIPPlans();
+  renderSIPPlans();
+}
+
+function delSIPPlan(id) {
+  if (!confirm('Remove this SIP plan?')) return;
+  sipPlans = sipPlans.filter(p => p.id !== id);
+  saveSIPPlans();
+  renderSIPPlans();
+}
+
+function renderSIPPlans() {
+  const tbody = document.getElementById('sipPlansTbody');
+  const empty = document.getElementById('sipPlansEmpty');
+  const table = document.getElementById('sipPlansTable');
+  const countEl = document.getElementById('sipPlanCount');
+  const footerTotal = document.getElementById('sipPlansFooterTotal');
+  const salaryEl = document.getElementById('sipPlanSalary');
+  const totalEl = document.getElementById('sipPlanTotal');
+  const pctEl = document.getElementById('sipPlanPct');
+  if (!tbody) return;
+
+  const activePlans = sipPlans.filter(p => p.status === 'active');
+  const totalMonthly = activePlans.reduce((s, p) => s + p.amount, 0);
+  const salary = state.salary || 0;
+
+  if (salaryEl) salaryEl.textContent = salary > 0 ? '₹' + salary.toLocaleString('en-IN') : '₹0';
+  if (totalEl) totalEl.textContent = '₹' + totalMonthly.toLocaleString('en-IN');
+  if (pctEl) pctEl.textContent = salary > 0 ? Math.round(totalMonthly / salary * 100) + '%' : '—';
+
+  if (!sipPlans.length) {
+    if (empty) empty.style.display = '';
+    if (table) table.style.display = 'none';
+    if (countEl) countEl.textContent = '0 active';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+  if (table) table.style.display = '';
+  if (countEl) countEl.textContent = activePlans.length + ' active' + (sipPlans.length > activePlans.length ? ', ' + (sipPlans.length - activePlans.length) + ' paused' : '');
+
+  const now = new Date();
+  tbody.innerHTML = sipPlans.map(p => {
+    const isActive = p.status === 'active';
+    const startDate = new Date(p.startDate);
+    const monthsActive = Math.max(1, (now.getFullYear() - startDate.getFullYear()) * 12 + now.getMonth() - startDate.getMonth() + 1);
+    const totalPlanned = p.amount * monthsActive;
+    const statusBadge = isActive
+      ? '<span style="padding:3px 10px;border-radius:12px;background:rgba(0,200,150,0.12);color:var(--green);font-size:0.7rem;font-weight:700;">Active</span>'
+      : '<span style="padding:3px 10px;border-radius:12px;background:rgba(160,160,192,0.12);color:var(--text3);font-size:0.7rem;font-weight:700;">Paused</span>';
+    return `<tr style="${!isActive ? 'opacity:0.5;' : ''}">
+      <td style="font-weight:700;">${p.name}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:600;">₹${p.amount.toLocaleString('en-IN')}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:0.75rem;color:var(--text3);">${new Date(p.startDate).toLocaleDateString('en-IN',{month:'short',year:'numeric'})}</td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--text2);">₹${totalPlanned.toLocaleString('en-IN')}</td>
+      <td style="white-space:nowrap;">
+        <button onclick="toggleSIPPlan(${p.id})" style="padding:3px 10px;border-radius:6px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);color:var(--blue);font-size:0.68rem;cursor:pointer;margin-right:4px;">${isActive ? '⏸ Pause' : '▶ Resume'}</button>
+        <button onclick="delSIPPlan(${p.id})" style="padding:3px 8px;border-radius:6px;background:rgba(255,87,87,0.06);border:1px solid rgba(255,87,87,0.15);color:var(--red);font-size:0.68rem;cursor:pointer;">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (footerTotal) footerTotal.textContent = '₹' + totalMonthly.toLocaleString('en-IN');
+}
+
+// Legacy stubs — these old functions are called from other places
+function buildMFLogFundDropdown() {}
 function toggleCustomFund() {}
-
-function addMFLog() {
-  const selVal = document.getElementById('mfLogFundSel').value;
-  const type = document.getElementById('mfLogType').value;
-  const amt  = parseFloat(document.getElementById('mfLogAmt').value);
-  const nav  = parseFloat(document.getElementById('mfLogNav').value);
-  const date = document.getElementById('mfLogDate').value;
-  const note = document.getElementById('mfLogNote').value.trim();
-
-  let rank = null;
-  let fundName = '';
-  let customId = null;
-
-  if (selVal.startsWith('custom_')) {
-    // Existing custom fund
-    customId = selVal;
-    const customFunds = JSON.parse(localStorage.getItem('mypf_custom_mfs') || '[]');
-    const cf = customFunds.find(c => 'custom_' + c.id === selVal);
-    fundName = cf ? cf.name : 'Custom Fund';
-    rank = selVal;
-    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
-  } else if (selVal.startsWith('broker_')) {
-    // Broker-synced fund
-    const brokerMFs = classifyBrokerHoldings().mf;
-    const key = selVal.replace('broker_', '');
-    const bm = brokerMFs.find(h => (h.isin || h.symbol) === key);
-    fundName = bm ? bm.name : 'Broker Fund';
-    rank = selVal;
-    if (!amt || !nav || !date) { alert('Fill Amount, NAV and Date'); return; }
-  } else {
-    // Standard portfolio fund
-    rank = parseInt(selVal);
-    if (!rank || !amt || !nav || !date) { alert('Fill Fund, Amount, NAV and Date'); return; }
-    const f = MF_RECS.find(x => x.rank === rank);
-    fundName = f ? f.name : 'Unknown';
-  }
-
-  const units = amt / nav;
-  mfLogs.push({ id: Date.now(), fundRank: rank, fundName, type, amt, nav, units, date, note });
-  // Update peak NAV tracking
-  const navKey = rank;
-  if (!mfNavs[navKey]) mfNavs[navKey] = { nav, updatedDate: date, peakNav: nav };
-  else if (nav > mfNavs[navKey].peakNav) mfNavs[navKey].peakNav = nav;
-  saveMF();
-  renderMFTracker();
-  renderMFSummaryStrip();
-  renderSelectedMFs();
-  updateDonut();
-  buildMFLogFundDropdown();
-  renderLogs(); // Update planner's Investment History
-  // Clear
-  ['mfLogAmt','mfLogNav','mfLogNote'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('mfLogFundSel').value = '';
-}
-
+function addMFLog() {}
 function delMFLog(id) {
   mfLogs = mfLogs.filter(l => l.id !== id);
-  saveMF(); renderMFTracker(); renderMFSummaryStrip(); renderSelectedMFs(); updateDonut(); renderLogs();
+  saveMF(); renderMFTracker(); renderMFSummaryStrip(); renderSelectedMFs(); updateDonut();
 }
 
 // ── TRACKER (holdings table + per-fund log) ──
@@ -5083,112 +5101,14 @@ function setMood(m, silent) {
   if (!silent) save();
 }
 
-// ══ PLANNER PILLS & TABLE ══
-function updatePlannerPills() {
-  const pct = (state.savingsPct || 15) / 100;
-  const totalTarget = Math.round((state.salary||0) * pct);
-  const t = Math.max(0, totalTarget - SHARESAVE_DEDUCTION);
-  const d = stratData[state.strategy];
-  const sipP = Math.round(t * d.sipPct);
-  const lumpP = t - sipP;
-  const fmt = n => n > 0 ? '₹\u202f' + n.toLocaleString('en-IN') : '₹\u202f—';
-  document.getElementById('pa15').textContent = fmt(t);
-  document.getElementById('paSIP').textContent = fmt(sipP);
-  document.getElementById('paLump').textContent = lumpP > 0 ? '₹\u202f' + lumpP.toLocaleString('en-IN') : '₹\u202f0';
-}
-
-// Default fund allocations
+// Legacy stubs for removed planner functions
+function updatePlannerPills() {}
 const DEFAULT_ALLOC = { 1:35, 2:30, 3:15, 4:10, 5:10 };
-
-function buildPlanTable() {
-  const tbody = document.getElementById('planTbody');
-  const pct = (state.savingsPct || 15) / 100;
-  const totalTarget = Math.round((state.salary||0) * pct);
-  const t = Math.max(0, totalTarget - SHARESAVE_DEDUCTION);
-  const d = stratData[state.strategy];
-  const sipPool = Math.round(t * d.sipPct);
-  const lumpPool = t - sipPool;
-
-  if (!state.selectedMFs.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px;">Select funds in the Mutual Funds tab first</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = state.selectedMFs.map(r => {
-    const f = MF_RECS.find(x=>x.rank===r);
-    const alloc = DEFAULT_ALLOC[r] || Math.round(100/state.selectedMFs.length);
-    const sipAmt = Math.round(sipPool * alloc / 100);
-    const lumpAmt = r===state.selectedMFs[0] ? lumpPool : 0; // lumpsum into top conviction
-    const mode = state.strategy==='crash' ? '<span class="badge badge-amber">Lumpsum</span>' : state.strategy==='dip'&&r===state.selectedMFs[0] ? '<span class="badge badge-green">SIP + Lump</span>' : '<span class="badge badge-blue">SIP</span>';
-    return `<tr>
-      <td style="color:${f.color};font-weight:600">${f.name}</td>
-      <td><span class="badge ${f.tag}" style="font-size:0.65rem;">${f.role}</span></td>
-      <td style="text-align:center;font-family:'JetBrains Mono',monospace;font-weight:600;">${alloc}%</td>
-      <td class="mono" style="color:var(--green)">${sipPool>0?'₹'+sipAmt.toLocaleString('en-IN'):'—'}</td>
-      <td>${mode}</td>
-      <td class="mono" style="color:var(--blue)">${lumpAmt>0?'₹'+lumpAmt.toLocaleString('en-IN'):'—'}</td>
-    </tr>`;
-  }).join('');
-  updatePlannerPills();
-}
-
-// ══ LOG ══
-function buildLogFundDropdown() {
-  const sel = document.getElementById('logFund');
-  const opts = state.selectedMFs.length
-    ? state.selectedMFs.map(r => { const f=MF_RECS.find(x=>x.rank===r); return `<option value="${f.name}">${f.name}</option>`; }).join('')
-    : '<option value="">Select funds in MF tab first</option>';
-  sel.innerHTML = opts + '<option value="HDFC FD">HDFC FD</option><option value="Canara RD">Canara RD</option><option value="SGB Gold">SGB Gold</option>';
-}
-
-function addLog() {
-  const fund = document.getElementById('logFund').value;
-  const amt = parseFloat(document.getElementById('logAmt').value);
-  const type = document.getElementById('logType').value;
-  const date = document.getElementById('logDate').value;
-  if (!fund||!amt||!date) { alert('Fill all log fields'); return; }
-  state.logs.push({ id: Date.now(), fund, amt, type, date });
-  save(); renderLogs(); updateDonut();
-  document.getElementById('logAmt').value = '';
-}
-
-function delLog(id) {
-  state.logs = state.logs.filter(l=>l.id!==id);
-  save(); renderLogs(); updateDonut();
-}
-
-function renderLogs() {
-  buildLogFundDropdown();
-  const container = document.getElementById('logEntries');
-  // Show mfLogs (the actual investment entries) in the planner history
-  const allLogs = [...mfLogs, ...state.logs.map(l => ({ ...l, fundName: l.fund, fundRank: null }))];
-  const deployed = allLogs.reduce((s,l)=>s+l.amt,0);
-
-  if (!allLogs.length) {
-    container.innerHTML = '<div style="font-size:0.83rem;color:var(--text3);padding:20px 0;text-align:center;">No investments logged yet.</div>';
-    document.getElementById('paDeployed').textContent = '₹ 0';
-    document.getElementById('logTotal').style.display = 'none';
-    return;
-  }
-  document.getElementById('logTotal').style.display = 'flex';
-  document.getElementById('logTotalVal').textContent = '₹' + deployed.toLocaleString('en-IN');
-  document.getElementById('paDeployed').textContent = '₹\u202f' + deployed.toLocaleString('en-IN');
-
-  const typeColors = { SIP:'badge-blue', Lumpsum:'badge-amber', 'Top-up':'badge-green', 'Step-up':'badge-purple', 'Step-up SIP':'badge-purple' };
-  // Sort by date descending
-  allLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
-  container.innerHTML = allLogs.map(l => {
-    const name = l.fundName || l.fund || 'Unknown';
-    const delFn = l.fundRank !== undefined && l.fundRank !== null ? `delMFLog(${l.id})` : `delLog(${l.id})`;
-    return `<div class="log-entry">
-      <span class="le-date">${new Date(l.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
-      <div class="le-fund">${name}<small>${l.type}</small></div>
-      <span class="le-amt">₹${l.amt.toLocaleString('en-IN')}</span>
-      <span class="badge ${typeColors[l.type]||'badge-blue'}">${l.type}</span>
-      <button class="le-del" onclick="${delFn}">✕</button>
-    </div>`;
-  }).join('');
-}
+function buildPlanTable() {}
+function buildLogFundDropdown() {}
+function addLog() {}
+function delLog(id) { state.logs = state.logs.filter(l=>l.id!==id); save(); updateDonut(); }
+function renderLogs() {}
 
 // ══ SHARESAVE TIMELINE — called from initDashboard ══
 
@@ -6885,7 +6805,7 @@ function clearSettingsKey(name) {
 const SYNC_KEYS = ['mypf_v3','mypf_fds','mypf_rds','mypf_sgb_v2','mypf_mflogs','mypf_mfnavs',
                    'mypf_po','mypf_ss_config','mypf_fund_verdicts','mypf_mf_analysis',
                    'mypf_budget','mypf_budget_history','mypf_physical_gold','mypf_custom_mfs',
-                   'mypf_broker_mf','mypf_sipday'];
+                   'mypf_broker_mf','mypf_sipday','mypf_sip_plans'];
 let _syncTimer = null;
 function scheduleSync() {
   if (!localStorage.getItem('mypf_sync_secret')) return;
