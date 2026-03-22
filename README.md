@@ -72,6 +72,14 @@ Available on every page with 6 one-click analyses + free-text chat:
 - Dropdown shows: Portfolio picks + Broker-synced MFs + Custom funds
 - Investment history tracking
 
+### Cloud Sync (for OpenClaw / API Access)
+- Optional cloud sync — push portfolio data to a secure Netlify endpoint
+- Protected by a secret key (set in Netlify env vars + app settings)
+- Auto-syncs on every portfolio change (3s debounce)
+- Enables external agents (like [OpenClaw](https://openclaw.ai)) to fetch live portfolio data via API
+- Manual "Sync Now" button in Settings → Data Management
+- Data stays encrypted in transit (HTTPS) and access-controlled by your secret
+
 ---
 
 ## Self-Hosting Guide
@@ -120,6 +128,7 @@ Go to Site Settings → Environment Variables → Add:
 |-----|-------|
 | `HDFC_API_KEY` | Your API Key |
 | `HDFC_API_SECRET` | Your API Secret |
+| `SYNC_SECRET` | *(Optional)* A random string for cloud sync — generate with `openssl rand -hex 24` |
 
 **Redeploy**, then go to **Broker** tab → Select HDFC → Connect.
 
@@ -169,7 +178,8 @@ myFinance/
 └── netlify/
     └── functions/
         ├── broker-auth.js        # OAuth token exchange (server-side, keys never in browser)
-        └── broker-proxy.js       # API proxy to broker endpoints
+        ├── broker-proxy.js       # API proxy to broker endpoints
+        └── portfolio-sync.mjs    # Cloud sync API (GET/POST portfolio data, protected by secret)
 ```
 
 ---
@@ -212,6 +222,26 @@ myFinance/
 │     HDFC_API_KEY          HDFC_API_SECRET                │
 │     (env variable)        (env variable)                 │
 │     NEVER in browser      NEVER in browser               │
+│                                                          │
+│  ┌───────────────────────┐                               │
+│  │  portfolio-sync.mjs    │  ← Cloud Sync API            │
+│  │  (Netlify Blobs store) │     (optional, for agents)   │
+│  └───────────┬───────────┘                               │
+│              │                                           │
+│        SYNC_SECRET (env variable)                        │
+│        Auth via X-Sync-Secret header                     │
+└─────────────────────────────────────────────────────────┘
+                    │
+          (Optional: external agents)
+                    │
+┌─────────────────────────────────────────────────────────┐
+│              OPENCLAW (on your machine)                   │
+│  ┌──────────────────┐  ┌──────────────────┐              │
+│  │  FinFolio Skill   │  │  Cron Jobs        │             │
+│  │  (reads API data) │  │  (proactive alerts)│            │
+│  └──────────────────┘  └──────────────────┘              │
+│              │                                           │
+│    Telegram / WhatsApp (your bot)                        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -221,7 +251,9 @@ myFinance/
 
 | Concern | How It's Handled |
 |---------|-----------------|
-| Portfolio data | 100% in browser localStorage — never sent anywhere |
+| Portfolio data | 100% in browser localStorage — never sent anywhere (unless cloud sync is enabled) |
+| Cloud sync | Opt-in only. Protected by a secret key. Data stored in Netlify Blobs (your own instance). HTTPS only |
+| Sync secret | Never in source code. Set via Netlify env var (`SYNC_SECRET`) + browser localStorage |
 | Broker API keys | Server-side only (Netlify env vars) — never in HTML |
 | OAuth tokens | sessionStorage — cleared when tab closes |
 | AI API keys | Stored client-side, sent directly to AI provider only |
@@ -309,10 +341,11 @@ All brokers should map to:
 - [x] Budget Planner
 - [x] Export AI analyses as text files
 - [x] Broker mode toggle (hide broker features for standalone use)
+- [x] Cloud sync API for external agent access (OpenClaw compatible)
 - [ ] Zerodha Kite integration
 - [ ] Angel One integration
 - [ ] Export portfolio as PDF/CSV
-- [ ] Multi-device sync (optional encrypted cloud backup)
+- [ ] Encrypted multi-device sync
 - [ ] Mobile PWA support
 
 ---
@@ -320,7 +353,7 @@ All brokers should map to:
 ## FAQ
 
 **Q: Is my data safe?**
-All data is in your browser's localStorage. Nothing is sent to any server. The HTML file is completely static.
+All data is in your browser's localStorage by default. If you enable Cloud Sync (optional), data is also stored in your own Netlify Blobs instance, protected by a secret key you control. Nothing is shared with third parties.
 
 **Q: Can I use this without deploying to Netlify?**
 Yes. Just open `index.html` in your browser. Everything works except broker integration.
@@ -333,6 +366,9 @@ Each person's data is in THEIR browser's localStorage — completely isolated. B
 
 **Q: Is the AI analysis accurate?**
 The AI uses your real portfolio data as context but relies on the model's training knowledge for market data. Always verify specific numbers independently.
+
+**Q: What is Cloud Sync?**
+An optional feature that saves your portfolio data to a secure API endpoint on your Netlify instance. This allows external tools like [OpenClaw](https://openclaw.ai) to fetch your portfolio and send you proactive alerts (e.g., FD maturity reminders, gold price drops, SIP reminders) via Telegram or WhatsApp. Enable it in Settings → Data Management → Cloud Sync.
 
 **Q: Why a single HTML file?**
 Simplicity. Share via WhatsApp/email, works offline, no build tools, no dependencies, no vendor lock-in.
