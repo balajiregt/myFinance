@@ -1183,9 +1183,9 @@ select option { background: var(--s2); }
       <div class="card-hdr" style="margin-bottom:0;">Your SGB Tranches</div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span id="goldRateSource" style="font-size:0.72rem;color:var(--text3);">Fetching gold rate…</span>
-        <button onclick="fetchLiveGoldRate()" id="goldFetchBtn"
+        <button onclick="fetchSGBRate()" id="goldFetchBtn"
           style="padding:5px 12px;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.25);border-radius:7px;color:var(--yellow);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;">
-          ⟳ Refresh Rate
+          ⟳ Fetch SGB Rate
         </button>
       </div>
     </div>
@@ -1228,7 +1228,7 @@ select option { background: var(--s2); }
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span id="pgRateSource" style="font-size:0.72rem;color:var(--text3);"></span>
-        <button onclick="fetchLiveGoldRate()" id="pgFetchBtn"
+        <button onclick="fetchPhysicalGoldRates()" id="pgFetchBtn"
           style="padding:5px 12px;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.25);border-radius:7px;color:var(--yellow);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.75rem;white-space:nowrap;">
           ⟳ Fetch Gold Rates
         </button>
@@ -3414,9 +3414,14 @@ function updateDonut() {
     sgbV = Math.round(brokerSgbV); goldSource = 'broker';
   }
 
-  // Physical gold value (pure grams × current gold price per gram)
+  // Physical gold value — use Gemini purity-specific rates if available, else derive from 24K
   const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || cachedGoldRate || 7500;
-  const physGoldV = physicalGold.reduce((s, g) => s + Math.round(g.pureGrams * pgGoldPrice), 0);
+  const pgRatesOverview = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
+  const physGoldV = physicalGold.reduce((s, g) => {
+    const key = 'k' + g.purity;
+    const rate = (pgRatesOverview && pgRatesOverview[key]) ? pgRatesOverview[key] : Math.round(pgGoldPrice * g.purity / 24);
+    return s + Math.round(g.grams * rate);
+  }, 0);
   const goldV = sgbV + physGoldV;
 
   // PO value
@@ -3709,19 +3714,109 @@ function onSGBSeriesChange() {
   if (manualWrap) manualWrap.style.display = isManual ? 'block' : 'none';
 }
 
-// ── LIVE GOLD RATE ──
-async function fetchLiveGoldRate() {
+// ── GEMINI GOLD RATE HELPER ──
+async function fetchGoldRateViaGemini(prompt) {
+  const key = localStorage.getItem('mypf_gemini_key');
+  if (!key) throw new Error('Gemini API key not set. Go to Settings → AI Provider → Gemini to add your free key.');
+  const res = await fetch(
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + key,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 256 }
+      })
+    }
+  );
+  if (!res.ok) { const e = await res.text(); throw new Error('Gemini ' + res.status + ': ' + e.slice(0, 150)); }
+  const d = await res.json();
+  return d.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('') || '';
+}
+
+// ── FETCH SGB RATE (24K / 999 purity) ──
+async function fetchSGBRate() {
   const btn = document.getElementById('goldFetchBtn');
   const src = document.getElementById('goldRateSource');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching…'; }
-  if (src) { src.textContent = 'Fetching live gold rate…'; src.style.color = 'var(--text3)'; }
+  if (src) { src.textContent = 'Asking Gemini for SGB rate…'; src.style.color = 'var(--text3)'; }
 
-  let pricePerGram = null;
-  let sourceLabel  = '';
-
-  // ─── METHOD 1: International spot price via gold-api.com (free, CORS, no key) ───
   try {
-    if (src) src.textContent = 'Fetching spot gold (gold-api.com)…';
+    const today = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+    const raw = await fetchGoldRateViaGemini(
+      `What is today's (${today}) Sovereign Gold Bond (SGB) gold rate in India in INR per gram? I need the 24K / 999 fine gold rate per gram that IBJA or RBI uses for SGB pricing. Return ONLY a JSON object like: {"k24": 14734} — no explanation, no markdown, just the JSON.`
+    );
+    const match = raw.match(/\{[^}]*"k24"\s*:\s*(\d+)[^}]*\}/);
+    if (!match) throw new Error('Could not parse rate from Gemini response: ' + raw.slice(0, 100));
+    const price = parseInt(match[1]);
+    if (price < 3000 || price > 50000) throw new Error('Rate out of sanity range: ₹' + price);
+
+    const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch SGB Rate'; }
+    applyGoldRate(price, `Gemini · IBJA 24K/999 · ${ts}`);
+  } catch(e) {
+    console.warn('Gemini SGB rate failed:', e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch SGB Rate'; }
+    if (src) {
+      src.innerHTML = `⚠ ${e.message.includes('not set') ? e.message : 'Gemini failed — try again or check'} <a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
+      src.style.color = 'var(--amber)';
+    }
+    // Fallback: try spot price API
+    await fetchGoldRateSpotFallback(btn, src);
+  }
+}
+
+// ── FETCH PHYSICAL GOLD RATES (24K, 22K, 18K, 14K) ──
+async function fetchPhysicalGoldRates() {
+  const btn = document.getElementById('pgFetchBtn');
+  const src = document.getElementById('pgRateSource');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Fetching…'; }
+  if (src) { src.textContent = 'Asking Gemini…'; src.style.color = 'var(--text3)'; }
+
+  try {
+    const today = new Date().toLocaleDateString('en-IN', { day:'numeric', month:'long', year:'numeric' });
+    const raw = await fetchGoldRateViaGemini(
+      `What are today's (${today}) gold rates in India in INR per gram for different purities? I need the retail/market rate (not making charges). Return ONLY a JSON object like: {"k24": 14734, "k22": 13506, "k18": 11050, "k14": 8596} — no explanation, no markdown, just the JSON.`
+    );
+    const match = raw.match(/\{[^}]*"k24"\s*:\s*\d+[^}]*\}/);
+    if (!match) throw new Error('Could not parse rates from Gemini response: ' + raw.slice(0, 100));
+    const rates = JSON.parse(match[0]);
+    if (!rates.k24 || rates.k24 < 3000 || rates.k24 > 50000) throw new Error('24K rate out of sanity range');
+
+    const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    localStorage.setItem('mypf_physical_gold_rates', JSON.stringify({ ...rates, ts }));
+    localStorage.setItem('mypf_gold_price_per_gram', rates.k24);
+
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch Gold Rates'; }
+    if (src) { src.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${rates.k24.toLocaleString('en-IN')}/g</span>`; }
+
+    // Update purity rates display
+    const container = document.getElementById('pgPurityRates');
+    if (container) {
+      container.style.display = 'flex';
+      container.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;width:100%;">
+        <span style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Today's Rates</span>
+        ${Object.entries(rates).filter(([k]) => k.startsWith('k')).map(([k,v]) => `<span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;"><strong style="color:var(--yellow);">${k.replace('k','') + 'K'}</strong> <span style="color:var(--text1);">₹${v.toLocaleString('en-IN')}/g</span></span>`).join('')}
+        <span style="font-size:0.58rem;color:var(--text3);margin-left:auto;">Gemini · ${ts}</span>
+      </div>`;
+    }
+    renderPhysicalGold();
+    updateDonut();
+  } catch(e) {
+    console.warn('Gemini physical gold rates failed:', e.message);
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch Gold Rates'; }
+    if (src) {
+      src.innerHTML = `⚠ <span style="font-size:0.68rem;">${e.message.includes('not set') ? e.message : 'Gemini failed'}</span>`;
+      src.style.color = 'var(--amber)';
+    }
+  }
+}
+
+// ── SPOT PRICE FALLBACK (no API key needed) ──
+async function fetchGoldRateSpotFallback(btn, src) {
+  let pricePerGram = null;
+  let sourceLabel = '';
+  try {
+    if (src) src.textContent = 'Trying spot gold fallback…';
     const goldRes = await fetch('https://api.gold-api.com/price/XAU', { cache: 'no-cache' });
     if (goldRes.ok) {
       const goldData = await goldRes.json();
@@ -3731,61 +3826,31 @@ async function fetchLiveGoldRate() {
         try {
           const fxR = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', { cache: 'no-cache' });
           if (fxR.ok) { const fxData = await fxR.json(); usdInr = parseFloat(fxData?.usd?.inr); }
-        } catch(e) { console.warn('Forex API 1 failed:', e.message); }
+        } catch(e) {}
         if (!usdInr) {
           try {
             const fxR2 = await fetch('https://latest.currency-api.pages.dev/v1/currencies/usd.json', { cache: 'no-cache' });
             if (fxR2.ok) { const fxData2 = await fxR2.json(); usdInr = parseFloat(fxData2?.usd?.inr); }
-          } catch(e) { console.warn('Forex API 2 failed:', e.message); }
+          } catch(e) {}
         }
-        if (!usdInr) usdInr = 86.5; // fallback
-        const inrPerGram24K = (usdPerOz * usdInr) / 31.1035;
-        const domesticPrice = Math.round(inrPerGram24K * 1.085); // +8.5% India duties (customs + AIDC + GST spread)
+        if (!usdInr) usdInr = 86.5;
+        const dutyPct = parseFloat(localStorage.getItem('mypf_gold_duty_pct')) || 9;
+        const domesticPrice = Math.round((usdPerOz * usdInr / 31.1035) * (1 + dutyPct / 100));
         if (domesticPrice > 3000 && domesticPrice < 50000) {
           pricePerGram = domesticPrice;
-          sourceLabel  = `Spot Gold · $${usdPerOz.toFixed(0)}/oz · ₹${usdInr.toFixed(1)}/$ · +8.5% duties`;
-          const usdOzEl  = document.getElementById('goldUsdOz');
-          const usdInrEl = document.getElementById('goldUsdInr');
-          if (usdOzEl)  usdOzEl.textContent = `$${usdPerOz.toFixed(2)}`;
-          if (usdInrEl) usdInrEl.textContent = `₹${usdInr.toFixed(2)}`;
+          sourceLabel = `Spot fallback · $${usdPerOz.toFixed(0)}/oz · +${dutyPct}%`;
         }
       }
     }
-  } catch(e) { console.warn('gold-api.com failed:', e.message); }
-
-  // ─── METHOD 2 (FALLBACK): Gold ETF NAV from AMFI ───
-  if (!pricePerGram) {
-    if (src) src.textContent = 'Spot API failed, trying AMFI ETFs…';
-    const GOLD_ETFS = [
-      { code: '135480', name: 'Nippon Gold ETF', multiplier: 157 },
-      { code: '120503', name: 'SBI Gold ETF',     multiplier: 157 },
-      { code: '120716', name: 'HDFC Gold ETF',    multiplier: 157 },
-      { code: '135389', name: 'Axis Gold ETF',    multiplier: 157 },
-    ];
-    for (const etf of GOLD_ETFS) {
-      try {
-        const r = await fetch(`https://api.mfapi.in/mf/${etf.code}/latest`, { cache: 'no-cache' });
-        if (!r.ok) continue;
-        const d = await r.json();
-        const nav = parseFloat(d?.data?.[0]?.nav);
-        if (!nav || isNaN(nav)) continue;
-        const derived = Math.round(nav * etf.multiplier);
-        if (derived > 3000) { pricePerGram = derived; sourceLabel = etf.name + ' (AMFI · adjusted)'; break; }
-      } catch(e) { console.warn(etf.name, 'failed:', e.message); }
-    }
-  }
-
-  if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch Live Rate'; }
-
+  } catch(e) { console.warn('Spot fallback failed:', e.message); }
   if (pricePerGram) {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch SGB Rate'; }
     applyGoldRate(pricePerGram, sourceLabel);
-  } else {
-    if (src) {
-      src.innerHTML = `⚠ Could not fetch rate. Enter ₹/gram manually or check <a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
-      src.style.color = 'var(--amber)';
-    }
   }
 }
+
+// Keep old function name as alias for backward compatibility
+async function fetchLiveGoldRate() { return fetchSGBRate(); }
 
 function applyGoldRate(pricePerGram, sourceLabel) {
   const priceEl = document.getElementById('sgbCurrentPrice');
@@ -3831,18 +3896,23 @@ function restoreCachedGoldRate() {
 }
 
 function updatePurityRates(price24K, ts) {
-  const rates = { '24K': price24K, '22K': Math.round(price24K * 22/24), '18K': Math.round(price24K * 18/24), '14K': Math.round(price24K * 14/24) };
+  // If Gemini-fetched purity rates exist, use those; else derive from 24K
+  const geminiRates = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
+  const rates = geminiRates
+    ? { '24K': geminiRates.k24 || price24K, '22K': geminiRates.k22 || Math.round(price24K * 22/24), '18K': geminiRates.k18 || Math.round(price24K * 18/24), '14K': geminiRates.k14 || Math.round(price24K * 14/24) }
+    : { '24K': price24K, '22K': Math.round(price24K * 22/24), '18K': Math.round(price24K * 18/24), '14K': Math.round(price24K * 14/24) };
+  const source = geminiRates ? 'Gemini' : 'Derived from SGB';
   const container = document.getElementById('pgPurityRates');
   if (container) {
     container.style.display = 'flex';
     container.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;width:100%;">
       <span style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Today's Rates</span>
       ${Object.entries(rates).map(([k,v]) => `<span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;"><strong style="color:var(--yellow);">${k}</strong> <span style="color:var(--text1);">₹${v.toLocaleString('en-IN')}/g</span></span>`).join('')}
-      <span style="font-size:0.58rem;color:var(--text3);margin-left:auto;">${ts || ''}</span>
+      <span style="font-size:0.58rem;color:var(--text3);margin-left:auto;">${source} · ${ts || ''}</span>
     </div>`;
   }
   const pgSrc = document.getElementById('pgRateSource');
-  if (pgSrc) pgSrc.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${price24K.toLocaleString('en-IN')}/g</span>`;
+  if (pgSrc && !geminiRates) pgSrc.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${price24K.toLocaleString('en-IN')}/g</span>`;
 }
 
 function addSGBHolding() {
@@ -3972,8 +4042,17 @@ function renderPhysicalGold() {
   const tbody = document.getElementById('pgTbody');
   const summary = document.getElementById('pgSummary');
   const consolidated = document.getElementById('goldConsolidatedContent');
-  // Get current gold price per gram (from SGB section or cached)
+  // Get purity-specific rates from Gemini (if available) or derive from 24K rate
+  const pgRatesRaw = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
   const goldPricePerGram = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || (() => { try { return JSON.parse(localStorage.getItem('mypf_gold_rate'))?.pricePerGram || 7500; } catch(e) { return 7500; } })();
+  // Returns per-gram rate for a given purity karat
+  function rateForKarat(k) {
+    if (pgRatesRaw) {
+      const key = 'k' + k;
+      if (pgRatesRaw[key]) return pgRatesRaw[key];
+    }
+    return Math.round(goldPricePerGram * k / 24);
+  }
 
   if (!physicalGold.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:20px;">No physical gold items tracked yet</td></tr>';
@@ -3982,15 +4061,15 @@ function renderPhysicalGold() {
     const typeIcons = { Chain:'📿', Ring:'💍', Bracelet:'📿', Earring:'✨', Pendant:'🔶', Coin:'🪙', Bar:'🟡', Anklet:'📿', 'Nose Pin':'💎', Mangalsutra:'📿', Waistband:'📿', Other:'🔸' };
     const storageIcons = { 'Bank Locker':'🏦', 'Home Safe':'🏠', 'Home':'🏠', 'Parents House':'👨‍👩‍👧', 'Worn Daily':'💍', 'Other':'📦' };
     tbody.innerHTML = physicalGold.map(g => {
-      const value = Math.round(g.pureGrams * goldPricePerGram);
-      const rateForPurity = Math.round(goldPricePerGram * g.purity / 24);
+      const perGramRate = rateForKarat(g.purity);
+      const value = Math.round(g.grams * perGramRate);
       const stIcon = storageIcons[g.storage] || '';
       const photoLink = g.photoUrl ? `<a href="${g.photoUrl}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.65rem;text-decoration:none;">📷 View</a>` : '<span style="color:var(--text3);font-size:0.6rem;">—</span>';
       return `<tr>
         <td>${typeIcons[g.type]||'🔸'} ${g.type}</td>
         <td style="font-size:0.78rem;color:var(--text2);">${g.desc || '—'} ${photoLink}</td>
         <td class="mono">${g.grams}g</td>
-        <td>${g.purity}K <span style="font-size:0.55rem;color:var(--text3);">₹${rateForPurity.toLocaleString('en-IN')}/g</span></td>
+        <td>${g.purity}K <span style="font-size:0.55rem;color:var(--text3);">₹${perGramRate.toLocaleString('en-IN')}/g</span></td>
         <td class="mono" style="color:var(--yellow);">${g.pureGrams}g</td>
         <td style="font-size:0.75rem;">${stIcon} ${g.storage || '—'}</td>
         <td class="mono" style="color:var(--green);">₹${value.toLocaleString('en-IN')}</td>
@@ -4000,20 +4079,22 @@ function renderPhysicalGold() {
 
     const totalGrams = physicalGold.reduce((s, g) => s + g.grams, 0);
     const totalPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
-    const totalValue = Math.round(totalPure * goldPricePerGram);
+    let totalValue = 0;
+    physicalGold.forEach(g => { totalValue += Math.round(g.grams * rateForKarat(g.purity)); });
     summary.innerHTML = `
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Items</span><strong>${physicalGold.length}</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Total Weight</span><strong style="font-family:'JetBrains Mono',monospace;">${totalGrams.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Pure Gold (24K equiv)</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--yellow);">${totalPure.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Current Value</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--green);">₹${totalValue.toLocaleString('en-IN')}</strong></div>
-      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">@ ₹${goldPricePerGram.toLocaleString('en-IN')}/g (24K)</div>`;
+      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">${pgRatesRaw ? 'Gemini rates' : '@ ₹' + goldPricePerGram.toLocaleString('en-IN') + '/g (24K)'}</div>`;
   }
 
   // Consolidated: SGB + Physical
   const sgbGrams = (JSON.parse(localStorage.getItem('mypf_sgb_v2') || '[]')).reduce((s, h) => s + h.grams, 0);
   const sgbValue = Math.round(sgbGrams * goldPricePerGram);
   const pgPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
-  const pgValue = Math.round(pgPure * goldPricePerGram);
+  let pgValue = 0;
+  physicalGold.forEach(g => { pgValue += Math.round(g.grams * rateForKarat(g.purity)); });
   const totalGoldGrams = sgbGrams + pgPure;
   const totalGoldValue = sgbValue + pgValue;
 
