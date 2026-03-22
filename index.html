@@ -1010,21 +1010,10 @@ select option { background: var(--s2); }
 <div id="page-deposits" class="page">
 <div class="wrap">
 
-  <div style="display:flex;gap:12px;margin-bottom:20px;">
-    <div style="flex:1;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.15);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
-      <span style="font-size:1.3rem;">🏦</span>
-      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">Fixed Deposits</div><div style="font-size:0.75rem;color:var(--text2);">Safe, Guaranteed Returns</div></div>
-    </div>
-    <div style="flex:1;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.15);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
-      <span style="font-size:1.3rem;">🏛️</span>
-      <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:1rem;">Recurring Deposits</div><div style="font-size:0.75rem;color:var(--text2);">Monthly Savings Discipline</div></div>
-    </div>
-  </div>
-
   <div class="detail-panel" style="margin-bottom:18px;">
     <div class="dp-tabs">
-      <button class="dp-tab active" onclick="switchDpTab('fd',this)">HDFC Fixed Deposits</button>
-      <button class="dp-tab" onclick="switchDpTab('rd',this)">Canara Recurring Deposits</button>
+      <button class="dp-tab active" onclick="switchDpTab('fd',this)">Fixed Deposits</button>
+      <button class="dp-tab" onclick="switchDpTab('rd',this)">Recurring Deposits</button>
       <button class="dp-tab" onclick="switchDpTab('rates',this)">Best Rates Today</button>
     </div>
     <div class="dp-content">
