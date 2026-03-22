@@ -2342,6 +2342,23 @@ select option { background: var(--s2); }
         </button>
       </div>
       <div style="font-size:0.72rem;color:var(--text3);margin-top:10px;">Export creates a full JSON backup of all your portfolio data. Import restores from a previously exported file.</div>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+        <div style="font-size:0.72rem;font-weight:700;color:var(--text2);margin-bottom:8px;">☁️ Cloud Sync (for OpenClaw / API access)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="password" id="syncSecretInput" placeholder="Enter sync secret"
+            style="flex:1;padding:8px 12px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
+          <button onclick="saveSyncSecret()"
+            style="padding:8px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
+            Save
+          </button>
+          <button onclick="syncNow()"
+            style="padding:8px 16px;background:rgba(80,200,120,0.1);border:1px solid rgba(80,200,120,0.25);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
+            Sync Now
+          </button>
+        </div>
+        <div id="sync-status-msg" style="font-size:0.72rem;color:var(--text3);margin-top:6px;"></div>
+        <div style="font-size:0.68rem;color:var(--text3);margin-top:4px;">Set a secret to enable auto-sync. Same secret must be set as SYNC_SECRET in Netlify env vars. Data syncs automatically when you make changes.</div>
+      </div>
       <input type="file" id="importFileInput" accept=".json" style="display:none;" onchange="handleImportFile(event)">
       <div id="data-mgmt-msg" style="font-size:0.75rem;margin-top:8px;min-height:16px;"></div>
     </div>
@@ -7021,6 +7038,42 @@ function clearSettingsKey(name) {
 }
 
 // ── DATA EXPORT / IMPORT ──
+// ── CLOUD SYNC (OpenClaw / API access) ──
+const SYNC_KEYS = ['mypf_v3','mypf_fds','mypf_rds','mypf_sgb_v2','mypf_mflogs','mypf_mfnavs',
+                   'mypf_po','mypf_ss_config','mypf_fund_verdicts','mypf_mf_analysis',
+                   'mypf_budget','mypf_budget_history','mypf_physical_gold','mypf_custom_mfs',
+                   'mypf_broker_mf','mypf_sipday'];
+let _syncTimer = null;
+function scheduleSync() {
+  if (!localStorage.getItem('mypf_sync_secret')) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(syncPortfolio, 3000);
+}
+async function syncPortfolio() {
+  const secret = localStorage.getItem('mypf_sync_secret');
+  if (!secret) return;
+  const dump = {};
+  SYNC_KEYS.forEach(k => { const v = localStorage.getItem(k); if (v) dump[k] = v; });
+  dump['_synced'] = new Date().toISOString();
+  try {
+    const base = location.origin.includes('localhost') ? '' : location.origin;
+    const res = await fetch(`${base}/.netlify/functions/portfolio-sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Sync-Secret': secret },
+      body: JSON.stringify(dump)
+    });
+    if (res.ok) console.log('[sync] portfolio synced to cloud');
+    else console.warn('[sync] sync failed:', res.status);
+  } catch (e) { console.warn('[sync] sync error:', e.message); }
+}
+
+// Patch localStorage.setItem to trigger auto-sync on portfolio changes
+const _origSetItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function(key, value) {
+  _origSetItem(key, value);
+  if (key.startsWith('mypf_') && SYNC_KEYS.includes(key)) scheduleSync();
+};
+
 function exportAllData() {
   const keys = ['mypf_v3','mypf_fds','mypf_rds','mypf_sgb_v2','mypf_mflogs','mypf_mfnavs',
                 'mypf_po','mypf_ss_config','mypf_fund_verdicts','mypf_mf_analysis',
@@ -7071,6 +7124,24 @@ function confirmClearAll() {
   const msg = document.getElementById('data-mgmt-msg');
   if (msg) { msg.textContent = 'All data cleared. Reloading…'; msg.style.color='var(--amber)'; }
   setTimeout(() => location.reload(), 1000);
+}
+
+function saveSyncSecret() {
+  const input = document.getElementById('syncSecretInput');
+  const msg = document.getElementById('sync-status-msg');
+  const secret = input?.value?.trim();
+  if (!secret) { if (msg) { msg.textContent = '⚠ Enter a sync secret.'; msg.style.color='var(--red)'; } return; }
+  localStorage.setItem('mypf_sync_secret', secret);
+  if (msg) { msg.textContent = '✅ Sync secret saved. Auto-sync enabled.'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',3000); }
+  input.value = '';
+}
+async function syncNow() {
+  const msg = document.getElementById('sync-status-msg');
+  const secret = localStorage.getItem('mypf_sync_secret');
+  if (!secret) { if (msg) { msg.textContent = '⚠ Set a sync secret first.'; msg.style.color='var(--red)'; } return; }
+  if (msg) { msg.textContent = '⏳ Syncing…'; msg.style.color='var(--text3)'; }
+  await syncPortfolio();
+  if (msg) { msg.textContent = '✅ Portfolio synced to cloud.'; msg.style.color='var(--green)'; setTimeout(()=>msg.textContent='',3000); }
 }
 
 // Hook settings page init into gotoPage
