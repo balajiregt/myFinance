@@ -6427,8 +6427,13 @@ async function fetchBrokerHoldings() {
       localStorage.setItem('mypf_broker_sgb', JSON.stringify(classified.sgb));
       localStorage.setItem('mypf_broker_etf', JSON.stringify(classified.etf));
       localStorage.setItem('mypf_broker_bonds', JSON.stringify(classified.bonds));
+      // Auto-enable broker mode when holdings are fetched
+      if (!isBrokerMode()) {
+        localStorage.setItem('mypf_broker_mode', 'on');
+        applyBrokerMode();
+      }
       updateDonut(); // Trigger Overview refresh with broker data
-      if (isBrokerMode()) renderBrokerMFSection(); // Sync MF tab with broker data
+      renderBrokerMFSection(); // Sync MF tab with broker data
       const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
       status.innerHTML = `✅ <span style="color:var(--green);">${holdings.length} holdings fetched</span> <span style="font-size:0.65rem;color:var(--text3);">· ${ts}</span>`;
     } else {
