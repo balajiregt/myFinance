@@ -5883,7 +5883,7 @@ const BROKER_META = {
     name: 'Zerodha (Kite Connect)',
     desc: 'Free personal API — holdings, positions, funds (no market data)',
     hasOAuth: true,
-    setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Netlify env vars.`,
+    setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Set redirect URL to <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:0.68rem;">${location.origin}/auth/callback</code> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Netlify env vars. Free for personal use (₹2,000 one-time).`,
   },
   angel_one: {
     name: 'Angel One (SmartAPI)',
@@ -6342,16 +6342,21 @@ function normalizeHoldings(broker, data) {
             : parseFloat(h.realised || 0),
         }));
       case 'zerodha':
+        // Kite Connect v3: { tradingsymbol, exchange, isin, quantity, average_price, last_price, close_price, pnl, day_change, day_change_percentage, ... }
         return (data?.data || data || []).map(h => ({
           symbol: h.tradingsymbol || '—',
-          name: h.instrument_token ? h.tradingsymbol : '—',
+          name: h.tradingsymbol || '—',
           qty: parseFloat(h.quantity || 0),
           avgPrice: parseFloat(h.average_price || 0),
-          currentPrice: parseFloat(h.last_price || 0),
+          currentPrice: parseFloat(h.last_price || h.close_price || 0),
           exchange: h.exchange || 'NSE',
           type: 'equity',
           broker,
+          isin: h.isin || '',
+          investedValue: parseFloat(h.average_price || 0) * parseFloat(h.quantity || 0),
           pnl: parseFloat(h.pnl || 0),
+          dayChange: parseFloat(h.day_change || 0),
+          dayChangePct: parseFloat(h.day_change_percentage || 0),
         }));
       case 'angel_one':
         return (data?.data || data || []).map(h => ({

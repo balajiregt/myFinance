@@ -288,10 +288,10 @@ myFinance/
 | Broker | Status | Env Variables |
 |--------|--------|---------------|
 | HDFC Securities (InvestRight) | ✅ Ready | `HDFC_API_KEY`, `HDFC_API_SECRET` |
-| Zerodha Kite | 🔜 Coming | — |
-| Angel One | 🔜 Coming | — |
-| Groww | 🔜 Coming | — |
-| Upstox | 🔜 Coming | — |
+| Zerodha Kite | ✅ Ready | `ZERODHA_API_KEY`, `ZERODHA_API_SECRET` |
+| Angel One | 🔜 Coming | `ANGEL_API_KEY`, `ANGEL_CLIENT_ID` |
+| Groww | 🔜 Coming | `GROWW_API_KEY`, `GROWW_API_SECRET` |
+| Upstox | 🔜 Coming | `UPSTOX_API_KEY`, `UPSTOX_API_SECRET` |
 
 ---
 
@@ -342,7 +342,7 @@ All brokers should map to:
 - [x] Export AI analyses as text files
 - [x] Broker mode toggle (hide broker features for standalone use)
 - [x] Cloud sync API for external agent access (OpenClaw compatible)
-- [ ] Zerodha Kite integration
+- [x] Zerodha Kite integration
 - [ ] Angel One integration
 - [ ] Export portfolio as PDF/CSV
 - [ ] Encrypted multi-device sync

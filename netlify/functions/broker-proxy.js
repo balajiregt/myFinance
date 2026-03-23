@@ -134,7 +134,7 @@ function buildAuthHeaders(broker, token) {
       // HDFC uses raw accessToken in Authorization header (no "Bearer" prefix)
       return { 'Authorization': token };
     case 'zerodha':
-      return { 'Authorization': `token ${process.env.ZERODHA_API_KEY}:${token}` };
+      return { 'Authorization': `token ${process.env.ZERODHA_API_KEY}:${token}`, 'X-Kite-Version': '3' };
     case 'groww':
       return { 'Authorization': `Bearer ${token}` };
     case 'angel_one':
