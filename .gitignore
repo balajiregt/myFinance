@@ -5,8 +5,9 @@
 
 # Dependencies
 node_modules/
+deno.lock
 
-# Netlify
+# Stale Netlify build artifacts (project no longer uses Netlify)
 .netlify/
 
 # OS

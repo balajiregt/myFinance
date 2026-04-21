@@ -12,7 +12,7 @@ Use this checklist for periodic security reviews and before major releases.
 |-------|--------|-------|
 | No hardcoded API keys in source | ✅ Fixed | Gemini key moved from URL param to `x-goog-api-key` header |
 | No tokens/passwords in committed files | ✅ OK | Verified — no secrets in tracked files |
-| `.gitignore` blocks `.env`, `node_modules/`, `.netlify/` | ✅ Added | Prevents accidental secret commits |
+| `.gitignore` blocks `.env`, `node_modules/` | ✅ Added | Prevents accidental secret commits |
 | Supabase anon key in source | ⚠️ Accepted | Anon key is designed to be public; security relies on RLS policies |
 | AI API keys in localStorage | ⚠️ Accepted | Client-side app — keys stored in plaintext localStorage. XSS = key theft. Mitigated by CSP + HTML escaping |
 
@@ -46,12 +46,12 @@ grep -n 'innerHTML.*\${' index.html | grep -v 'escHTML\|fmt\|icon\|style\|PIE_CO
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `broker-proxy.js` — CORS restricted to `process.env.URL` | ✅ OK | Only allows the Netlify site origin |
+| `broker-proxy.js` — CORS restricted to `process.env.URL` | ✅ OK | Only allows the configured Fly.io origin |
 | `broker-auth.js` — CORS restricted to `process.env.URL` | ✅ OK | Same pattern as broker-proxy |
 
 **How to check:**
 ```bash
-grep -n 'Allow-Origin\|includes.*localhost\|origin.*===\|cors' netlify/functions/*.{js,mjs}
+grep -n 'Allow-Origin\|includes.*localhost\|origin.*===\|cors' api/*.js
 ```
 
 ---
@@ -63,12 +63,12 @@ grep -n 'Allow-Origin\|includes.*localhost\|origin.*===\|cors' netlify/functions
 | Sync secret only via header (`X-Sync-Secret`) | ✅ Fixed | Removed query parameter fallback — secrets don't leak in logs/URLs |
 | `extra_headers` passthrough removed from broker-proxy | ✅ Fixed | Prevents header injection / request smuggling |
 | Error responses don't leak internal details | ✅ Fixed | Broker auth/proxy return generic errors; details logged server-side only |
-| Netlify functions validate required params | ✅ OK | All endpoints check for required fields before processing |
+| Broker handlers validate required params | ✅ OK | All endpoints check for required fields before processing |
 
 **How to check:**
 ```bash
 # Check for details/data leakage in error responses
-grep -n 'details:\|err.message' netlify/functions/*.{js,mjs}
+grep -n 'details:\|err.message' api/*.js
 ```
 
 ---
@@ -77,7 +77,7 @@ grep -n 'details:\|err.message' netlify/functions/*.{js,mjs}
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| CSP header set in `netlify.toml` | ✅ Added | Restricts script sources, connect targets, frame sources |
+| CSP header set in `server.js` | ✅ Added | Restricts script sources, connect targets, frame sources |
 | `script-src` allows `'unsafe-inline'` | ⚠️ Accepted | Required for single-file app with inline `<script>`. Cannot remove without refactoring to external JS |
 | `connect-src` whitelist covers all APIs | ✅ OK | Supabase, MFAPI, Gold API, Finnhub, AI providers, Gmail, Yahoo Finance, Overpass API |
 | `img-src` allows OSM tiles | ✅ OK | `*.tile.openstreetmap.org` for Leaflet map rendering |
@@ -127,9 +127,9 @@ frame-src https://accounts.google.com;
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| HTTPS enforced via HSTS | ✅ OK | `Strict-Transport-Security: max-age=31536000; includeSubDomains` (both Netlify + Fly.io) |
-| `X-Frame-Options: DENY` | ✅ OK | Prevents clickjacking (both Netlify + Fly.io) |
-| `X-Content-Type-Options: nosniff` | ✅ OK | Prevents MIME sniffing (both Netlify + Fly.io) |
+| HTTPS enforced via HSTS | ✅ OK | `Strict-Transport-Security: max-age=31536000; includeSubDomains` (Fly.io) |
+| `X-Frame-Options: DENY` | ✅ OK | Prevents clickjacking (Fly.io) |
+| `X-Content-Type-Options: nosniff` | ✅ OK | Prevents MIME sniffing (Fly.io) |
 | `Referrer-Policy: strict-origin-when-cross-origin` | ✅ OK | Limits referrer leakage |
 | `Permissions-Policy` restricts camera/mic/geo | ✅ OK | All denied |
 
@@ -143,8 +143,8 @@ frame-src https://accounts.google.com;
 | Broker secrets stored via `fly secrets` | ✅ OK | Encrypted at rest, injected as env vars at runtime |
 | Static egress IP for broker API compliance | ✅ OK | SEBI mandate (April 2026) — IP whitelisted on broker portal |
 | Path traversal protection | ✅ OK | `server.js` resolves paths and checks they stay within `/app/` |
-| Security headers match Netlify | ✅ OK | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
-| CORS restricted to `process.env.URL` | ✅ OK | Same pattern as Netlify functions — only allows configured origin |
+| Security headers set in `server.js` | ✅ OK | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
+| CORS restricted to `process.env.URL` | ✅ OK | Broker handlers only allow configured origin |
 | Docker image minimal | ✅ OK | `node:20-alpine` (~43MB), no unnecessary packages |
 | Machines auto-stop when idle | ✅ OK | Reduces attack surface window |
 | `force_https: true` in fly.toml | ✅ OK | All HTTP redirected to HTTPS |
@@ -152,9 +152,9 @@ frame-src https://accounts.google.com;
 **How to check:**
 ```bash
 # Verify server.js has no require() calls to external packages
-grep -n "require(" server.js | grep -v "node:" | grep -v "./netlify"
+grep -n "require(" server.js | grep -v "node:" | grep -v "./api"
 
-# Verify security headers in server.js match netlify.toml
+# Verify security headers in server.js
 grep -A1 "Strict-Transport\|X-Frame\|X-Content-Type\|Referrer-Policy" server.js
 ```
 
@@ -165,7 +165,7 @@ grep -A1 "Strict-Transport\|X-Frame\|X-Content-Type\|Referrer-Policy" server.js
 | Item | Priority | Description |
 |------|----------|-------------|
 | Hash anonymous passphrase | Medium | Server-side hash before using as `user_key` in Supabase |
-| Proxy AI calls through Netlify | Low | Would prevent client-side API key exposure; adds complexity and cost |
+| Proxy AI calls through Fly.io | Low | Would prevent client-side API key exposure; adds complexity and cost |
 | Move to external JS bundle | Low | Would allow removing `'unsafe-inline'` from CSP `script-src` |
 | Supabase RLS audit | Medium | Verify policies enforce `auth.uid()` filtering, test with another user's credentials |
 | Fly.io egress IP rotation | Low | Monitor if shared IPv4 changes — re-whitelist on broker portal if needed |

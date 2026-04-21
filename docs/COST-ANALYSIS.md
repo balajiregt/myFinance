@@ -111,7 +111,7 @@ Assuming 2 analyses + 3 chat messages per week:
 | Deployment | Monthly Cost | Broker Support | Notes |
 |-----------|-------------|----------------|-------|
 | **Open HTML file** | $0 | No | Just open `index.html` in browser |
-| **Netlify** | $0 | No | Free static hosting, all features except broker |
+| **Local `node server.js`** | $0 | No | Localhost origin, all features except broker |
 | **GitHub Pages** | $0 | No | Free static hosting, all features except broker |
 | **Fly.io** | ~$3.60 (~₹300) | **Yes** | Static IP required for SEBI-compliant broker API access |
 
@@ -124,9 +124,9 @@ Assuming 2 analyses + 3 chat messages per week:
 | Bandwidth | ~$0.00 | Yes — free tier | A few KB per broker sync; well within 160GB free |
 | **Total** | **~$3.60 + GST** | | Per broker sync: ~30-60s compute = negligible |
 
-### Why Not Just Netlify?
+### Why Fly.io?
 
-SEBI Exchange circular (effective April 2026) mandates static IP whitelisting for all Indian broker APIs. Netlify Functions use dynamic IPs that change on every invocation — impossible to whitelist. Fly.io provides a static egress IP at ~$3.60/month.
+SEBI Exchange circular (effective April 2026) mandates static IP whitelisting for all Indian broker APIs. Typical serverless platforms use dynamic IPs that change on every invocation — impossible to whitelist. Fly.io provides a static egress IP at ~$3.60/month. If you don't need broker integration, just open `index.html` or run `node server.js` locally — that's the $0 option.
 
 ---
 

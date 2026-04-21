@@ -1,4 +1,4 @@
-// netlify/functions/broker-proxy.js
+// api/broker-proxy.js
 // Generic broker API proxy — routes requests to the correct broker API server-side
 // This avoids CORS issues and keeps API secrets off the client
 

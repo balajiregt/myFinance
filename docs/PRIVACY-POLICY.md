@@ -73,7 +73,7 @@ When you use certain features, data is transmitted to third-party services:
 - **When:** You connect your broker account
 - **Data sent:** OAuth authorization code (for token exchange)
 - **Data received:** Your demat holdings
-- **Security:** API credentials stored server-side (Netlify env vars), never in browser
+- **Security:** API credentials stored server-side (Fly.io secrets), never in browser
 
 ### 4.5 Public Market APIs
 - **Data sent:** API requests for market prices (no personal data included)

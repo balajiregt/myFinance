@@ -95,9 +95,9 @@ flowchart LR
 
 ---
 
-## 3. Two-Tier Deployment Architecture
+## 3. Deployment Architecture
 
-How the app supports both free (Netlify) and broker-enabled (Fly.io) deployments using the same codebase.
+How the app supports both local (free, no broker) and Fly.io (broker-enabled) deployments using the same codebase.
 
 ```mermaid
 flowchart TD
@@ -107,12 +107,12 @@ flowchart TD
         SS["sessionStorage<br/>OAuth tokens"]
     end
 
-    subgraph Netlify ["Tier 1: Netlify (Free)"]
-        NF["Static hosting<br/>index.html served directly"]
-        NL["No broker support<br/>(dynamic IPs blocked by SEBI)"]
+    subgraph Local ["Local (Free)"]
+        FILE["Open index.html directly<br/>or run `node server.js`"]
+        NL["No broker support<br/>(SEBI requires static IP)"]
     end
 
-    subgraph FlyIO ["Tier 2: Fly.io (~$3.60/month)"]
+    subgraph FlyIO ["Fly.io (~$3.60/month)"]
         SRV["server.js<br/>Zero-dependency Node server"]
         BA["broker-auth.js<br/>(OAuth token exchange)"]
         BP["broker-proxy.js<br/>(API proxy)"]
@@ -130,7 +130,7 @@ flowchart TD
         OC["OpenClaw Agent<br/>Telegram/WhatsApp alerts"]
     end
 
-    APP -- "All features<br/>except broker" --> NF
+    APP -- "All features<br/>except broker" --> FILE
     APP -- "All features<br/>+ broker" --> SRV
     SRV --> BA
     SRV --> BP
@@ -141,7 +141,7 @@ flowchart TD
     SB -- "Read-only" --> OC
     OC -- "Alerts" --> TG["Telegram / WhatsApp"]
 
-    style NF fill:#1a2e1a,stroke:#3ecf8e,color:#fff
+    style FILE fill:#1a2e1a,stroke:#3ecf8e,color:#fff
     style SRV fill:#1a1a2e,stroke:#4a9eff,color:#fff
     style SIP fill:#2e1a1a,stroke:#e8923a,color:#fff
     style SB fill:#1a2e2e,stroke:#38bdf8,color:#fff
@@ -150,22 +150,22 @@ flowchart TD
 
 ### How `server.js` Works
 
-The Fly.io server is a zero-dependency Node.js HTTP server that reuses existing Netlify function handlers via an adapter pattern:
+The server is a zero-dependency Node.js HTTP server that routes broker requests to the `api/` handlers via an event-based handler adapter pattern:
 
 ```
-Browser → POST /api/broker-auth → server.js constructs Netlify-shaped event → broker-auth.js handler
-Browser → POST /api/broker-proxy → server.js constructs Netlify-shaped event → broker-proxy.js handler
+Browser → POST /api/broker-auth → server.js constructs event → broker-auth.js handler
+Browser → POST /api/broker-proxy → server.js constructs event → broker-proxy.js handler
 Browser → GET / or /auth/callback → serves index.html
 ```
 
 - No Express, no npm install — uses built-in `node:http` and `node:fs`
-- Same security headers as `netlify.toml` (CSP, HSTS, X-Frame-Options, etc.)
+- Security headers applied in `server.js` (CSP, HSTS, X-Frame-Options, etc.)
 - Docker image: ~43MB (node:20-alpine)
 - Machines auto-stop when idle, auto-start on request
 
 ### Why Fly.io?
 
-As per SEBI Exchange circular (effective April 2026), all Indian broker APIs require API calls to originate from a registered static IP. Netlify Functions and Vercel Serverless use dynamic IPs, making them incompatible with this regulation. Fly.io provides:
+As per SEBI Exchange circular (effective April 2026), all Indian broker APIs require API calls to originate from a registered static IP. Typical serverless platforms use dynamic IPs, making them incompatible with this regulation. Fly.io provides:
 - Static egress IPv4 (~$3.60/month)
 - Mumbai region (`bom`) for low latency to Indian broker APIs
 - Auto-stop/auto-start machines (pay only when running)

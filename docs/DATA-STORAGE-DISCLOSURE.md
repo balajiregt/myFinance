@@ -97,7 +97,7 @@ This document provides full transparency on every piece of data FinFolio stores,
 | Full email bodies | After Gmail sync | Only transaction metadata extracted. Raw email discarded after parsing |
 | Server-side user profiles | Backend database | No backend user database exists |
 | Analytics/telemetry | Server logs | Zero tracking, zero analytics |
-| IP addresses | Access logs | Netlify may log IPs in their infrastructure logs (standard CDN behavior), but FinFolio code does not access or store them |
+| IP addresses | Access logs | Fly.io may log IPs in their infrastructure logs (standard hosting behavior), but FinFolio code does not access or store them |
 
 ---
 
@@ -108,7 +108,7 @@ This document provides full transparency on every piece of data FinFolio stores,
 | Use AI assistant | Your chosen AI provider | Portfolio context + prompt | Subject to provider's policy |
 | Sync Gmail expenses | Google (Gmail API) | Search queries | Google logs API usage per their policy |
 | Parse expenses with AI | Your chosen AI provider | Email snippets (500 char max) | Subject to provider's policy |
-| Connect broker | HDFC Securities (via Netlify proxy) | OAuth token | HDFC logs API access per their policy |
+| Connect broker | HDFC Securities (via Fly.io proxy) | OAuth token | HDFC logs API access per their policy |
 | Enable Supabase sync | Your Supabase project | Portfolio data | Stored until you delete |
 | Fetch market prices | Public APIs (AMFI, gold, forex) | API request (no personal data) | Standard CDN/server logs |
 

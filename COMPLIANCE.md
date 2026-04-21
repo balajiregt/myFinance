@@ -43,12 +43,12 @@ This document certifies that all third-party API integrations in FinFolio follow
 |-----------|---------------|
 | API portal | [developer.hdfcsec.com](https://developer.hdfcsec.com) (official HDFC Securities developer portal) |
 | Auth protocol | OAuth 2.0 authorization code flow with server-side token exchange |
-| Client credentials | `HDFC_API_KEY` and `HDFC_API_SECRET` stored as Netlify environment variables — never exposed in client-side code |
-| Token exchange | Performed server-side via `netlify/functions/broker-auth.js` |
+| Client credentials | `HDFC_API_KEY` and `HDFC_API_SECRET` stored as Fly.io secrets — never exposed in client-side code |
+| Token exchange | Performed server-side via `api/broker-auth.js` |
 | Token storage | `sessionStorage` on client — cleared on tab close |
 | Endpoints used | `/portfolio/holdings`, `/portfolio/positions`, `/funds-and-margins`, `/user/profile` |
-| API proxy | All requests routed through `netlify/functions/broker-proxy.js` to keep API key server-side |
-| Data flow | Browser → Netlify function (adds API key) → HDFC API → Netlify function → Browser |
+| API proxy | All requests routed through `api/broker-proxy.js` to keep API key server-side |
+| Data flow | Browser → Fly.io handler (adds API key) → HDFC API → Fly.io handler → Browser |
 | Rate limiting | User-initiated only — no automated polling or bulk fetching |
 | Data stored | Holdings data in localStorage for display. No credentials or tokens persisted beyond session |
 
@@ -198,7 +198,7 @@ User's Browser (localStorage)
     │       └── Only bank alert emails parsed
     │
     ├── HDFC Securities API (OAuth 2.0) ──── Official developer API
-    │       └── Via Netlify proxy (API keys server-side)
+    │       └── Via Fly.io proxy (API keys server-side)
     │
     ├── AI Provider (user's key) ──────────── Gemini / Claude / OpenAI / OpenRouter
     │       └── Portfolio context + email snippets for analysis

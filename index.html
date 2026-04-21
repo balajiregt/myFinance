@@ -3606,7 +3606,7 @@ select option { background: var(--s2); }
           4. Go to <strong>APIs & Services → OAuth consent screen</strong> → External → fill in app name & email → add <code>gmail.readonly</code> scope → add yourself as test user<br>
           5. Go to <strong>Credentials → Create Credentials → OAuth Client ID</strong><br>
           6. Type: <strong>Web application</strong><br>
-          7. Authorized JavaScript origins: add your app URL (e.g. <code>https://your-app.fly.dev</code> or <code>https://your-app.netlify.app</code>)<br>
+          7. Authorized JavaScript origins: add your app URL (e.g. <code>https://your-app.fly.dev</code>)<br>
           8. Copy the <strong>Client ID</strong> and paste it above<br>
           <div style="margin-top:6px;color:var(--green);">✓ Gmail API is free — no billing or credit card needed.</div>
         </div>
@@ -8574,31 +8574,31 @@ const BROKER_META = {
     desc: 'InvestRight API — free for individual clients',
     // Auth URL built server-side in broker-auth.js (API key never reaches browser)
     hasOAuth: true,
-    setupHint: `<strong>Setup:</strong> Create app at <a href="https://developer.hdfcsec.com" target="_blank" style="color:var(--blue);">developer.hdfcsec.com</a> → Set redirect URL to <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:0.68rem;">${location.origin}/auth/callback</code> → Add <code>HDFC_API_KEY</code> & <code>HDFC_API_SECRET</code> in Fly.io secrets (or Netlify env vars).`,
+    setupHint: `<strong>Setup:</strong> Create app at <a href="https://developer.hdfcsec.com" target="_blank" style="color:var(--blue);">developer.hdfcsec.com</a> → Set redirect URL to <code style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:0.68rem;">${location.origin}/auth/callback</code> → Add <code>HDFC_API_KEY</code> & <code>HDFC_API_SECRET</code> in Fly.io secrets.`,
   },
   zerodha: {
     name: 'Zerodha (Kite Connect)',
     desc: 'Free personal API — holdings, positions, funds (no market data)',
     hasOAuth: true,
-    setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Fly.io secrets (or Netlify env vars).`,
+    setupHint: `<strong>Setup:</strong> Create personal app at <a href="https://developers.kite.trade" target="_blank" style="color:var(--blue);">developers.kite.trade</a> → Add <code>ZERODHA_API_KEY</code> & <code>ZERODHA_API_SECRET</code> in Fly.io secrets.`,
   },
   angel_one: {
     name: 'Angel One (SmartAPI)',
     desc: 'Completely free API — orders, holdings, data included',
     hasOAuth: false, // Uses TOTP, not OAuth redirect
-    setupHint: `<strong>Setup:</strong> Get SmartAPI key at <a href="https://smartapi.angelone.in" target="_blank" style="color:var(--blue);">smartapi.angelone.in</a> → Add <code>ANGEL_API_KEY</code> & <code>ANGEL_CLIENT_ID</code> in Fly.io secrets (or Netlify env vars). Login uses TOTP (no redirect).`,
+    setupHint: `<strong>Setup:</strong> Get SmartAPI key at <a href="https://smartapi.angelone.in" target="_blank" style="color:var(--blue);">smartapi.angelone.in</a> → Add <code>ANGEL_API_KEY</code> & <code>ANGEL_CLIENT_ID</code> in Fly.io secrets. Login uses TOTP (no redirect).`,
   },
   upstox: {
     name: 'Upstox v2',
     desc: 'Free basic API — holdings, positions, funds',
     hasOAuth: true,
-    setupHint: `<strong>Setup:</strong> Create app at <a href="https://account.upstox.com/developer/apps" target="_blank" style="color:var(--blue);">Upstox Developer</a> → Add <code>UPSTOX_API_KEY</code> & <code>UPSTOX_API_SECRET</code> in Fly.io secrets (or Netlify env vars).`,
+    setupHint: `<strong>Setup:</strong> Create app at <a href="https://account.upstox.com/developer/apps" target="_blank" style="color:var(--blue);">Upstox Developer</a> → Add <code>UPSTOX_API_KEY</code> & <code>UPSTOX_API_SECRET</code> in Fly.io secrets.`,
   },
   groww: {
     name: 'Groww',
     desc: 'API for holdings and portfolio tracking',
     hasOAuth: false,
-    setupHint: `<strong>Setup:</strong> Groww API access may require contacting their developer support. Add <code>GROWW_API_KEY</code> & <code>GROWW_API_SECRET</code> in Fly.io secrets (or Netlify env vars).`,
+    setupHint: `<strong>Setup:</strong> Groww API access may require contacting their developer support. Add <code>GROWW_API_KEY</code> & <code>GROWW_API_SECRET</code> in Fly.io secrets.`,
   },
   dhan: { name: 'Dhan (DhanHQ)', desc: 'Coming soon', hasOAuth: false, setupHint: 'Coming soon — check back later.' },
   fyers: { name: 'Fyers v3', desc: 'Coming soon', hasOAuth: false, setupHint: 'Coming soon — check back later.' },
@@ -8663,14 +8663,13 @@ function clearBrokerStorage() {
   localStorage.removeItem('mypf_broker_classified');
 }
 
-// Detect if running on a deployment with serverless functions available
-function isOnNetlify() {
-  return location.hostname.includes('netlify.app') || location.hostname.includes('netlify.com') || location.hostname.includes('fly.dev') || location.hostname === 'localhost';
+// Detect if running on a deployment with the broker API available
+function hasBrokerAPI() {
+  return location.hostname.includes('fly.dev') || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 }
 
 function getFunctionsBase() {
-  if (location.hostname.includes('fly.dev')) return '/api';
-  return '/.netlify/functions';
+  return '/api';
 }
 
 // Called when user selects a broker from dropdown
@@ -8774,7 +8773,7 @@ function brokerLogin() {
     } else if (data.needs_env) {
       // API key not configured on server
       updateBrokerUI('disconnected');
-      alert('❌ API key not configured for ' + meta.name + '.\n\nSet via: fly secrets set <KEY>=<VALUE>\n(or Netlify → Site Settings → Environment Variables)\n\nSee the setup hint below the broker selection.');
+      alert('❌ API key not configured for ' + meta.name + '.\n\nSet via: fly secrets set <KEY>=<VALUE>\n\nSee the setup hint below the broker selection.');
     } else {
       // Unknown error — offer manual token entry
       updateBrokerUI('disconnected');
@@ -8785,7 +8784,7 @@ function brokerLogin() {
   .catch(err => {
     console.warn('Auth URL fetch failed:', err);
     updateBrokerUI('disconnected');
-    const useManual = confirm('Could not reach the auth server.\n\nBroker OAuth requires deployment to Fly.io or Netlify.\n\nWould you like to enter your access token manually?');
+    const useManual = confirm('Could not reach the auth server.\n\nBroker OAuth requires deployment to Fly.io.\n\nWould you like to enter your access token manually?');
     if (useManual) promptManualToken(broker);
   });
 }
@@ -8807,7 +8806,7 @@ function promptManualToken(broker) {
 
   updateBrokerUI('loading');
 
-  // Exchange the code/token for an access token via our Netlify function
+  // Exchange the code/token for an access token via our broker-auth endpoint
   fetch(getFunctionsBase() + '/broker-auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -8952,7 +8951,7 @@ function brokerDisconnect() {
   applyBrokerMode(); // Refresh all broker-dependent UI
 }
 
-// Fetch holdings via Netlify Function proxy
+// Fetch holdings via broker-proxy endpoint
 async function fetchBrokerHoldings() {
   if (!brokerSession.broker || !brokerSession.token) {
     alert('Please connect a broker first');

@@ -4,7 +4,7 @@
 
 Track Stocks, Mutual Funds, FDs, RDs, SGB Gold, Physical Gold, Post Office schemes, Retirement (EPF/NPS), Real Estate, Insurance, Loans, Company Share Plans (ESPP/RSU/ESOP), and more — all from one dashboard with AI-powered insights. Auto-track expenses from bank emails via Gmail API. Proactive alerts via Telegram/WhatsApp.
 
-> **Self-hosted means YOU own it.** Fork this repo. Deploy to your own hosting (Netlify, Fly.io, or Vercel). Cloud backup goes to your own Supabase instance. All data stays in your browser by default — no shared servers, no tracking, no accounts.
+> **Self-hosted means YOU own it.** Fork this repo. Run it locally, or deploy to your own Fly.io instance. Cloud backup goes to your own Supabase instance. All data stays in your browser by default — no shared servers, no tracking, no accounts.
 
 ---
 
@@ -55,7 +55,7 @@ Track Stocks, Mutual Funds, FDs, RDs, SGB Gold, Physical Gold, Post Office schem
 ### Broker Integration
 - **HDFC Securities** — OAuth login, auto-fetch demat holdings
 - Holdings auto-classified: Stocks vs MF vs SGB vs ETF
-- API keys stored server-side only (Fly.io secrets / Netlify env vars)
+- API keys stored server-side only (Fly.io secrets)
 - Token in sessionStorage (clears on tab close)
 - Requires Fly.io deployment with static IP (SEBI mandate, effective April 2026)
 
@@ -153,30 +153,21 @@ open myFinance/index.html
 
 Everything works except broker integration: MF NAVs, gold prices, SGB, FD/RD, physical gold, post office, share plans, budget, and AI analysis (with your own Gemini key).
 
-### Option B: Deploy to Netlify (Free — No Broker)
+### Option B: Run Locally (No Broker)
 
-#### Step 1: Fork & Clone
+Either open `index.html` directly in your browser (as in Option A), or run the bundled Node.js server for a local `http://localhost` origin:
 
 ```bash
 git clone https://github.com/balajiregt/myFinance.git
 cd myFinance
+node server.js
 ```
-
-#### Step 2: Deploy to Netlify
-
-1. Go to [app.netlify.com](https://app.netlify.com)
-2. Click **"Add new site"** → **"Import an existing project"**
-3. Connect your GitHub fork
-4. Deploy settings:
-   - **Build command**: *(leave empty)*
-   - **Publish directory**: `.`
-5. Click **Deploy**
 
 Everything works — MF NAVs, gold prices, AI analysis, budget, Gmail sync, Supabase backup. Broker integration requires Fly.io (see Option C).
 
 ### Option C: Deploy to Fly.io (Enables Broker API — ~$3.60/month)
 
-SEBI mandates static IP whitelisting for all Indian broker APIs (effective April 2026). Netlify/Vercel use dynamic IPs. Fly.io provides a static egress IP required for broker integration.
+SEBI mandates static IP whitelisting for all Indian broker APIs (effective April 2026). Serverless platforms with dynamic IPs cannot satisfy this. Fly.io provides a static egress IP required for broker integration.
 
 #### Step 1: Install Fly CLI & Login
 
@@ -225,7 +216,7 @@ cd myFinance
 vercel
 ```
 
-Note: Broker integration requires adapting Netlify Functions to Vercel Serverless Functions (in `/api` directory).
+Note: Broker integration requires adapting the `api/` handlers to Vercel Serverless Functions, and Vercel's dynamic IPs cannot satisfy the SEBI static-IP mandate — broker APIs will only work on Fly.io.
 
 ### Option E: Deploy to GitHub Pages (Static Only)
 
@@ -247,8 +238,26 @@ Go to **Settings** tab in the app → **AI Provider** section:
 | **Claude Sonnet** | Paid — $3/$15 per M tokens | Get key at [console.anthropic.com](https://console.anthropic.com) |
 | **OpenRouter** | Varies by model | Get key at [openrouter.ai](https://openrouter.ai) — access 100+ models |
 | **OpenAI GPT** | Paid | Get key at [platform.openai.com](https://platform.openai.com) |
+| **Ollama (local)** | Free — runs on your machine | Install [ollama.com](https://ollama.com), then `ollama pull qwen2.5:3b`. See *Optional: Ollama Mode* below. |
 
 Paste your key in Settings → Save. The ✨ AI bubble is now active on every page.
+
+### Optional: Ollama Mode (fully-local AI, one-click toggle)
+
+If you want the chatbot to run on a local LLM (no API keys, no network), use the bundled `launch.command`:
+
+```bash
+chmod +x launch.command
+open launch.command          # or double-click it in Finder
+```
+
+What it does:
+- **First click:** starts Ollama + `node server.js` on port 8080 and opens `http://localhost:8080` (Ollama selectable in the chatbot's provider dropdown).
+- **Second click:** stops the local server and opens `https://finfolio.fly.dev` (cloud mode).
+
+Ollama only works when the page is served from `http://localhost` — browsers block `https://*.fly.dev → http://localhost:11434` as mixed content. That's why the local Node server exists. If you're happy with cloud AI providers, you don't need this.
+
+Recommended model for 8 GB machines: `qwen2.5:3b` (~2 GB RAM). Larger models (`qwen2.5:7b`, `llama3.1:8b`) need 16 GB+ to avoid swap thrashing.
 
 ---
 
@@ -257,12 +266,12 @@ Paste your key in Settings → Save. The ✨ AI bubble is now active on every pa
 ```
 myFinance/
 ├── index.html                    # The entire app (single file)
-├── server.js                     # Zero-dependency Node.js server (Fly.io deployment)
+├── server.js                     # Zero-dependency Node.js server (local + Fly.io)
+├── launch.command                # macOS one-click toggle: local Ollama ↔ cloud (fly.dev)
 ├── Dockerfile                    # Container image for Fly.io (~43MB)
 ├── fly.toml                      # Fly.io config: region, auto-stop, static IP
-├── netlify.toml                  # Netlify config: functions, redirects, security headers + CSP
 ├── package.json                  # Project metadata
-├── .gitignore                    # Blocks .env, node_modules, .netlify
+├── .gitignore                    # Blocks .env, node_modules
 ├── .dockerignore                 # Excludes .git, docs, .env from Docker builds
 ├── README.md
 ├── COMPLIANCE.md                 # API protocol compliance documentation
@@ -275,10 +284,9 @@ myFinance/
 │   ├── COST-ANALYSIS.md           # AI + hosting cost breakdown
 │   ├── SECURITY-AUDIT.md          # Security checklist with verification commands
 │   ├── SECURITY.md                # Security policy and architecture
-└── netlify/
-    └── functions/
-        ├── broker-auth.js        # OAuth token exchange (server-side, keys never in browser)
-        └── broker-proxy.js       # API proxy to broker endpoints
+└── api/
+    ├── broker-auth.js            # OAuth token exchange (server-side, keys never in browser)
+    └── broker-proxy.js           # API proxy to broker endpoints
 ```
 
 ---
@@ -321,7 +329,7 @@ myFinance/
 │        Required for broker API (SEBI static IP mandate)  │
 │  ┌──────────────┐                                        │
 │  │  server.js    │ Zero-dependency Node.js server         │
-│  │  (adapter)    │ Reuses Netlify function handlers       │
+│  │  (adapter)    │ Routes requests to api/ handlers       │
 │  └──────┬───────┘                                        │
 │  ┌──────┴────────┐  ┌──────────────────┐                 │
 │  │  broker-auth   │  │  broker-proxy     │                │
@@ -336,8 +344,9 @@ myFinance/
 └─────────────────────────────────────────────────────────┘
         OR (without broker)
 ┌─────────────────────────────────────────────────────────┐
-│              NETLIFY (free — no broker)                   │
-│        Serves index.html + all non-broker features       │
+│              LOCAL (free — no broker)                     │
+│  Open index.html directly, or run `node server.js`        │
+│  All data stays in your browser localStorage              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -349,15 +358,15 @@ myFinance/
 |---------|-----------------|
 | Portfolio data | 100% in browser localStorage — never sent anywhere (unless cloud sync is enabled) |
 | Cloud sync | Opt-in only. Data stored in your own Supabase instance with Row Level Security. HTTPS only |
-| Broker API keys | Server-side only (Fly.io secrets / Netlify env vars) — never in HTML |
+| Broker API keys | Server-side only (Fly.io secrets) — never in HTML |
 | OAuth tokens | sessionStorage — cleared when tab closes (Gmail + Broker) |
 | AI API keys | Stored client-side. Gemini key sent via `x-goog-api-key` header (not URL) |
 | XSS prevention | AI responses HTML-escaped before rendering. Budget labels and transaction fields sanitized via `escHTML()` |
-| CORS | Restricted to your own domain (Netlify via env var, Fly.io via `URL` secret) |
+| CORS | Restricted to your own domain (Fly.io via `URL` secret) |
 | CSP | Content-Security-Policy header restricts script/connect sources |
-| Headers | HSTS, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy (both Netlify and Fly.io) |
+| Headers | HSTS, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy (set in `server.js`) |
 | Static IP | Fly.io deployment uses static egress IP for broker API calls (SEBI compliance) |
-| Error leakage | Netlify functions return generic errors; details logged server-side only |
+| Error leakage | Broker handlers return generic errors; details logged server-side only |
 | Gmail data | Only merchant + amount + date persisted — no full email body stored |
 | Real estate coordinates | Stored in localStorage only; Overpass API queries are anonymous (no API key) |
 | Source code | Fully open source — audit everything. See [SECURITY-AUDIT.md](SECURITY-AUDIT.md) |
@@ -405,8 +414,8 @@ myFinance/
 
 ### Adding a New Broker
 
-1. Add broker config to `BROKER_CONFIG` in `netlify/functions/broker-proxy.js`
-2. Add auth config to `BROKER_AUTH_CONFIG` in `netlify/functions/broker-auth.js`
+1. Add broker config to `BROKER_CONFIG` in `api/broker-proxy.js`
+2. Add auth config to `BROKER_AUTH_CONFIG` in `api/broker-auth.js`
 3. Add a holdings normalizer in `index.html` (see `classifyBrokerHoldings()`)
 4. Submit a PR!
 
@@ -473,8 +482,8 @@ All brokers should map to:
 **Q: Is my data safe?**
 All data is in your browser's localStorage by default. If you enable Cloud Sync (optional), data is also stored in your own Supabase instance, protected by Row Level Security. Nothing is shared with third parties.
 
-**Q: Can I use this without deploying to Netlify?**
-Yes. Just open `index.html` in your browser. Everything works except broker integration.
+**Q: Can I use this without deploying anywhere?**
+Yes. Just open `index.html` in your browser (or run `node server.js` for a local origin). Everything works except broker integration, which requires Fly.io for the SEBI-mandated static IP.
 
 **Q: What happens if I clear my browser data?**
 Your portfolio data will be lost. Use Settings → Export Data to back up regularly.
@@ -503,7 +512,7 @@ FinFolio is a personal portfolio tracker for **informational purposes only**. It
 - The developers are **not liable** for any investment decisions, data loss, or financial losses arising from the use of this application.
 - Market data, NAVs, gold prices, and index values are fetched from third-party APIs and may be delayed or inaccurate. Always verify with official sources before making financial decisions.
 - Gmail expense tracking reads your own emails with your explicit consent. The app does not access any bank systems, modify your emails, or share your financial data with third parties without your action.
-- Cloud sync (Supabase / Netlify) is opt-in. When enabled, your portfolio data is transmitted over HTTPS to your own cloud instances. You are responsible for securing your own API keys, sync secrets, and Supabase RLS policies.
+- Cloud sync (Supabase) is opt-in. When enabled, your portfolio data is transmitted over HTTPS to your own cloud instances. You are responsible for securing your own API keys, sync secrets, and Supabase RLS policies.
 - This software is provided "AS IS" without warranty of any kind. See the [LICENSE](LICENSE) file for full terms.
 
 ---

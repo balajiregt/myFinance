@@ -1,15 +1,14 @@
 // server.js — Zero-dependency Node.js server for Fly.io deployment
-// Reuses existing Netlify function handlers via adapter pattern
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const brokerAuth = require('./netlify/functions/broker-auth.js');
-const brokerProxy = require('./netlify/functions/broker-proxy.js');
+const brokerAuth = require('./api/broker-auth.js');
+const brokerProxy = require('./api/broker-proxy.js');
 
 const PORT = process.env.PORT || 8080;
 
-// Security headers (matching netlify.toml)
+// Security headers
 const SECURITY_HEADERS = {
   'X-Frame-Options': 'DENY',
   'X-Content-Type-Options': 'nosniff',
@@ -38,8 +37,8 @@ function readBody(req) {
   });
 }
 
-// Adapt Netlify function handler to Node http
-async function netlifyAdapter(handler, req, res) {
+// Adapt a serverless-style (event-based) handler to Node http
+async function handlerAdapter(handler, req, res) {
   const body = await readBody(req);
   const event = {
     httpMethod: req.method,
@@ -90,12 +89,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
-  // API routes — delegate to Netlify function handlers
+  // API routes
   if (pathname === '/api/broker-auth') {
-    return netlifyAdapter(brokerAuth.handler, req, res);
+    return handlerAdapter(brokerAuth.handler, req, res);
   }
   if (pathname === '/api/broker-proxy') {
-    return netlifyAdapter(brokerProxy.handler, req, res);
+    return handlerAdapter(brokerProxy.handler, req, res);
   }
 
   // Only handle GET for static files

@@ -60,7 +60,6 @@ FinFolio integrates with third-party services. Each has their own terms:
 | OpenAI | [OpenAI Terms](https://openai.com/policies) |
 | OpenRouter | [OpenRouter Terms](https://openrouter.ai/terms) |
 | Supabase | [Supabase Terms](https://supabase.com/terms) |
-| Netlify | [Netlify Terms](https://www.netlify.com/legal/terms-of-use/) |
 | HDFC Securities API | [HDFC Developer Terms](https://developer.hdfcsec.com) |
 | Finnhub | [Finnhub Terms](https://finnhub.io/terms-of-service) |
 
@@ -71,7 +70,7 @@ You are responsible for complying with each service's terms when using their API
 ## 6. Data and Privacy
 
 - FinFolio stores all data locally in your browser by default
-- Cloud sync (Supabase, Netlify) is optional and user-initiated
+- Cloud sync (Supabase) is optional and user-initiated
 - No data is collected, tracked, or shared by the developers
 - See our [Privacy Policy](PRIVACY-POLICY.md) for full details
 
@@ -111,7 +110,7 @@ You agree to indemnify and hold harmless the developers, contributors, and maint
 
 ## 10. Service Availability
 
-- FinFolio is self-hosted software. Availability depends on your hosting provider (Netlify, Vercel, or local)
+- FinFolio is self-hosted software. Availability depends on how you run it (local or Fly.io)
 - Third-party APIs may change, rate-limit, or discontinue service without notice
 - The developers do not guarantee uptime, availability, or continued maintenance of the software
 - The developers may update, modify, or discontinue the project at any time

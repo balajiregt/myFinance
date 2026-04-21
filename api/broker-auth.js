@@ -1,4 +1,4 @@
-// netlify/functions/broker-auth.js
+// api/broker-auth.js
 // Handles OAuth token exchange for all supported brokers
 // The client sends the auth code received from broker's OAuth redirect,
 // this function exchanges it for an access token server-side (keeping secrets safe)
@@ -168,7 +168,7 @@ exports.handler = async (event) => {
       const authUrl = urlBuilder(siteUrl + '/auth/callback');
       if (!authUrl) {
         return respond(event, 400, {
-          error: `API key not configured for ${broker}. Set via fly secrets set or Netlify env vars.`,
+          error: `API key not configured for ${broker}. Set via: fly secrets set.`,
           needs_env: true,
         });
       }

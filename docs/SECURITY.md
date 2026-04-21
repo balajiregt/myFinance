@@ -73,9 +73,9 @@ If you discover a security vulnerability in FinFolio, **please report it respons
 
 - All portfolio data stored in browser localStorage (client-side only)
 - OAuth tokens in sessionStorage (cleared on tab close)
-- Broker API credentials server-side only (Fly.io secrets / Netlify env vars)
+- Broker API credentials server-side only (Fly.io secrets)
 - HTTPS enforced via HSTS headers
-- Content Security Policy (CSP) restricts script and API sources (both Netlify and Fly.io)
+- Content Security Policy (CSP) restricts script and API sources (applied by `server.js`)
 - CORS restricted to application's own domain
 - HTML sanitization on all AI-generated and user-provided content
 - No cookies, no tracking, no analytics
@@ -85,7 +85,7 @@ If you discover a security vulnerability in FinFolio, **please report it respons
 - Zero-dependency Node.js server — no third-party packages, minimal attack surface
 - Static egress IP whitelisted on broker portals (SEBI compliance)
 - Secrets stored via `fly secrets` (encrypted at rest, injected as env vars at runtime)
-- Same security headers as Netlify deployment (HSTS, CSP, X-Frame-Options, etc.)
+- Security headers set directly by `server.js` (HSTS, CSP, X-Frame-Options, etc.)
 - Path traversal protection on static file serving
 - Docker image: node:20-alpine (~43MB) — no unnecessary packages
 - Machines auto-stop when idle — reduced exposure window
