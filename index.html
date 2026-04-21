@@ -3350,6 +3350,7 @@ select option { background: var(--s2); }
       <button class="prov-btn"        data-p="openai"     onclick="selectProvider('openai',this)"><i class="bi bi-chat-dots"></i> OpenAI</button>
       <button class="prov-btn"        data-p="gemini"     onclick="selectProvider('gemini',this)"><i class="bi bi-stars"></i> Gemini</button>
       <button class="prov-btn"        data-p="openrouter" onclick="selectProvider('openrouter',this)"><i class="bi bi-globe"></i> OpenRouter</button>
+      <button class="prov-btn"        data-p="ollama"     onclick="selectProvider('ollama',this)"><i class="bi bi-hdd-network"></i> Ollama (Local)</button>
     </div>
 
     <!-- CLAUDE CARD -->
@@ -3470,6 +3471,36 @@ select option { background: var(--s2); }
         Browse models at <a href="https://openrouter.ai/models?order=pricing-low-to-high" target="_blank" style="color:var(--blue);">openrouter.ai/models</a> — models ending in <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">:free</code> cost nothing
       </div>
       <div id="openrouter-key-msg" style="font-size:0.72rem;margin-top:6px;min-height:16px;"></div>
+    </div>
+
+    <!-- OLLAMA CARD -->
+    <div id="prov-card-ollama" class="prov-card" style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;margin-bottom:12px;display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span style="font-weight:800;font-size:0.92rem;">Ollama (Local)</span>
+        <span id="ollama-key-status" style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:var(--s3);color:var(--text3);">Not checked</span>
+        <span style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:rgba(62,207,142,0.1);color:var(--green);">100% local &middot; free</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">
+        Runs on your machine. No key, no cloud call, no cost. Install from <a href="https://ollama.com/download" target="_blank" style="color:var(--blue);">ollama.com</a>, then <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">ollama pull qwen2.5:3b</code>.<br>
+        <strong>Required one-time setup for browser access:</strong> run <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">launchctl setenv OLLAMA_ORIGINS "*"</code> and restart Ollama (so CORS permits this tab).
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <input type="text" id="settings-ollama-baseurl" placeholder="http://localhost:11434"
+          style="flex:1;min-width:220px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);outline:none;">
+        <button onclick="saveOllamaBaseUrl()" style="padding:8px 18px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;">Save</button>
+        <button onclick="testOllamaConnection()" style="padding:8px 12px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.3);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">Test</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select id="settings-ollama-model" onchange="saveProviderModel('ollama')"
+          style="flex:1;min-width:220px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);outline:none;">
+          <option value="qwen2.5:3b">qwen2.5:3b (~2 GB, fits 8 GB RAM)</option>
+          <option value="qwen2.5:7b">qwen2.5:7b (~5 GB, needs 16 GB)</option>
+          <option value="llama3.2:3b">llama3.2:3b (~2 GB)</option>
+          <option value="granite3.2:8b">granite3.2:8b (~5 GB)</option>
+        </select>
+        <button onclick="refreshOllamaModels()" style="padding:8px 12px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-weight:600;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;" title="Load models from your local Ollama"><i class="bi bi-arrow-clockwise"></i></button>
+      </div>
+      <div id="ollama-key-msg" style="font-size:0.72rem;margin-top:6px;min-height:16px;"></div>
     </div>
   </div>
 
@@ -9473,7 +9504,54 @@ const MODEL_DEFAULTS = {
   openai: 'gpt-4o',
   gemini: 'gemini-2.5-flash',
   openrouter: 'nvidia/nemotron-3-super-120b-a12b:free',
+  ollama: 'qwen2.5:3b',
 };
+const OLLAMA_BASEURL_KEY = 'mypf_ollama_baseurl';
+const OLLAMA_BASEURL_DEFAULT = 'http://localhost:11434';
+function getOllamaBaseUrl() {
+  return (localStorage.getItem(OLLAMA_BASEURL_KEY) || OLLAMA_BASEURL_DEFAULT).replace(/\/+$/, '');
+}
+function saveOllamaBaseUrl() {
+  const inp = document.getElementById('settings-ollama-baseurl');
+  const val = inp?.value?.trim();
+  if (val) localStorage.setItem(OLLAMA_BASEURL_KEY, val.replace(/\/+$/, ''));
+  const msg = document.getElementById('ollama-key-msg');
+  if (msg) { msg.textContent = 'Saved: ' + getOllamaBaseUrl(); msg.style.color = 'var(--green)'; }
+}
+async function testOllamaConnection() {
+  const msg = document.getElementById('ollama-key-msg');
+  const status = document.getElementById('ollama-key-status');
+  if (msg) { msg.textContent = 'Testing…'; msg.style.color = 'var(--text3)'; }
+  try {
+    const res = await fetch(getOllamaBaseUrl() + '/api/tags');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const count = (d.models || []).length;
+    if (msg) { msg.textContent = '✓ Connected — ' + count + ' model(s) available.'; msg.style.color = 'var(--green)'; }
+    if (status) { status.textContent = 'Reachable'; status.style.background = 'rgba(62,207,142,0.12)'; status.style.color = 'var(--green)'; }
+  } catch (e) {
+    if (msg) { msg.textContent = '✗ Could not reach Ollama: ' + e.message + '. Is it running? Did you set OLLAMA_ORIGINS="*"?'; msg.style.color = 'var(--red)'; }
+    if (status) { status.textContent = 'Offline'; status.style.background = 'rgba(255,87,87,0.1)'; status.style.color = 'var(--red)'; }
+  }
+}
+async function refreshOllamaModels() {
+  const sel = document.getElementById('settings-ollama-model');
+  const msg = document.getElementById('ollama-key-msg');
+  try {
+    const res = await fetch(getOllamaBaseUrl() + '/api/tags');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    const models = (d.models || []).map(m => m.name || m.model).filter(Boolean);
+    if (sel && models.length) {
+      const current = getProviderModel('ollama');
+      sel.innerHTML = models.map(m => '<option value="' + m + '"' + (m === current ? ' selected' : '') + '>' + m + '</option>').join('');
+      if (!models.includes(current)) { localStorage.setItem('mypf_ollama_model', models[0]); sel.value = models[0]; }
+    }
+    if (msg) { msg.textContent = 'Loaded ' + models.length + ' model(s) from Ollama.'; msg.style.color = 'var(--green)'; }
+  } catch (e) {
+    if (msg) { msg.textContent = 'Could not load models: ' + e.message; msg.style.color = 'var(--red)'; }
+  }
+}
 function getProviderModel(provider) { return localStorage.getItem('mypf_' + provider + '_model') || MODEL_DEFAULTS[provider]; }
 function saveProviderModel(provider) {
   const sel = document.getElementById('settings-' + provider + '-model');
@@ -9497,6 +9575,7 @@ function setAIProvider(p) { localStorage.setItem('mypf_ai_provider', p); }
 // Get active provider's key (for banner checks)
 function getActiveAIKey() {
   const p = getAIProvider();
+  if (p === 'ollama') return 'local';
   const cfg = KEY_STORE[p];
   return cfg ? localStorage.getItem(cfg.ls) : null;
 }
@@ -9563,6 +9642,18 @@ async function callAI(prompt, maxTokens) {
     return d.choices?.[0]?.message?.content || '';
   }
 
+  if (provider === 'ollama') {
+    const res = await fetch(getOllamaBaseUrl() + '/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model: getProviderModel('ollama'), max_tokens: maxTokens,
+                             messages:[{ role:'user', content: prompt }] })
+    });
+    if (!res.ok) { const e = await res.text(); throw new Error('Ollama ' + res.status + ': ' + e.slice(0,120)); }
+    const d = await res.json();
+    return d.choices?.[0]?.message?.content || '';
+  }
+
   throw new Error('Unknown provider: ' + provider);
 }
 
@@ -9582,12 +9673,15 @@ function initSettingsPage() {
     if (inp) { inp.value = ''; inp.placeholder = val ? '●●●●●●●● (key saved)' : 'Paste ' + cfg.label + '…'; }
   });
   // Restore saved model selections
-  ['claude','openai','gemini'].forEach(p => {
+  ['claude','openai','gemini','ollama'].forEach(p => {
     const sel = document.getElementById('settings-' + p + '-model');
     if (sel) sel.value = getProviderModel(p);
   });
   const orModelDisplay = document.getElementById('openrouter-current-model');
   if (orModelDisplay) orModelDisplay.textContent = getOpenRouterModel();
+  // Restore Ollama base URL
+  const ollamaUrlInp = document.getElementById('settings-ollama-baseurl');
+  if (ollamaUrlInp) ollamaUrlInp.value = getOllamaBaseUrl();
   // Init Supabase toggle state
   const supaConfig = getSupaConfig();
   updateSupaToggleUI(supaConfig?.enabled || false);
@@ -10137,8 +10231,9 @@ function initAIPage() {
     { id: 'openai',     key: 'mypf_openai_key',      icon: '💬', label: () => getProviderModel('openai') },
     { id: 'gemini',     key: 'mypf_gemini_key',       icon: '✨', label: () => getProviderModel('gemini') },
     { id: 'openrouter', key: 'mypf_openrouter_key',   icon: '🌐', label: () => getOpenRouterModel() },
+    { id: 'ollama',     key: null,                    icon: '🖥️', label: () => getProviderModel('ollama') + ' (local)' },
   ];
-  const available = allProviders.filter(p => !!localStorage.getItem(p.key));
+  const available = allProviders.filter(p => p.key === null || !!localStorage.getItem(p.key));
 
   if (dropdown) {
     dropdown.innerHTML = '';
@@ -10159,7 +10254,8 @@ function initAIPage() {
   }
 
   const keyMap = { claude: 'mypf_apikey', openai: 'mypf_openai_key', gemini: 'mypf_gemini_key', openrouter: 'mypf_openrouter_key' };
-  const hasKey = !!localStorage.getItem(keyMap[getAIProvider()] || '');
+  const activeProvider = getAIProvider();
+  const hasKey = activeProvider === 'ollama' ? true : !!localStorage.getItem(keyMap[activeProvider] || '');
   const warn = document.getElementById('aiKeyWarning');
   if (warn) warn.style.display = hasKey ? 'none' : 'block';
 
@@ -10854,6 +10950,21 @@ async function callAIProvider(prompt) {
     return d.choices?.[0]?.message?.content || 'No response from OpenRouter';
   }
 
+  if (provider === 'ollama') {
+    try {
+      const res = await fetch(getOllamaBaseUrl() + '/v1/chat/completions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ model: getProviderModel('ollama'), max_tokens:1500, messages:[{role:'user',content:prompt}] })
+      });
+      const d = await res.json();
+      if (d.error) return 'Error: Ollama: ' + (d.error.message || JSON.stringify(d.error));
+      return d.choices?.[0]?.message?.content || 'No response from Ollama';
+    } catch (e) {
+      return 'Error: Ollama unreachable — is it running and is CORS configured? (' + e.message + ')';
+    }
+  }
+
   return 'Error: Unknown AI provider';
 }
 
@@ -10865,7 +10976,7 @@ function isAIMarketDataEnabled() {
 async function fetchMarketDataViaAI(query, format) {
   const provider = getAIProvider();
   const keyMap = { claude: 'mypf_apikey', openai: 'mypf_openai_key', gemini: 'mypf_gemini_key', openrouter: 'mypf_openrouter_key' };
-  if (!localStorage.getItem(keyMap[provider] || '')) return null;
+  if (provider !== 'ollama' && !localStorage.getItem(keyMap[provider] || '')) return null;
 
   const today = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'long', year:'numeric' });
   const prompt = `You are a market data API. Return ONLY valid JSON, no explanation, no markdown fences.

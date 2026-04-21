@@ -22,7 +22,7 @@ const SECURITY_HEADERS = {
     "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-    "connect-src 'self' https://*.supabase.co https://api.mfapi.in https://api.gold-api.com https://finnhub.io https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai https://gmail.googleapis.com https://cdn.jsdelivr.net https://query1.finance.yahoo.com https://overpass-api.de",
+    "connect-src 'self' http://localhost:11434 http://127.0.0.1:11434 https://*.supabase.co https://api.mfapi.in https://api.gold-api.com https://finnhub.io https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai https://gmail.googleapis.com https://cdn.jsdelivr.net https://query1.finance.yahoo.com https://overpass-api.de",
     "img-src 'self' data: https://*.tile.openstreetmap.org",
     "frame-src https://accounts.google.com",
   ].join('; '),
