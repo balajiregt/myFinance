@@ -127,7 +127,12 @@ flowchart TD
 
     subgraph Cloud ["Cloud Services"]
         SB["Supabase<br/>Cloud backup + RLS"]
-        OC["OpenClaw Agent<br/>Telegram/WhatsApp alerts"]
+        GM["Gemini / Claude<br/>(chat path)"]
+    end
+
+    subgraph AgentLayer ["FinFolio Agent (private add-on)"]
+        LD["launchd / cron<br/>scripted PUSH alerts"]
+        OC["OpenClaw gateway<br/>chat PULL replies"]
     end
 
     APP -- "All features<br/>except broker" --> FILE
@@ -138,14 +143,20 @@ flowchart TD
     BP --> HDFC
     SIP -.-> HDFC
     APP -- "Direct from browser<br/>(opt-in sync)" --> SB
+    SB -- "Read-only" --> LD
     SB -- "Read-only" --> OC
-    OC -- "Alerts" --> TG["Telegram / WhatsApp"]
+    LD -- "scheduled digests<br/>(deterministic)" --> TG["Telegram"]
+    OC -- "chat replies<br/>(LLM-powered)" --> TG
+    TG -- "user DMs / commands" --> OC
+    OC <--> GM
 
     style FILE fill:#1a2e1a,stroke:#3ecf8e,color:#fff
     style SRV fill:#1a1a2e,stroke:#4a9eff,color:#fff
     style SIP fill:#2e1a1a,stroke:#e8923a,color:#fff
     style SB fill:#1a2e2e,stroke:#38bdf8,color:#fff
+    style LD fill:#1a2e1a,stroke:#3ecf8e,color:#fff
     style OC fill:#2e2e1a,stroke:#f0c040,color:#fff
+    style GM fill:#2e1a1a,stroke:#e8923a,color:#fff
 ```
 
 ### How `server.js` Works

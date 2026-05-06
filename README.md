@@ -122,23 +122,58 @@ Available on every page with 7 one-click analyses + free-text chat:
 
 ## Proactive Alerts via Telegram / WhatsApp
 
-> **Want FinFolio to message YOU?** Get morning portfolio digests, market crash alerts, FD maturity reminders, SIP nudges, and expense summaries — all delivered to your Telegram or WhatsApp automatically.
+> **Want FinFolio to message YOU?** Get morning portfolio digests, market crash alerts, FD maturity reminders, SIP nudges, and expense summaries — all delivered to your Telegram or WhatsApp automatically. Plus ask follow-up questions in natural language.
 
-The **FinFolio Agent** is a premium add-on that turns your portfolio tracker into a proactive AI assistant. It reads your synced portfolio data (via Supabase cloud backup) and sends scheduled alerts through messaging channels.
+The **FinFolio Agent** is a premium add-on that turns your portfolio tracker into a proactive *and* interactive AI assistant. It reads your synced portfolio data (via Supabase cloud backup) and exposes two complementary interaction paths:
 
-**9 built-in agent tasks:**
-- Morning Portfolio Digest (weekdays 9 AM)
-- MF NAV Drop Alert (> 5% decline)
-- Gold Price Movement
-- Upcoming Reminders (insurance, loans, FD/RD maturities, SIPs, custom — configurable threshold via `FINFOLIO_REMINDER_DAYS`)
-- Market Index Alert (Nifty/Sensex crash/rally detection)
-- Market Mood Check (PE-based valuation)
-- Expense Summary (Gmail transaction breakdown)
-- Tax Harvesting Opportunities (Jan/March)
+### 🟢 PUSH — Scheduled alerts (deterministic, free)
 
-Built on [OpenClaw](https://openclaw.ai) — an AI gateway for Telegram/WhatsApp. Includes pre-configured skill definitions, cron schedules, and tested API integrations.
+Python scripts run on a schedule (macOS `launchd` or Linux `cron`/`systemd-timer`), fetch your portfolio data + live market APIs, compute the digest, and post to Telegram. **No LLM in the path** — math is provably correct, alerts arrive in 2–6 seconds, runs on a 8 GB Mac.
 
-**Interested?** Reach out to get access to the agent setup package.
+**6 built-in cron tasks:**
+
+| Task | Schedule (IST) | Trigger |
+|---|---|---|
+| Morning portfolio digest | Weekdays 9:00 AM | Always |
+| Upcoming reminders | Daily 8:00 AM | Only if items overdue or due ≤ 10 d |
+| Gold price check | Daily 10:00 AM | Always (with 🚨 tag if > 3% below your avg buy) |
+| Index impact alert | Weekdays 10:30 / 12:30 / 2:30 PM | Only if Nifty/Sensex moved > 0.8% |
+| Weekly performance digest | Fridays 6:00 PM | Always (per-fund 1M / 1Y returns + verdict) |
+| Tax harvesting check | Jan 1 & Mar 1, 9:00 AM | Always (LTCG opportunities + ₹1.25L exemption usage) |
+
+### 🔵 PULL — Interactive chat (LLM-powered, on demand, runs locally)
+
+DM your **Telegram bot** anytime with natural-language questions. Built on [OpenClaw](https://openclaw.ai) — an AI gateway that routes your message to a **locally-running Qwen 3 4B model via Ollama** (~2 min replies on an 8 GB M1, no cloud LLM API needed). The agent uses the **finfolio skill** to fetch live portfolio data from your Supabase backup and answer.
+
+**Optional:** swap to Claude Sonnet via Claude Pro/Max OAuth (~70 sec replies) or Gemini Flash free tier (~60 sec) if you want faster responses with cloud LLMs.
+
+**Examples of what you can ask:**
+
+```
+You: What's my net worth right now?
+Bot: ₹44.33L — MFs ₹52K, Gold ₹35.46L, FDs ₹7.95L, RDs ₹40K.
+
+You: Any FDs maturing soon?
+Bot: HDFC ₹6.5L matures 2026-11-01.
+
+You: Show MFs underperforming Nifty
+Bot: [list with returns vs Nifty 1Y]
+
+You: Should I rebalance?
+Bot: [LLM-generated analysis based on current allocation]
+```
+
+The PULL path also handles `/slash` commands like `/networth`, `/gold`, `/reminders`, `/weekly` for instant deterministic responses — no LLM call needed.
+
+### Why hybrid?
+
+PUSH guarantees you never miss a daily digest or a price-drop alert (no LLM means no timeouts, no hallucinations, no API cost). PULL adds AI flexibility for one-off questions where pre-baked schedules don't fit. They share the same Telegram bot and the same Supabase data — different triggers, complementary strengths.
+
+### Verified on 8 GB MacBook Air M1
+
+The entire stack — push scripts, OpenClaw gateway, Ollama with `qwen3:4b`, and the finfolio skill — runs comfortably on a base-model M1 with 8 GB RAM. No external GPU, no cloud LLM, no monthly subscription. **Your portfolio data never leaves your machine for AI processing** (only Supabase, your own cloud backup, sees the data).
+
+**Interested?** Reach out to get access to the agent setup package, or see the [private agent repo](https://github.com/balajiregt/finfolio-agent) for architecture details.
 
 ---
 
