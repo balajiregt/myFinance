@@ -23,3 +23,19 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Security tooling and generated runtime state
+artifacts/
+node_modules/
+.next/
+dist/
+target/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Reviewed local security archives are source inputs, not build output.
+!**/scripts/security/*.tgz

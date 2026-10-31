@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+root=$(git rev-parse --show-toplevel)
+exec node "$root/scripts/security-gate.mjs"

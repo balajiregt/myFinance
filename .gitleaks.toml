@@ -1,0 +1,9 @@
+title = "Workspace secret scanning"
+[extend]
+useDefault = true
+
+[[rules]]
+id = "caseforge-api-key"
+description = "CaseForge upload API key"
+regex = '''qaf_[a-f0-9]{64}'''
+keywords = ["qaf_"]
