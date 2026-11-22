@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>FinFolio local test data</title><body><h1>Local acceptance preview</h1><p>Synthetic portfolio on localhost only. No cloud connection or AI keys.</p><button id="load">Load synthetic portfolio</button><button id="completed">Load completed scheme fixture</button><script src="/assets/finance-core.js"></script><script>
+function loadFixture(completed){
+ const now=new Date(), m=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit'}).format(now), prior=new Date(m+'-01T00:00:00Z');prior.setUTCMonth(prior.getUTCMonth()-2);
+ const rd={id:42,bank:'Tanishq gold plan',monthly:10000,rate:7,tenure:10,start:prior.toISOString().slice(0,10),maturity:'2027-06-01',paidMonths:2,matAmt:103000};
+ const data={mypf_v3:{salary:100000,savingsPct:0,rds:[rd],fds:[],selectedMFs:[],strategy:'normal'},mypf_rds:[rd,{id:43,bank:'Example Bank',monthly:5000,rate:7,paidMonths:3,tenure:12,start:'2026-01-01',maturity:'2027-01-01',matAmt:62000}],mypf_sip_plans:[{id:1,name:'Index fund SIP',amount:10000,status:'active',startDate:'2026-01-01'}],mypf_ss_config:{monthly:12000},mypf_budget:{fixed:[{id:'rent',label:'Rent and bills',amount:40000,icon:'',locked:false}],variable:[{id:'living',label:'Living expenses',amount:20000,icon:'',locked:false}],efMonthly:0,efSaved:0},mypf_gmail_transactions:[{id:'transfer1',date:m+'-01',amount:5000,merchant:'Example Bank RD',type:'debit'},{id:'expense1',date:m+'-01',amount:2400,merchant:'Groceries',type:'debit'}]};
+ if(completed){
+   const C=FinanceCore;rd.start=C.addMonth(m,-9)+'-01';
+   const g=C.migrateRD(C.emptyGold(),rd,{startMonth:rd.start.slice(0,7)}),scheme=g.schemes[0];
+   g.payments.forEach(p=>{p.grams=1;p.rate=10000;p.date=p.month+'-01';});
+   for(let i=2;i<10;i++)g.payments.push({version:1,id:'completed-'+i,schemeId:scheme.id,month:C.addMonth(scheme.startMonth,i),date:C.addMonth(scheme.startMonth,i)+'-01',amount:10000,rate:10000,grams:1,receipt:'synthetic-'+i});
+   data.mypf_gold_schemes_v1=g;data.mypf_rds=data.mypf_rds.filter(x=>x.id!==42);data.mypf_v3.rds=data.mypf_rds;
+ }
+ Object.keys(localStorage).filter(k=>k.startsWith('mypf_')).forEach(k=>localStorage.removeItem(k));Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,JSON.stringify(v)));sessionStorage.setItem('mypf_auth_skipped','1');location.href='/';
+}document.getElementById('load').onclick=()=>loadFixture(false);document.getElementById('completed').onclick=()=>loadFixture(true);</script></body></html>

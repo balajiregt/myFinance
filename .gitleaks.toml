@@ -7,3 +7,11 @@ id = "caseforge-api-key"
 description = "CaseForge upload API key"
 regex = '''qaf_[a-f0-9]{64}'''
 keywords = ["qaf_"]
+
+# FinFolio browser-storage key names (e.g. SAVINGS_KEY = 'mypf_savings_v1') are
+# identifiers, not credentials. Only the exact mypf_<lowercase name> form is exempt;
+# anything with capitals or other characters is still scanned.
+[[allowlists]]
+description = "FinFolio localStorage key names"
+regexTarget = "secret"
+regexes = ['''^mypf_[a-z0-9_]+$''']

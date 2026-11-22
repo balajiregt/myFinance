@@ -39,3 +39,7 @@ target/
 
 # Reviewed local security archives are source inputs, not build output.
 !**/scripts/security/*.tgz
+
+# Python verification caches
+__pycache__/
+*.pyc

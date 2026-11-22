@@ -3,3 +3,7 @@ node_modules
 .env
 docs/
 .claude/
+
+outputs/
+copilot-sprint-metrics-starter/
+tests/
