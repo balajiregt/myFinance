@@ -2,7 +2,7 @@
 const C = require('../assets/finance-core');
 const SOURCE_URL = 'https://www.tanishq.co.in/gold-rate.html?lang=en';
 const TTL = 15 * 60 * 1000;
-const plain = html => html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&#8377;|&#x20b9;|&rupee;/gi,'₹').replace(/\s+/g,' ');
+const plain = html => html.replace(/<script\b[^>]*>[\s\S]*?<\/script\b[^>]*>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style\b[^>]*>/gi,' ').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&#8377;|&#x20b9;|&rupee;/gi,'₹').replace(/\s+/g,' ');
 function parseRates(html) {
   // Tanishq publishes all purities as row attributes. Read only the explicit 22K field.
   const headlineTable=[...html.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/gi)].map(x=>x[0]).find(x=>/class=["'][^"']*\bgoldrate-table-22kt\b/.test(x));
