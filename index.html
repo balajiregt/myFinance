@@ -2577,6 +2577,7 @@ select option { background: var(--s2); }
             <option value="loan">Loan</option>
             <option value="investment">Investment</option>
             <option value="tax">Tax</option>
+            <option value="bill">Credit card / bill</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -6406,8 +6407,8 @@ const OPENCLAW_CRONS = [
   { task: 'tax_check',          cron: '0 9 1 1,3 *',         label: 'Tax Harvesting Check',  icon: 'bi-receipt',       schedule: 'Jan & Mar 1st, 9 AM', dataCheck: () => true },
 ];
 
-const REM_ICONS = { insurance: 'bi-shield-check', loan: 'bi-bank', fd: 'bi-safe', rd: 'bi-piggy-bank', sip: 'bi-arrow-repeat', custom: 'bi-pin-angle', investment: 'bi-graph-up', tax: 'bi-receipt', other: 'bi-tag' };
-const REM_COLORS = { insurance: '#a78bfa', loan: '#f06060', fd: '#4a9eff', rd: '#4a9eff', sip: '#3ecf8e', custom: '#f59e0b', investment: '#3ecf8e', tax: '#e8923a', other: '#6b7080' };
+const REM_ICONS = { insurance: 'bi-shield-check', loan: 'bi-bank', fd: 'bi-safe', rd: 'bi-piggy-bank', sip: 'bi-arrow-repeat', custom: 'bi-pin-angle', investment: 'bi-graph-up', tax: 'bi-receipt', bill: 'bi-credit-card', other: 'bi-tag' };
+const REM_COLORS = { insurance: '#a78bfa', loan: '#f06060', fd: '#4a9eff', rd: '#4a9eff', sip: '#3ecf8e', custom: '#f59e0b', investment: '#3ecf8e', tax: '#e8923a', bill: '#f06060', other: '#6b7080' };
 
 function computeNextPremiumDate(startStr, freq, now) {
   if (!startStr) return null;
@@ -6473,7 +6474,7 @@ function generateAutoReminders() {
 
   // 6. Custom reminders
   getCustomReminders().filter(r => !r.dismissed).forEach(r => {
-    reminders.push({ type: r.category || 'custom', source: 'custom', id: r.id, title: r.title, dueDate: r.dueDate, amount: null, detail: r.notes || (r.recurring ? `Recurring ${r.frequency}` : 'One-time'), recurring: r.recurring, frequency: r.frequency });
+    reminders.push({ type: r.category || 'custom', source: 'custom', id: r.id, title: r.title, dueDate: r.recurring ? FinanceCore.nextOccurrence(r.dueDate, r.frequency) : r.dueDate, amount: null, detail: r.notes || (r.recurring ? `Recurring ${r.frequency}` : 'One-time'), recurring: r.recurring, frequency: r.frequency });
   });
 
   return reminders;
