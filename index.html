@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Portfolio — Complete Financial Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
@@ -836,6 +835,10 @@ select option { background: var(--s2); }
   content: ''; flex: 1; height: 1px; background: var(--border);
 }
 </style>
+<link rel="stylesheet" href="/assets/finfolio.css">
+<script src="/assets/finance-core.js"></script>
+<script src="/assets/bot-transactions.js"></script>
+<script src="/assets/finance-bridge.js"></script>
 </head>
 <body>
 
@@ -1044,7 +1047,7 @@ select option { background: var(--s2); }
         <div class="stat-icon icon-gold"><i class="bi bi-coin"></i></div>
         <div class="stat-label">Gold</div>
         <div class="stat-value" id="tile-gold">₹ —</div>
-        <div class="stat-change" id="tile-gold-sub" style="color:var(--text3);">SGB + Physical</div>
+        <div class="stat-change" id="tile-gold-sub" style="color:var(--text3);">SGB + Physical + Schemes</div>
         <div style="font-size:0.72rem;font-weight:600;color:var(--text3);margin-top:2px;" id="tile-pct-gold">—% of portfolio</div>
         <div class="tile-source src-manual" id="tile-src-gold" style="font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:4px;letter-spacing:0.04em;background:rgba(160,160,192,0.12);color:var(--text3);">MANUAL</div>
         <div class="stat-bar" style="background:linear-gradient(90deg,var(--c-gold),transparent)"></div>
@@ -1636,7 +1639,7 @@ select option { background: var(--s2); }
 <div class="wrap">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
     <div style="width:40px;height:40px;border-radius:12px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;"><i class="bi bi-coin" style="color:var(--yellow);"></i></div>
-    <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Gold Portfolio</div><div style="font-size:0.8rem;color:var(--text2);">SGB · Physical Gold · Jewellery Tracker</div></div>
+    <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Gold Portfolio</div><div style="font-size:0.8rem;color:var(--text2);">Savings Schemes · SGB · Physical Gold</div></div>
   </div>
 
   <div class="g2" style="margin-bottom:18px;">
@@ -2541,6 +2544,7 @@ select option { background: var(--s2); }
           <option value="loan">Loan EMI</option>
           <option value="fd">FD Maturity</option>
           <option value="rd">RD Maturity</option>
+          <option value="gold">Gold Instalments</option>
           <option value="sip">SIP</option>
           <option value="custom">Custom</option>
         </optgroup>
@@ -2706,7 +2710,7 @@ select option { background: var(--s2); }
     <div style="width:40px;height:40px;border-radius:12px;background:rgba(240,192,64,0.12);display:flex;align-items:center;justify-content:center;font-size:1.2rem;"><i class="bi bi-wallet2" style="color:var(--amber);"></i></div>
     <div>
       <div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Monthly Budget Planner</div>
-      <div style="font-size:0.8rem;color:var(--text2);">Track every rupee · see what's truly free to invest · plan SIPs & RDs from real surplus</div>
+      <div style="font-size:0.8rem;color:var(--text2);">Plan spending and savings · record payments · understand your monthly remainder</div>
     </div>
   </div>
 
@@ -2720,229 +2724,8 @@ select option { background: var(--s2); }
   </div>
 
   <!-- ══ TAB: OVERVIEW ══ -->
-  <div id="btab-overview">
-
-  <!-- ── INCOME ROW ── -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
-    <div class="card-sm" style="text-align:center;">
-      <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">In-hand Salary</div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:2px;">
-        <span style="font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.05rem;color:var(--text);">₹</span>
-        <input type="number" id="salaryIn" placeholder="e.g. 199000"
-          style="width:100px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.05rem;color:var(--text);background:transparent;border:none;border-bottom:1.5px solid var(--border);outline:none;text-align:center;padding:2px 0;"
-          oninput="onBudgetSalaryChange()">
-      </div>
-    </div>
-    <div class="card-sm" style="text-align:center;">
-      <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Savings Target</div>
-      <div style="display:flex;align-items:baseline;justify-content:center;gap:2px;">
-        <input type="number" id="savingsPct" value="15" min="1" max="80" step="1"
-          style="width:36px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:1.05rem;color:var(--yellow);background:transparent;border:none;border-bottom:1.5px solid rgba(240,192,64,0.3);outline:none;text-align:center;padding:2px 0;"
-          oninput="onBudgetSalaryChange()">
-        <span style="color:var(--yellow);font-weight:700;font-size:0.9rem;">%</span>
-      </div>
-      <div id="bw-savings" style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:0.82rem;color:var(--green);margin-top:3px;">₹ 0</div>
-      <div style="font-size:0.58rem;margin-top:2px;" id="bw-savings-pct"></div>
-    </div>
-  </div>
-
-  <!-- ── BUDGET OVERVIEW ── -->
-  <div class="summary-strip" style="margin-bottom:16px;">
-    <div class="summary-mini">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div class="sm-label" style="margin:0;">Monthly Budget</div>
-        <i class="bi bi-wallet2" style="color:var(--amber);font-size:1rem;"></i>
-      </div>
-      <div class="sm-value" style="color:var(--amber);" id="bw-planned">₹ 0</div>
-      <div style="font-size:0.55rem;color:var(--text3);margin-top:3px;">
-        Bills <span id="bw-fixed" style="color:var(--red);font-family:'JetBrains Mono',monospace;">₹ 0</span>
-        · Spending <span id="bw-variable" style="color:var(--amber);font-family:'JetBrains Mono',monospace;">₹ 0</span>
-      </div>
-      <span id="bw-fixed-pct" style="display:none;"></span>
-      <span id="bw-variable-pct" style="display:none;"></span>
-    </div>
-    <div class="summary-mini">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div class="sm-label" style="margin:0;">Actual Spent</div>
-        <i class="bi bi-cart" style="color:var(--red);font-size:1rem;"></i>
-      </div>
-      <div class="sm-value" style="color:var(--red);" id="bw-actual">₹ 0</div>
-      <div id="bw-actual-detail" style="font-size:0.55rem;color:var(--text3);margin-top:3px;">from Gmail this month</div>
-    </div>
-    <div class="summary-mini">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div class="sm-label" style="margin:0;">Over / Under</div>
-        <i class="bi bi-arrow-left-right" style="color:var(--blue);font-size:1rem;"></i>
-      </div>
-      <div class="sm-value" id="bw-diff">—</div>
-      <div id="bw-diff-detail" style="font-size:0.55rem;color:var(--text3);margin-top:3px;"></div>
-    </div>
-    <div class="summary-mini" style="border-color:rgba(62,207,142,0.2);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div class="sm-label" style="margin:0;">Free Cash</div>
-        <i class="bi bi-piggy-bank" style="color:var(--green);font-size:1rem;"></i>
-      </div>
-      <div class="sm-value" style="color:var(--green);" id="bw-free">₹ —</div>
-      <div style="font-size:0.58rem;color:var(--text3);margin-top:2px;" id="bw-free-pct"></div>
-    </div>
-  </div>
-
-  <!-- ── STACKED BAR ── -->
-  <div style="margin-bottom:24px;">
-    <div style="height:10px;border-radius:8px;overflow:hidden;display:flex;background:var(--s3);">
-      <div id="bar-fixed"    style="height:100%;background:var(--red);  transition:width 0.4s;width:0%;"></div>
-      <div id="bar-variable" style="height:100%;background:var(--amber);transition:width 0.4s;width:0%;"></div>
-      <div id="bar-savings"  style="height:100%;background:var(--green);transition:width 0.4s;width:0%;"></div>
-      <div id="bar-free"     style="height:100%;background:rgba(74,158,255,0.6);transition:width 0.4s;width:0%;"></div>
-    </div>
-    <div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;">
-      <span style="font-size:0.65rem;color:var(--red);">   ■ Fixed</span>
-      <span style="font-size:0.65rem;color:var(--amber);">■ Variable</span>
-      <span style="font-size:0.65rem;color:var(--green);">■ Savings</span>
-      <span style="font-size:0.65rem;color:rgba(74,158,255,0.8);">■ Free cash</span>
-    </div>
-  </div>
-
-  <!-- ── 2-COLUMN: CATEGORIES TABLE + GMAIL SYNC ── -->
-  <div class="row g-3 mb-3">
-    <div class="col-lg-8">
-      <div class="table-card">
-        <div class="table-card-header">
-          <h6>Budget Categories</h6>
-          <button class="btn-sm-outline" onclick="switchBudgetTab('planning',document.querySelectorAll('.budget-stab')[3])">+ Add Category</button>
-        </div>
-        <table class="table-modern">
-          <thead><tr><th>Category</th><th>Budget</th><th>Spent</th><th>Remaining</th><th>Progress</th></tr></thead>
-          <tbody id="budgetCatOverviewTbody">
-            <tr><td colspan="5" style="text-align:center;color:var(--text3);font-size:0.8rem;padding:20px;">Add budget categories in the Planning tab</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="col-lg-4">
-      <div class="table-card" style="padding:20px;">
-        <h6 style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:16px;">Gmail Expense Sync</h6>
-        <div style="text-align:center;padding:20px 0;">
-          <i class="bi bi-envelope-paper" style="font-size:2rem;color:var(--purple);display:block;margin-bottom:12px;"></i>
-          <div style="font-size:0.84rem;color:var(--text3);margin-bottom:14px;">Auto-import expenses from bank alert emails</div>
-          <button class="btn-primary-purple" style="font-size:0.78rem;padding:8px 20px;" onclick="switchBudgetTab('transactions',document.querySelectorAll('.budget-stab')[1])">
-            <i class="bi bi-google" style="margin-right:6px;"></i> Sync Expenses
-          </button>
-        </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-          <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:6px;">
-            <span style="color:var(--text3);">Status</span>
-            <span id="budgetGmailStatus" style="color:var(--text2);">Not synced</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:0.72rem;">
-            <span style="color:var(--text3);">Transactions</span>
-            <span id="budgetGmailCount" style="color:var(--text2);font-family:'JetBrains Mono',monospace;">0</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Health check (in overview) -->
-  <div id="budgetHealthCard" style="padding:12px 16px;border-radius:10px;font-size:0.8rem;line-height:1.6;margin-bottom:16px;"></div>
-
-  </div><!-- /btab-overview -->
-
-  <!-- ══ TAB: SAVINGS ══ -->
-  <div id="btab-savings" style="display:none;">
-
-  <!-- ── SAVINGS ALLOCATION ── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-    <div>
-      <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2);">📈 Savings Allocation</div>
-      <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">SIPs, RDs, Emergency Fund — auto-calculated from your savings target</div>
-    </div>
-    <div style="font-family:'JetBrains Mono',monospace;font-weight:900;font-size:1.1rem;color:var(--green);" id="bsave-total">₹ 0</div>
-  </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
-      <!-- LEFT COLUMN -->
-      <div>
-        <!-- Sharesave -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(232,146,58,0.06);border:1px solid rgba(232,146,58,0.2);border-radius:10px;margin-bottom:8px;">
-          <div>
-            <div style="font-size:0.82rem;font-weight:700;">Sharesave Deduction</div>
-            <div style="font-size:0.68rem;color:var(--text3);">Pre-payroll — deducted before in-hand</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--amber);" id="bsave-ss">₹ —</div>
-        </div>
-
-        <!-- SIP Pool -->
-        <div style="padding:10px 14px;background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.2);border-radius:10px;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <div>
-              <div style="font-size:0.82rem;font-weight:700;">SIP Pool (Mutual Funds)</div>
-              <div style="font-size:0.68rem;color:var(--text3);">Auto-calculated from savings%</div>
-            </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--green);" id="bsave-sip">₹ —</div>
-          </div>
-          <div id="bsave-sip-split" style="margin-top:6px;border-top:1px solid rgba(62,207,142,0.1);padding-top:6px;"></div>
-        </div>
-
-        <!-- RD -->
-        <div style="padding:10px 14px;background:rgba(74,158,255,0.06);border:1px solid rgba(74,158,255,0.2);border-radius:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-            <div>
-              <div style="font-size:0.82rem;font-weight:700;">Recurring Deposits (RD)</div>
-              <div style="font-size:0.68rem;color:var(--text3);">From your active RDs</div>
-            </div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--blue);" id="bsave-rd">₹ 0</div>
-          </div>
-          <div id="bsave-rd-list" style="font-size:0.72rem;color:var(--text3);"></div>
-        </div>
-      </div>
-
-      <!-- RIGHT COLUMN -->
-      <div>
-        <!-- Emergency Fund -->
-        <div style="padding:10px 14px;background:rgba(160,160,192,0.06);border:1px solid rgba(160,160,192,0.18);border-radius:10px;margin-bottom:8px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;">
-            <div>
-              <div style="font-size:0.82rem;font-weight:700;">Emergency Fund</div>
-              <div style="font-size:0.68rem;color:var(--text3);" id="bsave-ef-months">Target: 6 months expenses</div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--text2);" id="bsave-ef-monthly">₹ 0</div>
-              <input type="number" id="bsave-ef-input" placeholder="monthly top-up"
-                style="width:90px;margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none;text-align:right;"
-                oninput="recalcBudget()">
-            </div>
-          </div>
-          <div style="margin-top:8px;">
-            <div style="display:flex;justify-content:space-between;margin-bottom:3px;">
-              <span style="font-size:0.62rem;color:var(--text3);">Built so far</span>
-              <span style="font-size:0.62rem;color:var(--text3);" id="bsave-ef-label">₹ 0 / ₹ 0</span>
-            </div>
-            <div style="height:5px;background:var(--s3);border-radius:3px;overflow:hidden;">
-              <div id="bsave-ef-bar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--green));width:0%;border-radius:3px;transition:width 0.4s;"></div>
-            </div>
-          </div>
-          <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <span style="font-size:0.68rem;color:var(--text3);">Currently saved:</span>
-            <input type="number" id="bsave-ef-saved" placeholder="e.g. 50000"
-              style="width:110px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none;"
-              oninput="recalcBudget()">
-          </div>
-        </div>
-
-        <!-- Total committed -->
-        <div style="padding:10px 16px;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);border-radius:10px;margin-bottom:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:0.8rem;font-weight:700;color:var(--green);">Total Committed</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-weight:900;font-size:1.1rem;color:var(--green);" id="bsave-total-val">₹ 0</div>
-          </div>
-          <div style="font-size:0.68rem;color:var(--text3);margin-top:3px;" id="bsave-total-pct"></div>
-        </div>
-
-      </div>
-    </div>
-
-  </div><!-- /btab-savings -->
+  <div id="btab-overview"></div>
+  <div id="btab-savings" style="display:none"></div>
 
   <!-- ══ TAB: TRANSACTIONS ══ -->
   <div id="btab-transactions" style="display:none;">
@@ -2951,22 +2734,13 @@ select option { background: var(--s2); }
   <div id="gmailTxnSection" style="margin-bottom:28px;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
       <div>
-        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2);">📧 Gmail Transactions</div>
-        <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">Auto-track spending from bank email alerts</div>
+        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2);">🏦 Bank Transactions</div>
+        <div style="font-size:0.72rem;color:var(--text3);margin-top:2px;">Synced automatically from HDFC alerts by the FinFolio bot · every 15 min, 07:00–23:00</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input type="date" id="gmailSyncStart"
-          style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;">
-        <span style="font-size:0.72rem;color:var(--text3);">to</span>
-        <input type="date" id="gmailSyncEnd"
-          style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;">
-        <select id="gmailBankSync"
-          style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;">
-          <option value="__all__">All Banks</option>
-        </select>
-        <button onclick="syncGmailTransactions()" id="gmailSyncBtn"
+        <button onclick="refreshBotTransactions(true)" id="gmailSyncBtn" title="Fetch the latest transactions the bot has uploaded"
           style="padding:7px 16px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.3);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;white-space:nowrap;">
-          ⟳ Sync Now
+          ⟳ Refresh
         </button>
       </div>
     </div>
@@ -2976,8 +2750,8 @@ select option { background: var(--s2); }
 
     <!-- No Gmail setup message -->
     <div id="gmailTxnEmpty" style="padding:24px;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;">
-      <div style="font-size:0.85rem;color:var(--text3);margin-bottom:6px;">No Gmail transactions yet</div>
-      <div style="font-size:0.72rem;color:var(--text3);">Configure your Google Client ID in <a href="#" onclick="gotoPage('settings',null);return false;" style="color:var(--blue);">Settings</a>, connect Gmail, then click Sync Now.</div>
+      <div style="font-size:0.85rem;color:var(--text3);margin-bottom:6px;">No bank transactions for this month yet</div>
+      <div style="font-size:0.72rem;color:var(--text3);">The FinFolio bot adds HDFC payments here automatically (every 15 min, 07:00–23:00). It needs <a href="#" onclick="gotoPage('settings',null);return false;" style="color:var(--blue);">Cloud Backup</a> set up with the same passphrase the bot uses.</div></div>
     </div>
 
     <!-- Category filter + summary row -->
@@ -2991,6 +2765,7 @@ select option { background: var(--s2); }
         <option value="">All Methods</option>
         <option value="upi">UPI</option>
         <option value="credit_card">Credit Card</option>
+        <option value="debit_card">Debit Card</option>
         <option value="account">Bank A/c</option>
       </select>
       <div style="margin-left:auto;font-size:0.72rem;color:var(--text3);" id="gmailFilterInfo"></div>
@@ -3103,7 +2878,7 @@ select option { background: var(--s2); }
             <th style="text-align:right;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--red);">Bills</th>
             <th style="text-align:right;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);">Spending</th>
             <th style="text-align:right;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);">Saved</th>
-            <th style="text-align:right;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);">Free Cash</th>
+            <th style="text-align:right;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);">Planned remainder</th>
             <th style="text-align:center;padding:8px 12px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);">Savings%</th>
             <th style="width:32px;"></th>
           </tr>
@@ -3482,7 +3257,7 @@ select option { background: var(--s2); }
       </div>
       <div style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">
         Runs on your machine. No key, no cloud call, no cost. Install from <a href="https://ollama.com/download" target="_blank" style="color:var(--blue);">ollama.com</a>, then <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">ollama pull qwen2.5:3b</code>.<br>
-        <strong>Required one-time setup for browser access:</strong> run <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">launchctl setenv OLLAMA_ORIGINS "*"</code> and restart Ollama (so CORS permits this tab).
+        <strong>Required one-time setup for browser access:</strong> run <code style="background:var(--s3);padding:1px 5px;border-radius:4px;">launchctl setenv OLLAMA_ORIGINS "https://finfolio.fly.dev,http://localhost:8787,http://127.0.0.1:8787"</code> and restart Ollama (so CORS permits this tab).
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
         <input type="text" id="settings-ollama-baseurl" placeholder="http://localhost:11434"
@@ -3528,90 +3303,11 @@ select option { background: var(--s2); }
     </div>
   </div>
 
-  <!-- ── GMAIL EXPENSE TRACKING ── -->
+  <!-- ── BANK TRANSACTIONS (bot) ── -->
   <div class="form-card" style="margin-bottom:28px;">
-    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">📧 Gmail Expense Tracking</div>
-    <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;">
-
-      <!-- Info -->
-      <div style="font-size:0.75rem;color:var(--text3);margin-bottom:14px;line-height:1.6;">
-        Auto-track bank transactions from Gmail alerts. Uses <strong style="color:var(--text2);">gmail.readonly</strong> scope — cannot send, delete, or modify emails. Data goes directly from your browser to Google (no middleman).
-      </div>
-
-      <!-- Client ID -->
-      <div style="margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-weight:800;font-size:0.92rem;">🔑 Google OAuth Client ID</span>
-          <span id="gmail-client-status" style="font-size:0.62rem;padding:2px 8px;border-radius:20px;background:var(--s3);color:var(--text3);">Not set</span>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <input type="password" id="settings-gmail-client-id" placeholder="123456789-abc.apps.googleusercontent.com"
-            style="flex:1;min-width:280px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);outline:none;">
-          <button class="key-eye-btn" onclick="toggleKeyVis('settings-gmail-client-id',this)" title="Show/hide key"><i class="bi bi-eye-slash"></i></button>
-          <button onclick="saveGmailClientId()" style="padding:8px 18px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;">Save</button>
-          <button onclick="clearGmailClientId()" style="padding:8px 12px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-weight:600;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">Clear</button>
-        </div>
-      </div>
-
-      <!-- Bank Config Manager -->
-      <div style="margin-bottom:14px;">
-        <div style="font-weight:700;font-size:0.82rem;margin-bottom:6px;">Configured Banks</div>
-        <div id="bankConfigList" style="margin-bottom:10px;"></div>
-
-        <!-- Add from preset -->
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-          <select id="bankPresetSelect"
-            style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;min-width:180px;">
-          </select>
-          <button onclick="addBankPreset()" style="padding:7px 14px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">+ Add Bank</button>
-        </div>
-
-        <!-- Custom bank form (collapsible) -->
-        <details style="margin-top:6px;">
-          <summary style="font-size:0.72rem;color:var(--blue);cursor:pointer;font-weight:600;">+ Add custom bank</summary>
-          <div style="margin-top:8px;padding:12px;background:var(--s3);border-radius:8px;display:grid;gap:8px;">
-            <input type="text" id="customBankName" placeholder="Bank Name (e.g. Federal Bank)"
-              style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:0.78rem;outline:none;">
-            <input type="text" id="customBankEmail" placeholder="Sender email (e.g. alerts@federalbank.co.in)"
-              style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:0.78rem;outline:none;">
-            <input type="text" id="customBankSubjects" placeholder="Subject keywords (comma-separated)"
-              style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:0.78rem;outline:none;">
-            <textarea id="customBankParseHint" placeholder="Parse hint for AI (describe email format)" rows="3"
-              style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:0.78rem;outline:none;resize:vertical;font-family:'Cabinet Grotesk',sans-serif;"></textarea>
-            <button onclick="addCustomBank()" style="justify-self:start;padding:7px 16px;background:rgba(62,207,142,0.12);border:1px solid rgba(62,207,142,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.78rem;">Save Custom Bank</button>
-          </div>
-        </details>
-        <div style="font-size:0.68rem;color:var(--text3);margin-top:6px;">Add banks whose transaction alert emails you want to track. You can sync from multiple banks.</div>
-      </div>
-
-      <!-- Connect / Disconnect -->
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
-        <button id="gmail-connect-btn" onclick="connectGmail()"
-          style="padding:9px 20px;background:rgba(74,158,255,0.12);border:1px solid rgba(74,158,255,0.3);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.82rem;">
-          🔗 Connect Gmail
-        </button>
-        <button id="gmail-disconnect-btn" onclick="disconnectGmail()" style="display:none;padding:9px 20px;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.2);border-radius:8px;color:var(--red);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.82rem;">
-          ✕ Disconnect
-        </button>
-        <span id="gmail-conn-status" style="font-size:0.78rem;color:var(--text3);">Not connected</span>
-      </div>
-
-      <!-- Setup Instructions (collapsible) -->
-      <details style="margin-top:10px;">
-        <summary style="font-size:0.72rem;color:var(--blue);cursor:pointer;font-weight:600;">How to get a Google OAuth Client ID</summary>
-        <div style="font-size:0.72rem;color:var(--text3);line-height:1.8;margin-top:8px;padding:12px;background:var(--s3);border-radius:8px;">
-          1. Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--blue);">console.cloud.google.com</a><br>
-          2. Create a new project (e.g. "FinFolio")<br>
-          3. Go to <strong>APIs & Services → Library</strong> → search "Gmail API" → <strong>Enable</strong><br>
-          4. Go to <strong>APIs & Services → OAuth consent screen</strong> → External → fill in app name & email → add <code>gmail.readonly</code> scope → add yourself as test user<br>
-          5. Go to <strong>Credentials → Create Credentials → OAuth Client ID</strong><br>
-          6. Type: <strong>Web application</strong><br>
-          7. Authorized JavaScript origins: add your app URL (e.g. <code>https://your-app.fly.dev</code>)<br>
-          8. Copy the <strong>Client ID</strong> and paste it above<br>
-          <div style="margin-top:6px;color:var(--green);">✓ Gmail API is free — no billing or credit card needed.</div>
-        </div>
-      </details>
-
+    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">🏦 Bank Transactions</div>
+    <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;font-size:0.75rem;color:var(--text3);line-height:1.6;">
+      HDFC alert emails are read by the FinFolio bot on your server, with read-only access to a bot-only inbox, every 15 minutes from 07:00 to 23:00. The transactions appear in <a href="#" onclick="gotoPage('budget',null);return false;" style="color:var(--blue);">Budget → Transactions</a> through Cloud Backup. This browser no longer connects to Gmail. Categories you change there are also used in the Telegram digests.
     </div>
   </div>
 
@@ -3764,7 +3460,8 @@ select option { background: var(--s2); }
           <div id="supa-status-msg" style="font-size:0.72rem;color:var(--text3);margin-top:6px;"></div>
           <div style="font-size:0.68rem;color:var(--text3);margin-top:6px;line-height:1.5;">
             Signed-in users get automatic cloud sync. Data is secured with Row Level Security.<br>
-            Auto-syncs on every change. Use Push/Pull for manual sync.
+            Changes sync automatically while the app is open and online. Offline changes retry when you reconnect or reopen the app. A closed laptop cannot upload browser-only changes.
+            <div id="ff-cloud-status" role="status"></div>
           </div>
         </div>
       </div>
@@ -3778,10 +3475,10 @@ select option { background: var(--s2); }
     <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:14px;">ℹ️ About</div>
     <div style="padding:18px;background:var(--s2);border:1px solid var(--border);border-radius:14px;font-size:0.8rem;color:var(--text2);line-height:1.7;">
       <div style="font-weight:800;font-size:0.95rem;margin-bottom:6px;">My Portfolio Dashboard</div>
-      A self-contained personal finance tracker — single HTML file, zero backend, all data in your browser.<br>
+      A personal finance tracker with local storage, optional cloud sync and a small server for connected services.<br>
       <span style="color:var(--text3);">Sharesave · FD/RD · SGB Gold · Post Office · Mutual Funds · Reminders & Alerts · Budget · Broker API</span><br><br>
       <div style="display:flex;gap:20px;flex-wrap:wrap;">
-        <div><span style="color:var(--text3);">AI model</span><br><strong>Claude Sonnet (Anthropic)</strong></div>
+        <div><span style="color:var(--text3);">AI model</span><br><strong>Your selected provider</strong></div>
         <div><span style="color:var(--text3);">Price data</span><br><strong>Finnhub · AMFI · mfapi.in</strong></div>
         <div><span style="color:var(--text3);">Storage</span><br><strong>Browser localStorage only</strong></div>
       </div>
@@ -3957,6 +3654,7 @@ state.fds = fds;
 let rds = [];
 try { rds = JSON.parse(localStorage.getItem('mypf_rds') || '[]'); } catch(e){}
 if (!rds.length && state.rds?.length) { rds = state.rds; localStorage.setItem('mypf_rds', JSON.stringify(rds)); }
+rds = ffActiveRDs(rds);
 state.rds = rds;
 let sgbHoldings = [];
 try { sgbHoldings = JSON.parse(localStorage.getItem('mypf_sgb_v2') || '[]'); state.sgb = sgbHoldings; } catch(e){}
@@ -4027,7 +3725,7 @@ const PAGE_TITLES = {
   overview: ['Dashboard', 'Overview of your finances'],
   mf: ['Mutual Funds', 'Track SIPs, broker holdings & NAV'],
   sharesave: ['Stocks / Sharesave', 'ESPP, RSU & ESOP tracker'],
-  gold: ['Gold & Silver', 'SGB + Physical gold holdings'],
+  gold: ['Gold', 'Savings schemes, SGB and physical holdings'],
   deposits: ['Fixed & Recurring Deposits', 'FD / RD tracker'],
   po: ['Post Office', 'SSY, PPF, NSC & MIS schemes'],
   planner: ['Reminders & Alerts', 'SIP plans, renewals, EMI dates & custom alerts'],
@@ -4201,7 +3899,7 @@ function initDashboard() {
 
         const salary     = state.salary || 0;
         const ssMonthly  = getSS().monthly;
-        const mfBudget   = Math.max(0, Math.round(salary * (state.savingsPct||15) / 100) - ssMonthly);
+        const mfBudget   = ffSIPBudget();
         const holdFunds  = cachedVerdicts ? MF_RECS.filter(f => cachedVerdicts[f.rank]?.verdict === 'HOLD') : [];
 
         const verdictSection = cachedVerdicts
@@ -4953,7 +4651,7 @@ function onSalaryChange() {
   const ssMonthly = getSS().monthly;
 
   const totalSavingsTarget = Math.round(state.salary * pct);
-  const manualBudget = Math.max(0, totalSavingsTarget - ssMonthly);
+  const manualBudget = ffSIPBudget();
 
   // Compute SIP / lumpsum split (used by planner & AI mood)
   let sipP = 0, lumpP = 0;
@@ -5063,11 +4761,12 @@ function updateDonut() {
   const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || cachedGoldRate || 7500;
   const pgRatesOverview = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
   const physGoldV = physicalGold.reduce((s, g) => {
+    if (g.sourceSchemeId) return s + ffRedeemedValue(g);
     const key = 'k' + g.purity;
     const rate = (pgRatesOverview && pgRatesOverview[key]) ? pgRatesOverview[key] : Math.round(pgGoldPrice * g.purity / 24);
     return s + Math.round(g.grams * rate);
   }, 0);
-  const goldV = sgbV + physGoldV;
+  const goldV = sgbV + physGoldV + ffGoldValue(); // Schemes use deposited cost until redemption.
 
   // PO value
   let poV = 0;
@@ -5153,6 +4852,7 @@ function updateDonut() {
     else if (physGoldV > 0) goldSubEl.textContent = `${physicalGold.length} physical items`;
     else if (sgbV > 0) goldSubEl.textContent = `${sgbHoldings.length} SGB tranche${sgbHoldings.length > 1 ? 's' : ''}`;
     else goldSubEl.textContent = 'SGB + Physical';
+    if (ffGoldValue()>0) goldSubEl.textContent += ' · Schemes ' + fmt(ffGoldValue());
   }
 
   // Realty subtitle
@@ -5200,7 +4900,7 @@ function updateDonut() {
   if (dlRealty) dlRealty.textContent = realTotal > 0 ? pct(realtyV) : '—';
 
   // NW breakdown
-  document.getElementById('nwLocked').textContent = (ssV+retV+realtyV) > 0 ? '₹\u202f' + (ssV+retV+realtyV).toLocaleString('en-IN') : '—';
+  document.getElementById('nwLocked').textContent = (ssV+retV+realtyV+ffGoldValue()) > 0 ? '₹\u202f' + (ssV+retV+realtyV+ffGoldValue()).toLocaleString('en-IN') : '—';
   document.getElementById('nwLiquid').textContent = (fdV+rdV) > 0 ? '₹\u202f' + (fdV+rdV).toLocaleString('en-IN') : '—';
   document.getElementById('nwEquity').textContent = (stocksV+mfV+ssV) > 0 ? '₹\u202f' + (stocksV+mfV+ssV).toLocaleString('en-IN') : '—';
 
@@ -5785,32 +5485,32 @@ function renderPhysicalGold() {
     const typeIcons = { Chain:'📿', Ring:'💍', Bracelet:'📿', Earring:'✨', Pendant:'🔶', Coin:'🪙', Bar:'🟡', Anklet:'📿', 'Nose Pin':'💎', Mangalsutra:'📿', Waistband:'📿', Other:'🔸' };
     const storageIcons = { 'Bank Locker':'🏦', 'Home Safe':'🏠', 'Home':'🏠', 'Parents House':'👨‍👩‍👧', 'Worn Daily':'💍', 'Other':'📦' };
     tbody.innerHTML = physicalGold.map(g => {
-      const perGramRate = rateForKarat(g.purity);
-      const value = Math.round(g.grams * perGramRate);
+      const perGramRate = g.sourceSchemeId ? (ffFreshQuote()?.fresh ? ffFreshQuote().today.rate : 0) : rateForKarat(g.purity);
+      const value = g.sourceSchemeId ? ffRedeemedValue(g) : Math.round(g.grams * perGramRate);
       const stIcon = storageIcons[g.storage] || '';
       const photoLink = g.photoUrl ? `<a href="${g.photoUrl}" target="_blank" rel="noopener" style="color:var(--blue);font-size:0.65rem;text-decoration:none;">📷 View</a>` : '<span style="color:var(--text3);font-size:0.6rem;">—</span>';
       return `<tr>
         <td>${typeIcons[g.type]||'🔸'} ${g.type}</td>
-        <td style="font-size:0.78rem;color:var(--text2);">${g.desc || '—'} ${photoLink}</td>
+        <td style="font-size:0.78rem;color:var(--text2);">${escHTML(g.desc || '—')} ${photoLink}</td>
         <td class="mono">${g.grams}g</td>
-        <td>${g.purity}K <span style="font-size:0.55rem;color:var(--text3);">₹${perGramRate.toLocaleString('en-IN')}/g</span></td>
-        <td class="mono" style="color:var(--yellow);">${g.pureGrams}g</td>
-        <td style="font-size:0.75rem;">${stIcon} ${g.storage || '—'}</td>
+        <td>${g.purity}K <span style="font-size:0.55rem;color:var(--text3);">${perGramRate ? '₹'+perGramRate.toLocaleString('en-IN')+'/g' : 'Deposited cost'}</span></td>
+        <td class="mono" style="color:var(--yellow);">${Number(g.pureGrams).toFixed(4)}g</td>
+        <td style="font-size:0.75rem;">${stIcon} ${escHTML(g.storage || '—')}</td>
         <td class="mono" style="color:var(--green);">₹${value.toLocaleString('en-IN')}</td>
-        <td><button onclick="delPhysicalGold(${g.id})" class="le-del">✕</button></td>
+        <td>${g.sourceSchemeId ? 'Linked scheme' : `<button onclick="delPhysicalGold(${g.id})" class="le-del">✕</button>`}</td>
       </tr>`;
     }).join('');
 
     const totalGrams = physicalGold.reduce((s, g) => s + g.grams, 0);
     const totalPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
     let totalValue = 0;
-    physicalGold.forEach(g => { totalValue += Math.round(g.grams * rateForKarat(g.purity)); });
+    physicalGold.forEach(g => { totalValue += g.sourceSchemeId ? ffRedeemedValue(g) : Math.round(g.grams * rateForKarat(g.purity)); });
     summary.innerHTML = `
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Items</span><strong>${physicalGold.length}</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Total Weight</span><strong style="font-family:'JetBrains Mono',monospace;">${totalGrams.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Pure Gold (24K equiv)</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--yellow);">${totalPure.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Current Value</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--green);">₹${totalValue.toLocaleString('en-IN')}</strong></div>
-      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">${pgRatesRaw ? 'Gemini rates' : '@ ₹' + goldPricePerGram.toLocaleString('en-IN') + '/g (24K)'}</div>`;
+      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">${pgRatesRaw ? 'Existing purity rates' : '@ ₹' + goldPricePerGram.toLocaleString('en-IN') + '/g (24K)'} · Redeemed schemes use fresh Tanishq 22K or deposited cost.</div>`;
   }
 
   // Consolidated: SGB + Physical
@@ -5818,7 +5518,7 @@ function renderPhysicalGold() {
   const sgbValue = Math.round(sgbGrams * goldPricePerGram);
   const pgPure = physicalGold.reduce((s, g) => s + g.pureGrams, 0);
   let pgValue = 0;
-  physicalGold.forEach(g => { pgValue += Math.round(g.grams * rateForKarat(g.purity)); });
+  physicalGold.forEach(g => { pgValue += g.sourceSchemeId ? ffRedeemedValue(g) : Math.round(g.grams * rateForKarat(g.purity)); });
   const totalGoldGrams = sgbGrams + pgPure;
   const totalGoldValue = sgbValue + pgValue;
 
@@ -6068,7 +5768,7 @@ function saveVerdicts(verdicts, reviewDate) {
 }
 
 function renderVerdictCards(verdicts, liveNavData) {
-  const mfBudget = Math.max(0, Math.round((state.salary||0) * (state.savingsPct||15) / 100) - getSS().monthly);
+  const mfBudget = ffSIPBudget();
   const portfolioFunds = state.selectedMFs.map(r => MF_RECS.find(f => f.rank === r)).filter(Boolean);
   const rows = portfolioFunds.map(f => {
     const v    = verdicts[f.rank];
@@ -6175,10 +5875,10 @@ async function runMFAnalysis() {
   setStep('Step 2/3 — Building portfolio context…');
 
   const salary      = state.salary || 0;
-  const savingsPct  = state.savingsPct || 15;
+  const savingsPct  = state.savingsPct ?? 0;
   const moodMap     = { bull:'Euphoric — P/E >24, market at peak', fair:'Fair Value — P/E 18-22', slight:'Slight Dip — 5-10% off peak', dip:'Correction — 10-20% off peak', crash:'Crash — 20%+ drawdown' };
   const ssMonthly   = getSS().monthly;
-  const mfBudget    = Math.max(0, Math.round(salary * savingsPct / 100) - ssMonthly);
+  const mfBudget    = ffSIPBudget();
   const lastVerdicts = getVerdicts();
   const lastDate    = lastVerdicts ? new Date(lastVerdicts.reviewDate).toLocaleDateString('en-IN') : 'Never';
 
@@ -6754,7 +6454,7 @@ function generateAutoReminders() {
   });
 
   // 4. RD maturities
-  (JSON.parse(localStorage.getItem('mypf_rds') || '[]')).forEach(r => {
+  ffActiveRDs(JSON.parse(localStorage.getItem('mypf_rds') || '[]')).forEach(r => {
     if (r.maturityDate || r.maturity) {
       reminders.push({ type: 'rd', source: 'auto', title: `RD Maturity: ${r.label||r.bank||'Bank'}`, dueDate: r.maturityDate || r.maturity, amount: r.maturityAmount || r.matAmt, detail: `Monthly ${fmt(r.monthly||0)} · ${r.rate}%` });
     }
@@ -6767,6 +6467,9 @@ function generateAutoReminders() {
     if (nextSIP <= now) nextSIP.setMonth(nextSIP.getMonth() + 1);
     reminders.push({ type: 'sip', source: 'auto', title: `SIP: ${p.name}`, dueDate: nextSIP.toISOString().slice(0,10), amount: p.amount, detail: `${fmt(p.amount||0)}/month` });
   });
+
+  // Gold instalments share the timeline, filters and summary counts.
+  reminders.push(...ffGoldReminders());
 
   // 6. Custom reminders
   getCustomReminders().filter(r => !r.dismissed).forEach(r => {
@@ -6781,7 +6484,7 @@ function renderAutoReminders() {
   if (!el) return;
   const filterType = document.getElementById('remFilterType')?.value || '';
   let all = generateAutoReminders();
-  const now = new Date();
+  const now = new Date(FinanceCore.day() + 'T00:00:00Z');
 
   // Apply filter
   if (filterType === 'custom') all = all.filter(r => r.source === 'custom');
@@ -6819,8 +6522,8 @@ function renderAutoReminders() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);">
       <div style="width:34px;height:34px;border-radius:10px;background:${color}15;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="bi ${icon}" style="color:${color};font-size:0.9rem;"></i></div>
       <div style="flex:1;min-width:0;">
-        <div style="font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.title}${customTag}</div>
-        <div style="font-size:0.7rem;color:var(--text3);">${dateStr}${r.amount ? ' · '+fmt(r.amount) : ''} · ${r.detail||''}</div>
+        <div style="font-weight:600;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escHTML(r.title)}${customTag}</div>
+        <div style="font-size:0.7rem;color:var(--text3);">${dateStr}${r.amount ? ' · '+fmt(r.amount) : ''} · ${escHTML(r.detail||'')}</div>
       </div>
       <span class="badge-pill ${badgeClass}">${badge}</span>
       ${deleteBtn}
@@ -6831,7 +6534,7 @@ function renderAutoReminders() {
 }
 
 function updateRemindersSummary(allReminders) {
-  const now = new Date();
+  const now = new Date(FinanceCore.day() + 'T00:00:00Z');
   const in30 = new Date(now); in30.setDate(in30.getDate() + 30);
   const upcoming = allReminders.filter(r => { const d = new Date(r.dueDate); return d >= now && d <= in30; }).length;
   const overdue = allReminders.filter(r => new Date(r.dueDate) < now).length;
@@ -7221,11 +6924,11 @@ function renderMFSummaryStrip() {
 
 function setStrat(s, silent) {
   state.strategy = s;
-  ['normal','dip','crash'].forEach(k => document.getElementById('sc-'+k).classList.remove('active'));
-  document.getElementById('sc-'+s).classList.add('active');
+  ['normal','dip','crash'].forEach(k => document.getElementById('sc-'+k)?.classList.remove('active'));
+  document.getElementById('sc-'+s)?.classList.add('active');
   const d = stratData[s];
   const msg = document.getElementById('stratMsg');
-  msg.className = d.cls; msg.innerHTML = d.msg;
+  if (msg && d) { msg.className = d.cls; msg.innerHTML = d.msg; }
   updatePlannerPills(); buildPlanTable();
   if (!silent) save();
 }
@@ -7235,11 +6938,11 @@ function setStrat(s, silent) {
 
 function setMood(m, silent) {
   state.mood = m;
-  ['bull','fair','slight','dip','crash'].forEach(k => document.getElementById('mb-'+k).classList.remove('active'));
-  document.getElementById('mb-'+m).classList.add('active');
+  ['bull','fair','slight','dip','crash'].forEach(k => document.getElementById('mb-'+k)?.classList.remove('active'));
+  document.getElementById('mb-'+m)?.classList.add('active');
   const d = moodData[m];
   const msg = document.getElementById('moodMsg');
-  msg.className = d.cls; msg.innerHTML = d.msg;
+  if (msg && d) { msg.className = d.cls; msg.innerHTML = d.msg; }
   if (!silent) save();
 }
 
@@ -8395,9 +8098,9 @@ async function runAIAnalysis() {
   output.innerHTML = '<div style="color:var(--text2);font-size:0.84rem;line-height:1.8;padding:4px 0;">🔍 Checking live market data — Nifty, valuations, FII flows…<br><span style="color:var(--text3);font-size:0.78rem;">10–20 seconds</span></div>';
 
   const salary      = state.salary || 0;
-  const savingsPct  = state.savingsPct || 15;
+  const savingsPct  = state.savingsPct ?? 0;
   const ssMonthly   = getSS().monthly;
-  const mfBudget    = Math.max(0, Math.round(salary * savingsPct / 100) - ssMonthly);
+  const mfBudget    = ffSIPBudget();
   const lumpPool    = state._lumpPool || 0;
 
   // ── Read stored verdicts ──
@@ -9413,80 +9116,6 @@ async function fetchBrokerMFLiveNav() {
 }
 
 // ══════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════
-// GMAIL EXPENSE TRACKING — BANK CONFIG REGISTRY
-// ══════════════════════════════════════════════════════
-// ── Bank preset templates (one-click add) ──
-const GMAIL_BANK_PRESETS = {
-  hdfc: {
-    name: 'HDFC Bank',
-    senderEmail: 'alerts@hdfcbank.bank.in',
-    subjectKeywords: 'Account update, UPI txn, debited via Credit Card',
-    parseHint: `HDFC Bank sends 3 types of transaction alerts:
-1. Bank account debit: Subject "View: Account update for your HDFC Bank A/c" — body contains "debited" or "credited", amount as "Rs.XXX" or "INR XXX", merchant/payee name, date.
-2. UPI transaction: Subject "You have done a UPI txn. Check details!" — body contains UPI payee name, amount as "Rs.XXX", date, VPA/UPI ID.
-3. Credit card debit: Subject "Rs.XXX debited via Credit Card **NNNN" — body contains merchant name, amount in subject and body, card last 4 digits, date.
-Extract: date (DD-MM-YYYY), merchant/payee, amount (number only), type (debit/credit), payment_method (account/upi/credit_card).`,
-  },
-  icici: {
-    name: 'ICICI Bank',
-    senderEmail: 'alerts@icicibank.com',
-    subjectKeywords: 'Transaction alert, debited, credited',
-    parseHint: `ICICI Bank transaction alerts: body contains "debited"/"credited", amount as "Rs." or "INR", account number last 4 digits, merchant/payee name, transaction date. UPI transactions mention UPI reference ID.`,
-  },
-  sbi: {
-    name: 'SBI',
-    senderEmail: 'alerts@sbi.co.in',
-    subjectKeywords: 'Transaction Alert, debited, credited',
-    parseHint: `SBI transaction alerts: body contains "debited"/"credited" from account ending XXXX, amount as "Rs." or "INR", beneficiary/merchant name, date.`,
-  },
-  axis: {
-    name: 'Axis Bank',
-    senderEmail: 'alerts@axisbank.com',
-    subjectKeywords: 'Transaction alert, debited, spent',
-    parseHint: `Axis Bank transaction alerts: body contains "debited"/"spent", amount as "Rs." or "INR", card or account last 4 digits, merchant name, date.`,
-  },
-  kotak: {
-    name: 'Kotak Mahindra',
-    senderEmail: 'alerts@kotak.com',
-    subjectKeywords: 'Transaction alert, debited, credited',
-    parseHint: `Kotak Bank transaction alerts: body contains "debited"/"credited", amount as "Rs." or "INR", account/card ending digits, payee/merchant, date.`,
-  },
-  canara: {
-    name: 'Canara Bank',
-    senderEmail: 'alerts@canarabank.com',
-    subjectKeywords: 'Transaction, debited, credited',
-    parseHint: `Canara Bank transaction alerts: body contains "debited"/"credited", amount, account last digits, payee name, date.`,
-  },
-};
-
-// ── Build runtime bank configs from user's saved configs ──
-function getGmailBankConfigs() {
-  const saved = JSON.parse(localStorage.getItem('mypf_gmail_bank_configs') || 'null');
-  if (saved && Object.keys(saved).length) return saved;
-  // Default: HDFC only (migrated from hardcoded)
-  return { hdfc: presetToConfig(GMAIL_BANK_PRESETS.hdfc) };
-}
-
-function presetToConfig(preset) {
-  const subjects = preset.subjectKeywords.split(',').map(s => s.trim()).filter(Boolean);
-  const subjectQuery = subjects.map(s => `subject:"${s}"`).join(' OR ');
-  return {
-    name: preset.name,
-    senderEmail: preset.senderEmail,
-    subjectKeywords: preset.subjectKeywords,
-    query: `from:${preset.senderEmail} (${subjectQuery})`,
-    parseHint: preset.parseHint,
-  };
-}
-
-function saveGmailBankConfigs(configs) {
-  localStorage.setItem('mypf_gmail_bank_configs', JSON.stringify(configs));
-}
-
-// Legacy compat (used by existing code paths)
-let GMAIL_BANK_CONFIGS = getGmailBankConfigs();
-
 // SETTINGS PAGE
 // ══════════════════════════════════════════════════════
 
@@ -9529,7 +9158,7 @@ async function testOllamaConnection() {
     if (msg) { msg.textContent = '✓ Connected — ' + count + ' model(s) available.'; msg.style.color = 'var(--green)'; }
     if (status) { status.textContent = 'Reachable'; status.style.background = 'rgba(62,207,142,0.12)'; status.style.color = 'var(--green)'; }
   } catch (e) {
-    if (msg) { msg.textContent = '✗ Could not reach Ollama: ' + e.message + '. Is it running? Did you set OLLAMA_ORIGINS="*"?'; msg.style.color = 'var(--red)'; }
+    if (msg) { msg.textContent = '✗ Could not reach Ollama: ' + e.message + '. Is it running? Is this app’s origin allowed in OLLAMA_ORIGINS?'; msg.style.color = 'var(--red)'; }
     if (status) { status.textContent = 'Offline'; status.style.background = 'rgba(255,87,87,0.1)'; status.style.color = 'var(--red)'; }
   }
 }
@@ -9698,9 +9327,6 @@ function initSettingsPage() {
     if (acctEl) acctEl.style.display = 'none';
     if (anonCfg) anonCfg.style.display = 'block';
   }
-  // Gmail settings
-  updateGmailSettingsUI();
-  updateGmailConnUI();
 }
 
 function selectProvider(name, btn) {
@@ -9786,13 +9412,15 @@ const SYNC_KEYS = ['mypf_v3','mypf_fds','mypf_rds','mypf_sgb_v2','mypf_mflogs','
                    'mypf_broker_mf','mypf_broker_stocks','mypf_broker_sgb','mypf_broker_etf',
                    'mypf_broker_bonds','mypf_broker_mf_schemes',
                    'mypf_sipday','mypf_sip_plans','mypf_manual_funds',
-                   'mypf_gmail_transactions','mypf_gmail_bank_configs','mypf_retirement',
-                   'mypf_realty','mypf_insurance','mypf_loans','mypf_custom_reminders'];
-// Patch localStorage.setItem to trigger auto-sync on portfolio changes
-const _origSetItem = localStorage.setItem.bind(localStorage);
-localStorage.setItem = function(key, value) {
-  _origSetItem(key, value);
-  if (key.startsWith('mypf_') && SYNC_KEYS.includes(key)) { scheduleSupaSync(); }
+                   'mypf_gmail_transactions','mypf_txn_overrides','mypf_gmail_bank_configs','mypf_retirement',
+                   'mypf_realty','mypf_insurance','mypf_loans','mypf_custom_reminders',
+                   'mypf_gold_schemes_v1','mypf_savings_v1','mypf_migration_backup_v1'];
+// Preserve the native setter for cloud pulls, which must not trigger a push loop.
+const _nativeStorageSetItem = Storage.prototype.setItem;
+const _origSetItem = (key, value) => _nativeStorageSetItem.call(localStorage, key, value);
+Storage.prototype.setItem = function(key, value) {
+  _nativeStorageSetItem.call(this, key, value);
+  if (this === localStorage && key.startsWith('mypf_') && SYNC_KEYS.includes(key)) scheduleSupaSync();
 };
 
 function exportAllData() {
@@ -9814,7 +9442,7 @@ function exportProfileForAI() {
   const jp = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch(e) { return null; } };
   const state = jp('mypf_v3') || {};
   const fds = jp('mypf_fds') || [];
-  const rds = jp('mypf_rds') || [];
+  const rds = ffActiveRDs(jp('mypf_rds') || []);
   const sgbs = jp('mypf_sgb_v2') || [];
   const physicalGold = jp('mypf_physical_gold') || [];
   const poSchemes = jp('mypf_po') || [];
@@ -9824,7 +9452,7 @@ function exportProfileForAI() {
   const realty = jp('mypf_realty') || [];
   const budgetData = jp('mypf_budget') || {};
   const budgetHistory = jp('mypf_budget_history') || [];
-  const gmailTxns = jp('mypf_gmail_transactions') || [];
+  const gmailTxns = window.BotTxns ? BotTxns.all() : (jp('mypf_gmail_transactions') || []);
   const brokerStocks = jp('mypf_broker_stocks') || [];
   const brokerMF = jp('mypf_broker_mf') || [];
   const brokerSGB = jp('mypf_broker_sgb') || [];
@@ -9842,7 +9470,7 @@ function exportProfileForAI() {
 
   // Compute totals
   const fdTotal = fds.reduce((s,f) => s + (f.principal||0), 0);
-  const rdTotal = rds.reduce((s,r) => s + (r.deposited||0), 0);
+  const rdTotal = rds.reduce((s,r) => s + (r.deposited ?? (r.monthly||0)*(r.paidMonths||0)), 0);
   const sgbInvested = sgbs.reduce((s,h) => s + (h.grams||0) * (h.buyPrice||0), 0);
   const goldPPG = goldRate?.pricePerGram || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 0;
   const sgbCurrentVal = sgbs.reduce((s,h) => s + (h.grams||0), 0) * goldPPG;
@@ -9863,7 +9491,7 @@ function exportProfileForAI() {
 
   // Spending analysis from Gmail
   const spendByCategory = {};
-  gmailTxns.forEach(t => {
+  FinanceCore.expenseTransactions({transactions:gmailTxns,savings:FinanceCore.read(localStorage,FinanceCore.SAVINGS_KEY,FinanceCore.emptySavings)}).forEach(t => {
     const cat = t.category || 'uncategorized';
     spendByCategory[cat] = (spendByCategory[cat] || 0) + (t.amount || 0);
   });
@@ -9904,6 +9532,7 @@ function exportProfileForAI() {
       savingsTargetPct: state.savingsPct || 0,
       totalFDs: fdTotal,
       totalRDs: rdTotal,
+      totalGoldSchemes: ffGoldValue(),
       totalSGB: { invested: sgbInvested, currentValue: sgbCurrentVal, goldPricePerGram: goldPPG },
       totalPhysicalGold: { invested: pgInvested, currentValue: pgCurrentVal },
       totalPostOffice: poTotal,
@@ -9946,6 +9575,7 @@ function exportProfileForAI() {
     budget: {
       fixedExpenses: budgetData.fixed || [],
       variableExpenses: budgetData.variable || [],
+      savingsModel: window.FinanceUI ? FinanceCore.budget(FinanceUI.input(), FinanceCore.month()) : null,
       efSaved: budgetData.efSaved || 0,
       efMonthly: budgetData.efMonthly || 0,
       history: budgetHistory.slice(-6)
@@ -9976,7 +9606,7 @@ function handleImportFile(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const dump = JSON.parse(ev.target.result);
+      const dump = FinanceCore.restoreEntries(JSON.parse(ev.target.result));
       let count = 0;
       Object.entries(dump).forEach(([k,v]) => {
         if (k.startsWith('mypf_')) { localStorage.setItem(k, v); count++; }
@@ -10131,12 +9761,11 @@ async function supaPullAll() {
   if (!config?.url || !config?.key || !config?.userKey) throw new Error('Supabase not configured');
   const rows = await supaRequest('GET', `/portfolio?user_key=eq.${encodeURIComponent(config.userKey)}&select=data_key,value`);
   if (!rows || !rows.length) throw new Error('No data found in cloud for this passphrase');
+  const incoming = Object.fromEntries(rows.filter(r => r.data_key && SYNC_KEYS.includes(r.data_key) && r.value).map(r => [r.data_key, r.value]));
+  const validated = FinanceCore.restoreEntries(incoming);
   let restored = 0;
-  rows.forEach(r => {
-    if (r.data_key && r.data_key !== '_synced' && SYNC_KEYS.includes(r.data_key) && r.value) {
-      _origSetItem(r.data_key, r.value); // Use original setItem to avoid re-triggering sync
-      restored++;
-    }
+  Object.entries(validated).forEach(([key,value]) => {
+    if (SYNC_KEYS.includes(key)) { _origSetItem(key,value); restored++; }
   });
   return restored;
 }
@@ -10169,20 +9798,43 @@ async function supaPullNow() {
   }
 }
 
-// Supabase auto-sync (debounced)
+// Durable pending marker: offline edits retry when the app next has a connection.
 let _supaSyncTimer = null;
+let _supaSyncRunning = false;
+let _supaSyncRevision = 0;
 function scheduleSupaSync() {
   const config = getSupaConfig();
   if (!config?.enabled) return;
+  _supaSyncRevision++;
+  _origSetItem('mypf_sync_pending', '1');
+  updateCloudSyncStatus();
   clearTimeout(_supaSyncTimer);
-  _supaSyncTimer = setTimeout(async () => {
-    try {
-      await supaUpsertAll();
-      console.log('[supa-sync] synced to Supabase');
-    }
-    catch (e) { console.warn('[supa-sync] error:', e.message); }
-  }, 3000);
+  _supaSyncTimer = setTimeout(flushSupaSync, 3000);
 }
+async function flushSupaSync() {
+  if (_supaSyncRunning || !navigator.onLine || !getSupaConfig()?.enabled || !localStorage.getItem('mypf_sync_pending')) return;
+  _supaSyncRunning = true;
+  const revision = _supaSyncRevision;
+  try {
+    await supaUpsertAll();
+    if (revision === _supaSyncRevision) localStorage.removeItem('mypf_sync_pending');
+    _origSetItem('mypf_sync_last_success', new Date().toISOString());
+  } catch (e) {
+    console.warn('[supa-sync] Pending changes retained; will retry when online.');
+  } finally {
+    _supaSyncRunning = false;
+    updateCloudSyncStatus();
+  }
+}
+function updateCloudSyncStatus() {
+  const el = document.getElementById('ff-cloud-status');
+  if (!el) return;
+  const last = localStorage.getItem('mypf_sync_last_success');
+  el.textContent = !getSupaConfig()?.enabled ? 'Cloud sync is not configured.' : localStorage.getItem('mypf_sync_pending') ? 'Changes saved on this device · waiting to sync.' : last ? 'Last automatic sync: ' + new Date(last).toLocaleString('en-IN') : 'Automatic sync is enabled.';
+}
+window.addEventListener('online', flushSupaSync);
+window.addEventListener('load', () => { updateCloudSyncStatus(); flushSupaSync(); });
+setInterval(flushSupaSync, 60000);
 
 // Hook settings page init into gotoPage
 const _origGotoPageSettings = gotoPage;
@@ -10617,7 +10269,7 @@ const AI_MODULE_CONFIG = {
       const ss = getSS();
       const salary = state.salary || 0;
       const fds = JSON.parse(localStorage.getItem('mypf_fds') || '[]');
-      const rds = JSON.parse(localStorage.getItem('mypf_rds') || '[]');
+      const rds = ffActiveRDs(JSON.parse(localStorage.getItem('mypf_rds') || '[]'));
       const sgbs = JSON.parse(localStorage.getItem('mypf_sgb') || '[]');
       const pgold = JSON.parse(localStorage.getItem('mypf_physical_gold') || '[]');
       const mfManual = JSON.parse(localStorage.getItem('mypf_manual_funds') || '[]');
@@ -11064,358 +10716,56 @@ function showAIHistoryItem(idx) {
 }
 
 // ══════════════════════════════════════════════════════
+// BANK TRANSACTIONS: synced by the FinFolio VPS bot (assets/bot-transactions.js)
 // ══════════════════════════════════════════════════════
-// GMAIL EXPENSE TRACKING
-// ══════════════════════════════════════════════════════
 
-let gmailTokenClient = null;
-let gmailToken = null;
-
-// ── Settings helpers ──
-function saveGmailClientId() {
-  const el = document.getElementById('settings-gmail-client-id');
-  const val = (el?.value || '').trim();
-  if (!val) return;
-  localStorage.setItem('mypf_gmail_client_id', val);
-  updateGmailSettingsUI();
-  initGmailAuth();
-}
-function clearGmailClientId() {
-  localStorage.removeItem('mypf_gmail_client_id');
-  const el = document.getElementById('settings-gmail-client-id');
-  if (el) el.value = '';
-  disconnectGmail();
-  updateGmailSettingsUI();
-}
-function renderBankConfigList() {
-  const configs = getGmailBankConfigs();
-  const list = document.getElementById('bankConfigList');
-  if (!list) return;
-  const keys = Object.keys(configs);
-  if (!keys.length) {
-    list.innerHTML = '<div style="font-size:0.75rem;color:var(--text3);padding:8px 0;">No banks configured. Add one below.</div>';
-  } else {
-    list.innerHTML = keys.map(k => {
-      const c = configs[k];
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s3);border-radius:8px;margin-bottom:6px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:0.8rem;color:var(--text1);">${escHTML(c.name)}</div>
-          <div style="font-size:0.68rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHTML(c.senderEmail || '')} — ${escHTML((c.subjectKeywords || '').slice(0, 60))}</div>
-        </div>
-        <button onclick="removeBankConfig('${escHTML(k)}')" style="padding:4px 10px;background:rgba(255,87,87,0.08);border:1px solid rgba(255,87,87,0.2);border-radius:6px;color:var(--red);font-size:0.7rem;font-weight:600;cursor:pointer;">Remove</button>
-      </div>`;
-    }).join('');
-  }
-  // Update preset dropdown (exclude already-added)
-  const presetSel = document.getElementById('bankPresetSelect');
-  if (presetSel) {
-    const available = Object.keys(GMAIL_BANK_PRESETS).filter(k => !configs[k]);
-    presetSel.innerHTML = available.length
-      ? available.map(k => `<option value="${k}">${escHTML(GMAIL_BANK_PRESETS[k].name)}</option>`).join('')
-      : '<option value="">All presets added</option>';
-  }
-  // Update budget page bank selector
-  renderBudgetBankSelector();
-}
-function addBankPreset() {
-  const sel = document.getElementById('bankPresetSelect');
-  const key = sel?.value;
-  if (!key || !GMAIL_BANK_PRESETS[key]) return;
-  const configs = getGmailBankConfigs();
-  configs[key] = presetToConfig(GMAIL_BANK_PRESETS[key]);
-  configs[key].senderEmail = GMAIL_BANK_PRESETS[key].senderEmail;
-  configs[key].subjectKeywords = GMAIL_BANK_PRESETS[key].subjectKeywords;
-  saveGmailBankConfigs(configs);
-  renderBankConfigList();
-}
-function addCustomBank() {
-  const name = document.getElementById('customBankName')?.value?.trim();
-  const email = document.getElementById('customBankEmail')?.value?.trim();
-  const subjects = document.getElementById('customBankSubjects')?.value?.trim();
-  const hint = document.getElementById('customBankParseHint')?.value?.trim();
-  if (!name || !email) { alert('Bank name and sender email are required.'); return; }
-  const key = 'custom_' + name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  const subjectList = subjects ? subjects.split(',').map(s => s.trim()).filter(Boolean) : [];
-  const subjectQuery = subjectList.length ? subjectList.map(s => `subject:"${s}"`).join(' OR ') : '';
-  const query = subjectQuery ? `from:${email} (${subjectQuery})` : `from:${email}`;
-  const configs = getGmailBankConfigs();
-  configs[key] = { name, senderEmail: email, subjectKeywords: subjects || '', query, parseHint: hint || `Bank transaction alert from ${name}. Extract: date, merchant/payee, amount, type (debit/credit), payment method.` };
-  saveGmailBankConfigs(configs);
-  // Clear form
-  ['customBankName','customBankEmail','customBankSubjects','customBankParseHint'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  renderBankConfigList();
-}
-function removeBankConfig(key) {
-  const configs = getGmailBankConfigs();
-  delete configs[key];
-  saveGmailBankConfigs(configs);
-  renderBankConfigList();
-}
-function renderBudgetBankSelector() {
-  const sel = document.getElementById('gmailBankSync');
-  if (!sel) return;
-  const configs = getGmailBankConfigs();
-  const keys = Object.keys(configs);
-  sel.innerHTML = '<option value="__all__">All Banks</option>' +
-    keys.map(k => `<option value="${k}">${escHTML(configs[k].name)}</option>`).join('');
-}
-function updateGmailSettingsUI() {
-  const clientId = localStorage.getItem('mypf_gmail_client_id');
-  const statusEl = document.getElementById('gmail-client-status');
-  if (statusEl) {
-    statusEl.textContent = clientId ? '✓ Set' : 'Not set';
-    statusEl.style.background = clientId ? 'rgba(62,207,142,0.12)' : 'var(--s3)';
-    statusEl.style.color = clientId ? 'var(--green)' : 'var(--text3)';
-  }
-  const inputEl = document.getElementById('settings-gmail-client-id');
-  if (inputEl && clientId && !inputEl.value) inputEl.value = clientId;
-  renderBankConfigList();
-  updateGmailConnUI();
-}
-function updateGmailConnUI() {
-  const connected = !!(gmailToken && gmailToken.expires_at > Date.now());
-  const connBtn = document.getElementById('gmail-connect-btn');
-  const discBtn = document.getElementById('gmail-disconnect-btn');
-  const statusEl = document.getElementById('gmail-conn-status');
-  if (connBtn) connBtn.style.display = connected ? 'none' : '';
-  if (discBtn) discBtn.style.display = connected ? '' : 'none';
-  if (statusEl) {
-    statusEl.textContent = connected ? '✓ Connected' : 'Not connected';
-    statusEl.style.color = connected ? 'var(--green)' : 'var(--text3)';
-  }
-}
-
-// ── OAuth ──
-function initGmailAuth() {
-  const clientId = localStorage.getItem('mypf_gmail_client_id');
-  if (!clientId || typeof google === 'undefined' || !google.accounts?.oauth2) return;
-  gmailTokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: 'https://www.googleapis.com/auth/gmail.readonly',
-    callback: onGmailTokenResponse,
-  });
-}
-function onGmailTokenResponse(resp) {
-  if (resp.error) {
-    const s = document.getElementById('gmail-conn-status');
-    if (s) { s.textContent = 'Auth failed: ' + resp.error; s.style.color = 'var(--red)'; }
-    return;
-  }
-  gmailToken = { access_token: resp.access_token, expires_at: Date.now() + (resp.expires_in * 1000) };
-  sessionStorage.setItem('mypf_gmail_token', JSON.stringify(gmailToken));
-  updateGmailConnUI();
-}
-function connectGmail() {
-  if (!gmailTokenClient) initGmailAuth();
-  if (!gmailTokenClient) { alert('Set your Google OAuth Client ID in Settings first.'); return; }
-  gmailTokenClient.requestAccessToken();
-}
-function disconnectGmail() {
-  if (gmailToken?.access_token) {
-    try { google.accounts.oauth2.revoke(gmailToken.access_token); } catch(e) {}
-  }
-  gmailToken = null;
-  sessionStorage.removeItem('mypf_gmail_token');
-  updateGmailConnUI();
-}
-async function ensureGmailToken() {
-  if (gmailToken && gmailToken.expires_at > Date.now() + 60000) return true;
-  const stored = (() => { try { return JSON.parse(sessionStorage.getItem('mypf_gmail_token')); } catch(e) { return null; } })();
-  if (stored && stored.expires_at > Date.now() + 60000) { gmailToken = stored; return true; }
-  if (!gmailTokenClient) initGmailAuth();
-  if (!gmailTokenClient) return false;
-  return new Promise(resolve => {
-    const origCb = gmailTokenClient.callback;
-    gmailTokenClient.callback = (resp) => { onGmailTokenResponse(resp); gmailTokenClient.callback = origCb; resolve(!resp.error); };
-    gmailTokenClient.requestAccessToken();
-  });
-}
-
-// ── Gmail API + LLM parsing ──
-function extractEmailBody(payload) {
-  if (payload.body?.data) return atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
-  if (payload.parts) {
-    const tp = payload.parts.find(p => p.mimeType === 'text/plain');
-    if (tp?.body?.data) return atob(tp.body.data.replace(/-/g, '+').replace(/_/g, '/'));
-    const hp = payload.parts.find(p => p.mimeType === 'text/html');
-    if (hp?.body?.data) {
-      const raw = atob(hp.body.data.replace(/-/g, '+').replace(/_/g, '/'));
-      return raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    }
-  }
-  return '';
-}
-
-function buildTransactionParsePrompt(emails, categories, parseHint) {
-  return `Parse these bank alert emails into structured transactions.
-${parseHint}
-
-For each email, extract: merchant/payee name, amount (number only, no currency symbol), date (YYYY-MM-DD), card last 4 digits (if available, else ""), payment_method (account/upi/credit_card), type (debit/credit).
-
-IMPORTANT for categorization:
-- For CREDITS (money received): use categories like Income, Salary, FD Liquidation, FD Interest, Refund, Cashback, Dividend, Transfer, Investment
-- For DEBITS (money spent): use spending categories like Groceries, Dining, Shopping, Transport, Bills & Utilities, EMI, Rent, etc.
-- Use the MOST SPECIFIC matching category, never default to "Miscellaneous" unless truly uncategorizable
-
-Available categories: ${categories.join(', ')}.
-If none match, suggest a short descriptive category name and whether it's "fixed" or "variable".
-
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"idx":0,"merchant":"Store Name","amount":1234.56,"date":"2026-03-15","card":"1234","payment_method":"credit_card","type":"debit","category":"Groceries","budgetType":"variable"}]
-
-If an email is not a valid transaction (e.g. OTP, marketing, balance info only), skip it — do not include in the array.
-
-Emails to parse:
-${emails.map((e, i) => `[${i}] ${(e.body || e.snippet || '').slice(0, 500)}`).join('\n\n')}`;
-}
-
-async function syncGmailTransactions() {
+let _botTxnRefreshing = null;
+async function refreshBotTransactions(manual) {
   const statusEl = document.getElementById('gmailSyncStatus');
-  const syncBtn = document.getElementById('gmailSyncBtn');
-
-  if (!await ensureGmailToken()) {
-    if (statusEl) { statusEl.textContent = '⚠ Connect Gmail in Settings first.'; statusEl.style.color = 'var(--amber)'; }
-    return;
-  }
-
-  // Get date range
-  const startEl = document.getElementById('gmailSyncStart');
-  const endEl = document.getElementById('gmailSyncEnd');
-  const startDate = startEl?.value || '';
-  const endDate = endEl?.value || '';
-  if (!startDate || !endDate) {
-    if (statusEl) { statusEl.textContent = '⚠ Select start and end dates.'; statusEl.style.color = 'var(--amber)'; }
-    return;
-  }
-
-  // Determine which bank(s) to sync
-  const bankSyncSel = document.getElementById('gmailBankSync');
-  const selectedBank = bankSyncSel?.value || '__all__';
-  const allConfigs = getGmailBankConfigs();
-  const banksToSync = selectedBank === '__all__' ? Object.keys(allConfigs) : [selectedBank];
-  const validBanks = banksToSync.filter(k => allConfigs[k]);
-  if (!validBanks.length) {
-    if (statusEl) { statusEl.textContent = '⚠ No banks configured. Add banks in Settings.'; statusEl.style.color = 'var(--amber)'; }
-    return;
-  }
-
-  if (syncBtn) { syncBtn.disabled = true; syncBtn.textContent = '⟳ Syncing…'; }
-
-  const afterStr = startDate.replace(/-/g, '/');
-  const endPlusOne = new Date(new Date(endDate).getTime() + 86400000).toISOString().split('T')[0].replace(/-/g, '/');
-  let totalNew = 0, totalSkipped = 0;
-
-  try {
-  for (const bankKey of validBanks) {
-    const config = allConfigs[bankKey];
-    if (statusEl) { statusEl.textContent = `Fetching ${config.name} emails…`; statusEl.style.color = 'var(--blue)'; }
-
-    // Build query with date range
-    let query = config.query + ` after:${afterStr} before:${endPlusOne}`;
-
-    // 1. List matching messages
-    const listRes = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=100`,
-      { headers: { Authorization: 'Bearer ' + gmailToken.access_token } }
-    );
-    if (!listRes.ok) throw new Error('Gmail API error: ' + listRes.status);
-    const listData = await listRes.json();
-
-    if (!listData.messages?.length) { totalSkipped++; continue; }
-
-    // 2. Dedup against existing
-    let transactions = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-    const existingIds = new Set(transactions.map(t => t.id));
-    const newMsgs = listData.messages.filter(m => !existingIds.has(m.id));
-
-    if (!newMsgs.length) { totalSkipped++; continue; }
-
-    if (statusEl) statusEl.textContent = `${config.name}: ${newMsgs.length} new email(s). Fetching…`;
-
-    // 3. Fetch message bodies in batches of 10
-    const emailTexts = [];
-    for (let i = 0; i < newMsgs.length; i += 10) {
-      const batch = newMsgs.slice(i, i + 10);
-      const fetches = batch.map(m =>
-        fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`,
-          { headers: { Authorization: 'Bearer ' + gmailToken.access_token } })
-        .then(r => r.json())
-      );
-      const bodies = await Promise.all(fetches);
-      bodies.forEach(msg => {
-        emailTexts.push({
-          id: msg.id,
-          snippet: msg.snippet || '',
-          body: extractEmailBody(msg.payload || {}),
-          date: new Date(parseInt(msg.internalDate)).toISOString().split('T')[0],
-        });
-      });
-    }
-
-    if (statusEl) statusEl.textContent = `${config.name}: Parsing ${emailTexts.length} transaction(s) with AI…`;
-
-    // 4. Build categories from budget data + common transaction types
-    const budgetCats = [
-      ...budgetData.fixed.map(i => i.label),
-      ...budgetData.variable.map(i => i.label),
-    ].filter(Boolean);
-    // Always include income/transfer types so LLM doesn't bucket everything as Miscellaneous
-    const standardCats = ['Groceries', 'Dining', 'Shopping', 'Transport', 'Fuel', 'Bills & Utilities', 'Rent', 'EMI', 'Insurance',
-      'Healthcare', 'Education', 'Entertainment', 'Subscriptions', 'Travel',
-      'Income', 'Salary', 'FD Liquidation', 'FD Interest', 'Refund', 'Cashback', 'Transfer', 'Investment', 'Mutual Fund', 'Dividend', 'Other'];
-    const categories = [...new Set([...budgetCats, ...standardCats])];
-
-    // 5. LLM parse (batch up to 15 at a time)
-    const allParsed = [];
-    for (let i = 0; i < emailTexts.length; i += 15) {
-      const batch = emailTexts.slice(i, i + 15);
-      const prompt = buildTransactionParsePrompt(batch, categories, config.parseHint);
-      const aiResp = await callAIProvider(prompt);
-
-      // Extract JSON from AI response
-      let parsed = [];
-      try {
-        const jsonMatch = aiResp.match(/\[[\s\S]*\]/);
-        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
-      } catch(e) { console.warn('Gmail LLM parse error:', e); }
-
-      parsed.forEach(p => {
-        const srcEmail = batch[p.idx];
-        if (!srcEmail) return;
-        allParsed.push({
-          id: srcEmail.id,
-          date: p.date || srcEmail.date,
-          merchant: p.merchant || 'Unknown',
-          amount: parseFloat(p.amount) || 0,
-          card: p.card || '',
-          payment_method: p.payment_method || 'account',
-          type: p.type || 'debit',
-          category: p.category || 'Other',
-          budgetType: p.budgetType || 'variable',
-          bank: config.name,
-        });
-      });
-    }
-
-    // 6. Merge and save
-    transactions = [...allParsed, ...transactions].sort((a, b) => b.date.localeCompare(a.date));
-    localStorage.setItem('mypf_gmail_transactions', JSON.stringify(transactions));
-    totalNew += allParsed.length;
-  } // end bank loop
-
-    if (totalNew > 0) {
-      if (statusEl) { statusEl.textContent = `✓ Synced ${totalNew} new transaction(s) from ${validBanks.length} bank(s).`; statusEl.style.color = 'var(--green)'; }
-    } else {
-      if (statusEl) { statusEl.textContent = 'No new transactions found across selected bank(s).'; statusEl.style.color = 'var(--text3)'; }
-    }
+  const btn = document.getElementById('gmailSyncBtn');
+  const config = getSupaConfig();
+  if (!config?.url || !config?.key || !config?.userKey) {
     renderGmailTransactions();
-
-  } catch(err) {
-    console.error('Gmail sync error:', err);
-    if (statusEl) { statusEl.textContent = '✕ Error: ' + err.message; statusEl.style.color = 'var(--red)'; }
-  } finally {
-    if (syncBtn) { syncBtn.disabled = false; syncBtn.textContent = '⟳ Sync Now'; }
+    if (statusEl) { statusEl.textContent = '⚠ Set up Cloud Backup in Settings to see bot-synced transactions.'; statusEl.style.color = 'var(--amber)'; }
+    return;
   }
+  if (_botTxnRefreshing) return _botTxnRefreshing;
+  if (btn) { btn.disabled = true; btn.textContent = '⟳ Refreshing…'; }
+  let failed = false;
+  _botTxnRefreshing = (async () => {
+    try { await BotTxns.refresh(supaRequest, config.userKey); }
+    catch (e) { failed = true; console.warn('[bot-txns] refresh failed'); }
+    finally {
+      _botTxnRefreshing = null;
+      if (btn) { btn.disabled = false; btn.textContent = '⟳ Refresh'; }
+      renderGmailTransactions();
+      if (failed && manual && statusEl) { statusEl.textContent = '✕ Could not reach Supabase. Showing the last copy.'; statusEl.style.color = 'var(--red)'; }
+    }
+  })();
+  return _botTxnRefreshing;
+}
+
+function renderBotTxnStatus() {
+  const el = document.getElementById('gmailSyncStatus');
+  if (!el) return;
+  const st = BotTxns.status();
+  el.style.color = 'var(--text3)';
+  if (!st) { el.textContent = 'Waiting for the first upload from the bot.'; return; }
+  const when = st.lastSync ? new Date(st.lastSync).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const since = st.trackingSince ? new Date(st.trackingSince + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+  let html = `Last update from the bot: ${escHTML(when)} · latest payment ${escHTML(st.latestTxnDate || '—')}${since ? ` · tracking HDFC alerts since ${escHTML(since)}` : ''}`;
+  if (st.unparsed) {
+    const subjects = (st.unparsedSubjects || []).map(x => `“${escHTML(x.subject)}” (${escHTML(x.received)})`).join(', ');
+    html += ` · <span style="color:var(--amber);">⚠ ${st.unparsed} email${st.unparsed > 1 ? 's' : ''} the bot couldn't read, not in totals: ${subjects}</span>`;
+  }
+  el.innerHTML = html;
+}
+
+function setTxnCategory(sel) {
+  const { id, merchant } = sel.dataset;
+  const everyone = merchant && confirm(`Use “${sel.value}” for every payment to ${merchant}, including future ones?\n\nOK: all payments to this merchant\nCancel: only this payment`);
+  BotTxns.setCategory(id, sel.value, everyone ? merchant : null);
+  renderGmailTransactions();
 }
 
 // ── Pie chart colors ──
@@ -11495,7 +10845,8 @@ function drawGmailPieChart(categoryTotals) {
 
 // ── Render transactions ──
 function renderGmailTransactions() {
-  const txns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
+  const txns = BotTxns.all();
+  renderBotTxnStatus();
   const emptyEl = document.getElementById('gmailTxnEmpty');
   const tableWrap = document.getElementById('gmailTxnTableWrap');
   const tbody = document.getElementById('gmailTxnTbody');
@@ -11517,9 +10868,10 @@ function renderGmailTransactions() {
 
   // Filter to current month by default
   const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthKey = window.FinanceUI ? FinanceUI.selectedMonth() : FinanceCore.month();
   const monthTxns = txns.filter(t => t.date?.startsWith(monthKey));
-  let baseTxns = monthTxns.length ? monthTxns : txns.slice(0, 100);
+  let baseTxns = monthTxns;
+  const expenseIds = new Set(FinanceCore.expenseTransactions({transactions:baseTxns,savings:FinanceCore.read(localStorage,FinanceCore.SAVINGS_KEY,FinanceCore.emptySavings)}).map(t=>t.id));
 
   // Populate category filter options
   const catFilter = document.getElementById('gmailCategoryFilter');
@@ -11542,7 +10894,7 @@ function renderGmailTransactions() {
   if (filterInfo) {
     const parts = [];
     if (selectedCat) parts.push(selectedCat);
-    if (selectedPay) parts.push(selectedPay === 'upi' ? 'UPI' : selectedPay === 'credit_card' ? 'Credit Card' : 'Bank A/c');
+    if (selectedPay) parts.push({ upi: 'UPI', credit_card: 'Credit Card', debit_card: 'Debit Card' }[selectedPay] || 'Bank A/c');
     filterInfo.textContent = parts.length ? `Showing: ${parts.join(' + ')}` : '';
   }
 
@@ -11550,7 +10902,7 @@ function renderGmailTransactions() {
 
   // Build category totals for pie chart (from baseTxns, not filtered)
   const categoryTotals = {};
-  baseTxns.forEach(t => {
+  baseTxns.filter(t=>expenseIds.has(t.id)).forEach(t => {
     const cat = t.category || 'Other';
     categoryTotals[cat] = (categoryTotals[cat] || 0) + (t.amount || 0);
   });
@@ -11564,51 +10916,36 @@ function renderGmailTransactions() {
       return `<tr>
       <td style="font-size:0.78rem;white-space:nowrap;">${escHTML(t.date || '—')}</td>
       <td style="font-weight:600;">${escHTML(t.merchant || '—')}</td>
-      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--red);">${fmt(t.amount)}</td>
-      <td><span style="font-size:0.68rem;padding:2px 8px;border-radius:12px;background:${catColor}18;color:${catColor};white-space:nowrap;">${escHTML(t.category || '—')}</span></td>
+      <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:${t.type === 'credit' ? 'var(--green)' : t.type === 'transfer' ? 'var(--text3)' : 'var(--red)'};">${t.type === 'credit' ? '+' : ''}${fmt(t.amount)}</td>
+      <td><select data-id="${escHTML(String(t.id))}" data-merchant="${escHTML(t.merchant || '')}" onchange="setTxnCategory(this)" aria-label="Category for ${escHTML(t.merchant || 'transaction')}"
+        style="font-size:0.68rem;padding:2px 6px;border-radius:12px;background:${catColor}18;color:${catColor};border:1px solid ${catColor}40;cursor:pointer;max-width:150px;">${[...new Set([...BotTxns.CATEGORIES, t.category || 'Other'])].map(c => `<option${c === (t.category || 'Other') ? ' selected' : ''}>${escHTML(c)}</option>`).join('')}</select>${t.type === 'debit' && BotTxns.isSpending(t) && !expenseIds.has(t.id) ? '<div style="font-size:0.6rem;color:var(--text3);">Linked savings transfer</div>' : ''}</td>
       <td style="font-size:0.68rem;color:var(--text3);">${escHTML(t.bank || '—')}</td>
-      <td style="font-size:0.72rem;color:var(--text3);font-family:'JetBrains Mono',monospace;">${t.payment_method === 'upi' ? 'UPI' : t.payment_method === 'credit_card' ? 'CC••' + (t.card || '') : t.card ? 'A/c••' + t.card : t.payment_method || ''}</td>
-      <td><button onclick="deleteGmailTxn('${t.id}')" style="padding:2px 6px;border-radius:4px;background:transparent;border:1px solid rgba(255,87,87,0.15);color:var(--red);font-size:0.6rem;cursor:pointer;">✕</button></td>
+      <td style="font-size:0.72rem;color:var(--text3);font-family:'JetBrains Mono',monospace;">${t.payment_method === 'upi' ? 'UPI' : t.payment_method === 'credit_card' ? 'CC••' + escHTML(t.card || '') : t.payment_method === 'debit_card' ? 'DC••' + escHTML(t.card || '') : t.card ? 'A/c••' + escHTML(t.card) : escHTML(t.payment_method || '')}</td>
+      <td><button onclick="deleteGmailTxn(this.dataset.id)" data-id="${escHTML(String(t.id))}" title="Hide from totals" aria-label="Hide this transaction" style="padding:2px 6px;border-radius:4px;background:transparent;border:1px solid rgba(255,87,87,0.15);color:var(--red);font-size:0.6rem;cursor:pointer;">✕</button></td>
     </tr>`;
     }).join('');
   }
 
   // Totals
-  const total = displayTxns.reduce((s, t) => s + (t.amount || 0), 0);
+  const total = FinanceCore.sum(displayTxns.filter(t=>expenseIds.has(t.id)),t=>t.amount);
   const countEl = document.getElementById('gmailTxnCount');
   const totalEl = document.getElementById('gmailTxnTotal');
   if (countEl) countEl.textContent = displayTxns.length + ' transaction' + (displayTxns.length !== 1 ? 's' : '') + (monthTxns.length ? ' this month' : '') + (selectedCat || selectedPay ? ' (filtered)' : '');
-  if (totalEl) totalEl.textContent = fmt(total);
+  if (totalEl) totalEl.textContent = expenseIds.size ? fmt(total) + ' expenses' : 'Not recorded';
 
   // Refresh overview cards with latest Gmail data
   recalcBudget();
 }
 
 function deleteGmailTxn(msgId) {
-  let txns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-  txns = txns.filter(t => t.id !== msgId);
-  localStorage.setItem('mypf_gmail_transactions', JSON.stringify(txns));
+  if (!confirm('Hide this transaction? It will be left out of totals here and in the Telegram digests.')) return;
+  BotTxns.hide(msgId);
   renderGmailTransactions();
 }
 
 function initGmailSection() {
-  // Restore token
-  try { gmailToken = JSON.parse(sessionStorage.getItem('mypf_gmail_token') || 'null'); } catch(e) {}
-  // Init GIS after script loads
-  if (typeof google !== 'undefined' && google.accounts?.oauth2) {
-    initGmailAuth();
-  } else {
-    // GIS script loads async — retry shortly
-    setTimeout(() => { initGmailAuth(); updateGmailSettingsUI(); updateGmailConnUI(); }, 1500);
-  }
-  updateGmailSettingsUI();
-  updateGmailConnUI();
-  // Set default date range (1st of month → today)
-  const now = new Date();
-  const startEl = document.getElementById('gmailSyncStart');
-  const endEl = document.getElementById('gmailSyncEnd');
-  if (startEl && !startEl.value) startEl.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  if (endEl && !endEl.value) endEl.value = now.toISOString().split('T')[0];
+  renderGmailTransactions();
+  refreshBotTransactions(false);
 }
 
 // BUDGET PLANNER
@@ -11704,212 +11041,7 @@ function removeBudgetItem(type, idx) {
   saveBudget(); renderBudgetList(type); recalcBudget();
 }
 
-function recalcBudget() {
-  const salary   = state.salary || 0;
-  const ssAmt    = getSS().monthly || 0; // Pre-payroll — already deducted before in-hand salary
-  const rdAmt    = (state.rds || []).reduce((s,r) => s + (r.monthly||0), 0);
-
-  // Savings target from in-hand salary (sharesave is pre-payroll, not included)
-  const savingsTarget = Math.round(salary * (state.savingsPct||15) / 100);
-  const sipAmt   = savingsTarget; // Full target goes to SIP pool (sharesave is separate)
-
-  const fixed    = budgetData.fixed.reduce((s,i)    => s + (i.amount||0), 0);
-  const variable = budgetData.variable.reduce((s,i) => s + (i.amount||0), 0);
-
-  const efMonthlyEl = document.getElementById('bsave-ef-input');
-  const efSavedEl   = document.getElementById('bsave-ef-saved');
-  const efMonthly   = efMonthlyEl ? parseFloat(efMonthlyEl.value) || 0 : 0;
-  const efSaved     = efSavedEl   ? parseFloat(efSavedEl.value)   || 0 : 0;
-  budgetData.efSaved   = efSaved;
-  budgetData.efMonthly = efMonthly;
-
-  // Total committed from in-hand = savings target + RD + EF (sharesave excluded — pre-payroll)
-  const extraSavings  = rdAmt + efMonthly;
-  const totalCommitted = savingsTarget + extraSavings;
-  const totalOut      = fixed + variable + totalCommitted;
-  const freeCash      = salary - totalOut;
-  // Total savings for display (includes sharesave for full picture)
-  const totalSavingsDisplay = ssAmt + totalCommitted;
-
-  const fmt = n => n > 0 ? '₹\u202f' + Math.round(n).toLocaleString('en-IN') : (n < 0 ? '-₹\u202f' + Math.round(-n).toLocaleString('en-IN') : '₹\u202f0');
-  const pct = n => salary > 0 ? (n/salary*100).toFixed(0) + '%' : '';
-
-  // Update summary cards
-  const setText = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  setText('bw-fixed',    fmt(fixed));    setText('bw-fixed-pct',    salary>0 ? pct(fixed)+' of salary' : '');
-  setText('bw-variable', fmt(variable)); setText('bw-variable-pct', salary>0 ? pct(variable)+' of salary' : '');
-
-  // Planned expenses (fixed + variable)
-  const planned = fixed + variable;
-  setText('bw-planned', fmt(planned));
-
-  // Actual spent from Gmail (current month)
-  const gmailTxns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-  const nowDt = new Date();
-  const curMonthKey = `${nowDt.getFullYear()}-${String(nowDt.getMonth() + 1).padStart(2, '0')}`;
-  const monthGmailTxns = gmailTxns.filter(t => t.date?.startsWith(curMonthKey));
-  const actualSpent = monthGmailTxns.reduce((s, t) => s + (t.amount || 0), 0);
-  setText('bw-actual', fmt(actualSpent));
-  const actualDetailEl = document.getElementById('bw-actual-detail');
-  if (actualDetailEl) actualDetailEl.textContent = monthGmailTxns.length ? monthGmailTxns.length + ' txn' + (monthGmailTxns.length !== 1 ? 's' : '') + ' this month' : 'no Gmail data yet';
-
-  // Over / Under budget
-  const diffEl = document.getElementById('bw-diff');
-  const diffDetailEl = document.getElementById('bw-diff-detail');
-  if (planned > 0 && actualSpent > 0) {
-    const diff = planned - actualSpent;
-    if (diffEl) { diffEl.textContent = (diff >= 0 ? '+' : '') + fmt(diff); diffEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--red)'; }
-    if (diffDetailEl) diffDetailEl.textContent = diff >= 0 ? 'under budget' : 'over budget';
-  } else if (diffEl) {
-    diffEl.textContent = '—'; diffEl.style.color = 'var(--text3)';
-    if (diffDetailEl) diffDetailEl.textContent = planned === 0 ? 'set budget first' : 'sync Gmail';
-  }
-
-  // Savings card
-  setText('bw-savings', fmt(savingsTarget));
-  const savPctEl = document.getElementById('bw-savings-pct');
-  if (savPctEl) {
-    if (extraSavings > 0) {
-      savPctEl.innerHTML = `<span style="color:var(--green);">+₹${Math.round(extraSavings).toLocaleString('en-IN')} RD/EF extra</span>`;
-    } else {
-      savPctEl.textContent = 'of salary';
-      savPctEl.style.color = 'var(--text3)';
-    }
-  }
-
-  const freeEl = document.getElementById('bw-free');
-  if (freeEl) { freeEl.textContent = fmt(freeCash); freeEl.style.color = freeCash >= 0 ? 'var(--green)' : 'var(--red)'; }
-  setText('bw-free-pct', salary>0 ? pct(freeCash)+' of salary' : '');
-
-  // Bar segments
-  const setW = (id, w) => { const el=document.getElementById(id); if(el) el.style.width=Math.max(0,Math.min(100,w))+'%'; };
-  if (salary > 0) {
-    setW('bar-fixed',    fixed/salary*100);
-    setW('bar-variable', variable/salary*100);
-    setW('bar-savings',  savingsTarget/salary*100);
-    setW('bar-free',     Math.max(0,freeCash)/salary*100);
-  }
-
-  // Savings panel
-  setText('bsave-ss', ssAmt > 0 ? '₹\u202f' + ssAmt.toLocaleString('en-IN') : '₹ 0');
-  setText('bsave-sip', fmt(sipAmt));
-  setText('bsave-rd',  rdAmt > 0 ? '₹\u202f' + rdAmt.toLocaleString('en-IN') : '₹ 0');
-
-  // RD list
-  const rdListEl = document.getElementById('bsave-rd-list');
-  if (rdListEl) {
-    const rdItems = (state.rds||[]).filter(r => r.monthly > 0);
-    rdListEl.innerHTML = rdItems.length
-      ? rdItems.map(r => `<span style="background:var(--s3);border-radius:4px;padding:1px 7px;margin-right:4px;display:inline-block;margin-bottom:3px;">${r.label||'RD'} ₹${r.monthly.toLocaleString('en-IN')}</span>`).join('')
-      : '<span style="color:var(--text3);">No active RDs</span>';
-  }
-
-  // Emergency fund progress
-  const monthlyExpenses = fixed + variable;
-  const efTarget = monthlyExpenses * 6;
-  const efPct    = efTarget > 0 ? Math.min(100, efSaved / efTarget * 100) : 0;
-  setText('bsave-ef-monthly', efMonthly > 0 ? '₹\u202f' + efMonthly.toLocaleString('en-IN') + '/mo' : '₹ 0');
-  setText('bsave-ef-label',   `₹${Math.round(efSaved).toLocaleString('en-IN')} / ₹${Math.round(efTarget).toLocaleString('en-IN')}`);
-  setText('bsave-ef-months',  `Target: 6× monthly expenses${efTarget>0?' (₹'+Math.round(efTarget).toLocaleString('en-IN')+')':''}`);
-  const efBar = document.getElementById('bsave-ef-bar');
-  if (efBar) efBar.style.width = efPct + '%';
-
-  // SIP per-fund split
-  const sipSplitEl = document.getElementById('bsave-sip-split');
-  if (sipSplitEl && state.selectedMFs.length && sipAmt > 0) {
-    const verdicts = getVerdicts()?.verdicts || {};
-    const holdFunds = state.selectedMFs.map(r => MF_RECS.find(f=>f.rank===r)).filter(f => f && (!verdicts[f.rank] || verdicts[f.rank].verdict === 'HOLD'));
-    if (holdFunds.length) {
-      const equalAmt = Math.round(sipAmt / holdFunds.length);
-      sipSplitEl.innerHTML = holdFunds.map(f => {
-        const v = verdicts[f.rank];
-        const a = v?.allocPct ? Math.round(sipAmt * v.allocPct / 100) : equalAmt;
-        return `<div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text3);margin-bottom:2px;">
-          <span style="color:${f.color}">${f.name.split(' ').slice(-2).join(' ')}</span>
-          <span style="font-family:'JetBrains Mono',monospace;color:var(--green);">₹${a.toLocaleString('en-IN')}</span>
-        </div>`;
-      }).join('');
-    } else sipSplitEl.innerHTML = '';
-  } else if (sipSplitEl) sipSplitEl.innerHTML = '';
-
-  // Total savings row (summary header + body card) — includes sharesave for full picture
-  setText('bsave-total',     fmt(totalSavingsDisplay));
-  setText('bsave-total-val', fmt(totalSavingsDisplay));
-  setText('bsave-total-pct', ssAmt > 0
-    ? `${pct(savingsTarget)} from in-hand + ₹${ssAmt.toLocaleString('en-IN')} sharesave (pre-payroll)`
-    : `${state.savingsPct||15}% target (₹${Math.round(savingsTarget).toLocaleString('en-IN')}) from in-hand`);
-
-  // Health card
-  const healthEl = document.getElementById('budgetHealthCard');
-  if (healthEl) {
-    const savingsRate = salary > 0 ? savingsTarget/salary*100 : 0;
-    const expenseRate = salary > 0 ? (fixed+variable)/salary*100 : 0;
-    let status, msg, color;
-    if (salary === 0) {
-      status='💡 Set your salary'; msg='Enter your in-hand salary in the top banner to see budget health.'; color='var(--s3)'; }
-    else if (freeCash < 0) {
-      status='🚨 Overspending!'; msg=`You are spending <strong>₹${fmt(-freeCash)}</strong> more than you earn. Review your expenses or reduce savings commitments.`; color='rgba(255,87,87,0.08)'; }
-    else if (savingsRate < 10) {
-      status='⚠️ Low savings rate'; msg=`Only <strong>${savingsRate.toFixed(0)}%</strong> saved. Consider cutting variable expenses — aim for at least 20%.`; color='rgba(232,146,58,0.08)'; }
-    else if (expenseRate > 70) {
-      status='⚠️ High expense ratio'; msg=`<strong>${expenseRate.toFixed(0)}%</strong> of salary going to expenses. Little buffer for emergencies. Try to get below 60%.`; color='rgba(232,146,58,0.08)'; }
-    else if (savingsRate >= 20 && freeCash > 0) {
-      status='✅ Healthy budget'; msg=`Saving <strong>${savingsRate.toFixed(0)}%</strong> with <strong>₹${Math.round(freeCash).toLocaleString('en-IN')}</strong> free cash. Great position — consider adding the surplus to lumpsum reserve.`; color='rgba(62,207,142,0.08)'; }
-    else {
-      status='👍 On track'; msg=`Saving <strong>${savingsRate.toFixed(0)}%</strong>. Free cash of <strong>₹${Math.round(freeCash).toLocaleString('en-IN')}</strong> available. Could increase SIP by ₹${Math.round(freeCash*0.5).toLocaleString('en-IN')} and still be comfortable.`; color='rgba(62,207,142,0.06)'; }
-    healthEl.style.background = color;
-    healthEl.style.border     = '1px solid ' + color.replace('0.0','0.2').replace('0.08','0.2');
-    healthEl.style.borderRadius = '10px';
-    healthEl.innerHTML = `<div style="font-weight:800;margin-bottom:4px;">${status}</div><div style="color:var(--text2);font-size:0.78rem;">${msg}</div>`;
-  }
-
-  // Budget categories overview table (2-col layout on Overview tab)
-  const catTbody = document.getElementById('budgetCatOverviewTbody');
-  if (catTbody) {
-    const allCats = [...budgetData.fixed.map(i => ({...i, type:'fixed'})), ...budgetData.variable.map(i => ({...i, type:'variable'}))].filter(i => i.amount > 0);
-    if (allCats.length) {
-      const catIcons = { rent:'bi-house', emi:'bi-credit-card', utilities:'bi-lightning', insurance:'bi-shield', groceries:'bi-cart3', transport:'bi-car-front', food:'bi-cup-straw', entertainment:'bi-film', shopping:'bi-bag', health:'bi-heart-pulse', education:'bi-book', subscriptions:'bi-phone' };
-      const catColors = { rent:'#a78bfa', emi:'#f06060', utilities:'#4a9eff', insurance:'#20c4a8', groceries:'#3ecf8e', transport:'#4a9eff', food:'#e8923a', entertainment:'#f0c040', shopping:'#ff6b9d', health:'#f06060', education:'#a78bfa', subscriptions:'#4a9eff' };
-      // Get Gmail spent per category
-      const gmailTxns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-      const nowDt2 = new Date();
-      const curMK = `${nowDt2.getFullYear()}-${String(nowDt2.getMonth()+1).padStart(2,'0')}`;
-      const mTxns = gmailTxns.filter(t => t.date?.startsWith(curMK));
-      const spentByLabel = {};
-      mTxns.forEach(t => { const c = (t.category||'other').toLowerCase(); spentByLabel[c] = (spentByLabel[c]||0) + (t.amount||0); });
-      catTbody.innerHTML = allCats.slice(0, 8).map(c => {
-        const lk = c.label.toLowerCase().replace(/[^a-z]/g,'');
-        const icon = catIcons[lk] || (c.type==='fixed' ? 'bi-pin-angle' : 'bi-tag');
-        const clr = catColors[lk] || (c.type==='fixed' ? 'var(--red)' : 'var(--amber)');
-        const spent = spentByLabel[lk] || 0;
-        const rem = c.amount - spent;
-        const pctUsed = Math.min(100, spent > 0 ? spent/c.amount*100 : 0);
-        const barColor = pctUsed >= 100 ? '#f06060' : pctUsed >= 75 ? '#e8923a' : '#3ecf8e';
-        return `<tr>
-          <td><i class="bi ${icon}" style="margin-right:8px;color:${clr};"></i>${c.label}</td>
-          <td class="mono">${fmt(c.amount)}</td>
-          <td class="mono">${spent > 0 ? fmt(spent) : '—'}</td>
-          <td class="mono" style="color:${rem >= 0 ? 'var(--green)' : 'var(--red)'};">${spent > 0 ? fmt(rem) : '—'}</td>
-          <td><div class="progress-thin" style="width:120px;"><div class="bar" style="width:${pctUsed}%;background:${barColor};"></div></div></td>
-        </tr>`;
-      }).join('');
-    } else {
-      catTbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3);font-size:0.8rem;padding:20px;">Add budget categories in the Planning tab</td></tr>';
-    }
-  }
-
-  // Update Gmail sync status in overview card
-  const gmailStatusEl = document.getElementById('budgetGmailStatus');
-  const gmailCountEl = document.getElementById('budgetGmailCount');
-  if (gmailStatusEl && gmailCountEl) {
-    const gTxns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-    gmailCountEl.textContent = gTxns.length;
-    gmailStatusEl.textContent = gTxns.length > 0 ? 'Connected' : 'Not synced';
-    gmailStatusEl.style.color = gTxns.length > 0 ? 'var(--green)' : 'var(--text3)';
-  }
-
-  saveBudget();
-}
+function recalcBudget() { if(window.FinanceUI) FinanceUI.refresh(); }
 
 function initBudgetPage() {
   renderBudgetList('fixed');
@@ -11954,219 +11086,7 @@ function switchBudgetTab(tab, btn) {
 }
 
 // ── BUDGET TRENDS ──
-function renderBudgetTrends() {
-  const monthCount = parseInt(document.getElementById('trendMonthCount')?.value || '6');
-  const noDataEl = document.getElementById('trendNoData');
-  const chartCanvas = document.getElementById('trendBarChart');
-
-  // Gather data from snapshots + Gmail transactions
-  const history = JSON.parse(localStorage.getItem('mypf_budget_history') || '[]');
-  const gmailTxns = JSON.parse(localStorage.getItem('mypf_gmail_transactions') || '[]');
-
-  // Build month keys for last N months
-  const now = new Date();
-  const monthKeys = [];
-  for (let i = monthCount - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-  }
-
-  // Build actual spent per month from Gmail
-  const actualByMonth = {};
-  const catByMonth = {};
-  gmailTxns.forEach(t => {
-    if (!t.date) return;
-    const mk = t.date.substring(0, 7);
-    actualByMonth[mk] = (actualByMonth[mk] || 0) + (t.amount || 0);
-    if (!catByMonth[mk]) catByMonth[mk] = {};
-    const cat = t.category || 'Other';
-    catByMonth[mk][cat] = (catByMonth[mk][cat] || 0) + (t.amount || 0);
-  });
-
-  // Build planned + saved per month from snapshots
-  const snapByMonth = {};
-  history.forEach(h => { snapByMonth[h.month] = h; });
-
-  // Check if we have any data
-  const hasData = monthKeys.some(mk => actualByMonth[mk] || snapByMonth[mk]);
-  if (!hasData) {
-    if (noDataEl) noDataEl.style.display = '';
-    if (chartCanvas) chartCanvas.parentElement.style.display = 'none';
-    document.querySelectorAll('#btab-trends > div:not(#trendNoData)').forEach(el => {
-      if (el !== chartCanvas?.parentElement) el.style.display = el.id === 'trendNoData' ? '' : 'none';
-    });
-    return;
-  }
-  if (noDataEl) noDataEl.style.display = 'none';
-  if (chartCanvas) chartCanvas.parentElement.style.display = '';
-
-  // Show other sections
-  document.querySelectorAll('#btab-trends > div').forEach(el => {
-    if (el.id !== 'trendNoData') el.style.display = '';
-  });
-
-  // Draw bar chart
-  if (chartCanvas) {
-    const ctx = chartCanvas.getContext('2d');
-    const W = chartCanvas.width, H = chartCanvas.height;
-    const pad = { top: 10, right: 20, bottom: 40, left: 60 };
-    const chartW = W - pad.left - pad.right;
-    const chartH = H - pad.top - pad.bottom;
-
-    ctx.clearRect(0, 0, W, H);
-
-    // Data arrays
-    const planned = monthKeys.map(mk => {
-      const s = snapByMonth[mk];
-      return s ? (s.fixed || 0) + (s.variable || 0) : 0;
-    });
-    const actual = monthKeys.map(mk => actualByMonth[mk] || 0);
-    const saved = monthKeys.map(mk => snapByMonth[mk]?.savings || 0);
-    const maxVal = Math.max(...planned, ...actual, ...saved, 1);
-
-    const groupW = chartW / monthKeys.length;
-    const barW = Math.min(20, groupW * 0.25);
-    const gap = 4;
-
-    // Y-axis gridlines
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--border').trim() || '#333';
-    ctx.lineWidth = 0.5;
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#888';
-    ctx.font = '10px JetBrains Mono, monospace';
-    ctx.textAlign = 'right';
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + chartH - (chartH * i / 4);
-      ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
-      const val = Math.round(maxVal * i / 4);
-      ctx.fillText(val >= 100000 ? '₹' + (val / 100000).toFixed(1) + 'L' : val >= 1000 ? '₹' + (val / 1000).toFixed(0) + 'K' : '₹' + val, pad.left - 6, y + 3);
-    }
-
-    // Bars
-    const colors = {
-      planned: getComputedStyle(document.documentElement).getPropertyValue('--amber').trim() || '#e8923a',
-      actual: getComputedStyle(document.documentElement).getPropertyValue('--red').trim() || '#ff5757',
-      saved: getComputedStyle(document.documentElement).getPropertyValue('--green').trim() || '#3ecf8e'
-    };
-
-    monthKeys.forEach((mk, i) => {
-      const cx = pad.left + groupW * i + groupW / 2;
-
-      const drawBar = (val, color, offset) => {
-        const h = maxVal > 0 ? (val / maxVal) * chartH : 0;
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.75;
-        ctx.beginPath();
-        const x = cx + offset - barW / 2;
-        const y = pad.top + chartH - h;
-        const r = 3;
-        ctx.moveTo(x + r, y);
-        ctx.lineTo(x + barW - r, y);
-        ctx.quadraticCurveTo(x + barW, y, x + barW, y + r);
-        ctx.lineTo(x + barW, pad.top + chartH);
-        ctx.lineTo(x, pad.top + chartH);
-        ctx.lineTo(x, y + r);
-        ctx.quadraticCurveTo(x, y, x + r, y);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      };
-
-      drawBar(planned[i], colors.planned, -(barW + gap));
-      drawBar(actual[i], colors.actual, 0);
-      drawBar(saved[i], colors.saved, barW + gap);
-
-      // Month label
-      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#888';
-      ctx.font = '10px Cabinet Grotesk, sans-serif';
-      ctx.textAlign = 'center';
-      const label = new Date(mk + '-01').toLocaleDateString('en-IN', { month: 'short' });
-      ctx.fillText(label, cx, pad.top + chartH + 20);
-    });
-  }
-
-  // Top categories this month vs last
-  const thisMonthKey = monthKeys[monthKeys.length - 1];
-  const lastMonthKey = monthKeys.length >= 2 ? monthKeys[monthKeys.length - 2] : null;
-
-  const renderTopCats = (mk, elId) => {
-    const el = document.getElementById(elId);
-    if (!el) return;
-    const cats = catByMonth[mk] || {};
-    const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]).slice(0, 6);
-    if (!sorted.length) { el.innerHTML = '<div style="color:var(--text3);font-size:0.78rem;">No data</div>'; return; }
-    const maxCat = sorted[0][1];
-    const fmt = n => '₹\u202f' + Math.round(n).toLocaleString('en-IN');
-    el.innerHTML = sorted.map(([cat, amt]) => {
-      const pct = maxCat > 0 ? (amt / maxCat * 100) : 0;
-      return `<div style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px;">
-          <span>${cat}</span>
-          <span style="font-family:'JetBrains Mono',monospace;color:var(--red);">${fmt(amt)}</span>
-        </div>
-        <div style="height:4px;background:var(--s3);border-radius:2px;overflow:hidden;">
-          <div style="height:100%;width:${pct}%;background:var(--red);border-radius:2px;opacity:0.6;"></div>
-        </div>
-      </div>`;
-    }).join('');
-  };
-
-  renderTopCats(thisMonthKey, 'trendTopCatsThis');
-  if (lastMonthKey) renderTopCats(lastMonthKey, 'trendTopCatsLast');
-
-  // Insights
-  const insightsEl = document.getElementById('trendInsights');
-  if (insightsEl) {
-    const insights = [];
-    const thisActual = actualByMonth[thisMonthKey] || 0;
-    const lastActual = lastMonthKey ? (actualByMonth[lastMonthKey] || 0) : 0;
-    const thisPlanned = snapByMonth[thisMonthKey] ? (snapByMonth[thisMonthKey].fixed || 0) + (snapByMonth[thisMonthKey].variable || 0) : 0;
-    const fmt = n => '₹\u202f' + Math.round(n).toLocaleString('en-IN');
-
-    if (thisActual > 0 && lastActual > 0) {
-      const change = ((thisActual - lastActual) / lastActual * 100).toFixed(0);
-      const dir = change > 0 ? 'up' : 'down';
-      const color = change > 0 ? 'var(--red)' : 'var(--green)';
-      insights.push(`Spending is <span style="color:${color};font-weight:700;">${dir} ${Math.abs(change)}%</span> vs last month (${fmt(thisActual)} vs ${fmt(lastActual)})`);
-    }
-
-    if (thisActual > 0 && thisPlanned > 0) {
-      const diff = thisPlanned - thisActual;
-      if (diff >= 0) insights.push(`You're <span style="color:var(--green);font-weight:700;">${fmt(diff)} under budget</span> this month`);
-      else insights.push(`You're <span style="color:var(--red);font-weight:700;">${fmt(-diff)} over budget</span> this month`);
-    }
-
-    // Category changes
-    const thisCats = catByMonth[thisMonthKey] || {};
-    const lastCats = lastMonthKey ? (catByMonth[lastMonthKey] || {}) : {};
-    const allCats = [...new Set([...Object.keys(thisCats), ...Object.keys(lastCats)])];
-    const catChanges = allCats.map(cat => ({
-      cat, thisAmt: thisCats[cat] || 0, lastAmt: lastCats[cat] || 0,
-      change: (thisCats[cat] || 0) - (lastCats[cat] || 0)
-    })).filter(c => c.lastAmt > 0 && Math.abs(c.change) > 500);
-
-    catChanges.sort((a, b) => b.change - a.change);
-    const biggest = catChanges[0];
-    if (biggest && biggest.change > 0) {
-      const pct = ((biggest.change / biggest.lastAmt) * 100).toFixed(0);
-      insights.push(`<span style="font-weight:600;">${biggest.cat}</span> increased by ${fmt(biggest.change)} (+${pct}%) — biggest spike`);
-    }
-    const smallest = catChanges[catChanges.length - 1];
-    if (smallest && smallest.change < 0) {
-      const pct = ((Math.abs(smallest.change) / smallest.lastAmt) * 100).toFixed(0);
-      insights.push(`<span style="font-weight:600;">${smallest.cat}</span> dropped by ${fmt(Math.abs(smallest.change))} (-${pct}%)`);
-    }
-
-    // Average monthly spend
-    const allActuals = monthKeys.map(mk => actualByMonth[mk] || 0).filter(a => a > 0);
-    if (allActuals.length >= 2) {
-      const avg = allActuals.reduce((s, a) => s + a, 0) / allActuals.length;
-      insights.push(`Average monthly spending: <span style="font-weight:700;">${fmt(avg)}</span> over ${allActuals.length} months`);
-    }
-
-    insightsEl.innerHTML = insights.length
-      ? insights.map(i => `<div style="margin-bottom:6px;">• ${i}</div>`).join('')
-      : '<div style="color:var(--text3);">Sync more months of Gmail data to see insights.</div>';
-  }
-}
+function renderBudgetTrends() {} // Rendered by the shared savings UI.
 
 // ── MONTHLY SNAPSHOT STORE ──
 let budgetHistory = [];
@@ -12174,133 +11094,15 @@ try { budgetHistory = JSON.parse(localStorage.getItem('mypf_budget_history') || 
 
 function saveBudgetHistory() { localStorage.setItem('mypf_budget_history', JSON.stringify(budgetHistory)); }
 
-function saveBudgetSnapshot() {
-  const mp  = document.getElementById('budgetMonthPicker');
-  const msg = document.getElementById('budgetSnapshotMsg');
-  if (!mp?.value) { if (msg) { msg.textContent = '⚠ Select a month first.'; msg.style.color='var(--amber)'; } return; }
-
-  const salary      = state.salary || 0;
-  const ssAmt       = getSS().monthly || 0;
-  const rdAmt       = (state.rds || []).reduce((s,r) => s + (r.monthly||0), 0);
-  const sipAmt      = Math.max(0, Math.round(salary * (state.savingsPct||15) / 100) - ssAmt);
-  const savingsTarget = Math.round(salary * (state.savingsPct||15) / 100);
-  const fixed       = budgetData.fixed.reduce((s,i)    => s + (i.amount||0), 0);
-  const variable    = budgetData.variable.reduce((s,i) => s + (i.amount||0), 0);
-  const efMonthly   = budgetData.efMonthly || 0;
-  const totalCommitted = savingsTarget + rdAmt + efMonthly;
-  const freeCash    = salary - fixed - variable - totalCommitted;
-
-  const monthKey = mp.value; // e.g. "2026-03"
-  const label    = new Date(monthKey + '-01').toLocaleDateString('en-IN', { month:'short', year:'numeric' });
-
-  // Replace if same month exists
-  const existing = budgetHistory.findIndex(h => h.month === monthKey);
-  const snapshot = {
-    month: monthKey, label,
-    salary, fixed, variable, savings: totalCommitted, freeCash,
-    savingsPct: salary > 0 ? +(savingsTarget/salary*100).toFixed(1) : 0,
-    expensePct: salary > 0 ? +((fixed+variable)/salary*100).toFixed(1) : 0,
-    breakdown: {
-      sharesave: ssAmt, sip: sipAmt, rd: rdAmt, ef: efMonthly,
-      fixedItems:    budgetData.fixed.map(i => ({ label: i.label, amount: i.amount })),
-      variableItems: budgetData.variable.map(i => ({ label: i.label, amount: i.amount })),
-    }
-  };
-
-  if (existing >= 0) budgetHistory[existing] = snapshot;
-  else budgetHistory.unshift(snapshot);
-
-  // Keep max 24 months
-  if (budgetHistory.length > 24) budgetHistory = budgetHistory.slice(0, 24);
-
-  saveBudgetHistory();
-  renderBudgetHistory();
-
-  if (msg) {
-    msg.innerHTML = `✅ <strong>${label}</strong> saved to history.`;
-    msg.style.color = 'var(--green)';
-    setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
-  }
-}
-
-function renderBudgetHistory() {
-  const tbody = document.getElementById('budgetHistoryTbody');
-  if (!tbody) return;
-  if (!budgetHistory.length) {
-    tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--text3);font-size:0.82rem;">No history yet — save your first month above.</td></tr>`;
-    return;
-  }
-
-  const fmt  = n => n !== undefined ? '₹' + Math.round(n).toLocaleString('en-IN') : '—';
-  const sorted = [...budgetHistory].sort((a,b) => b.month.localeCompare(a.month));
-
-  tbody.innerHTML = sorted.map((h, i) => {
-    const freeColor = h.freeCash >= 0 ? 'var(--green)' : 'var(--red)';
-    const savBadge  = h.savingsPct >= 20
-      ? `<span style="background:rgba(62,207,142,0.12);color:var(--green);font-size:0.6rem;padding:1px 6px;border-radius:4px;">${h.savingsPct}%</span>`
-      : h.savingsPct >= 10
-      ? `<span style="background:rgba(232,146,58,0.12);color:var(--amber);font-size:0.6rem;padding:1px 6px;border-radius:4px;">${h.savingsPct}%</span>`
-      : `<span style="background:rgba(255,87,87,0.12);color:var(--red);font-size:0.6rem;padding:1px 6px;border-radius:4px;">${h.savingsPct}%</span>`;
-    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.04);" id="bh-row-${i}">
-      <td style="padding:10px 12px;font-weight:700;font-size:0.82rem;">${h.label}</td>
-      <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;text-align:right;">${fmt(h.salary)}</td>
-      <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--red);text-align:right;">${fmt(h.fixed)}</td>
-      <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--amber);text-align:right;">${fmt(h.variable)}</td>
-      <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:var(--green);text-align:right;">${fmt(h.savings)}</td>
-      <td style="padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:${freeColor};font-weight:700;text-align:right;">${fmt(h.freeCash)}</td>
-      <td style="padding:10px 12px;text-align:center;">${savBadge}</td>
-      <td style="padding:10px 12px;text-align:center;">
-        <button onclick="deleteBudgetSnapshot('${h.month}')"
-          style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:0.75rem;padding:2px 6px;" title="Delete">✕</button>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function deleteBudgetSnapshot(monthKey) {
-  budgetHistory = budgetHistory.filter(h => h.month !== monthKey);
-  saveBudgetHistory();
-  renderBudgetHistory();
-}
-
-function exportBudgetCSV() {
-  if (!budgetHistory.length) { alert('No history to export yet. Save at least one month first.'); return; }
-
-  const sorted = [...budgetHistory].sort((a,b) => a.month.localeCompare(b.month));
-
-  // Summary sheet
-  const summaryRows = [
-    ['Month','Salary','Fixed Expenses','Variable Expenses','Savings','Free Cash','Savings %','Expense %'],
-    ...sorted.map(h => [
-      h.label, h.salary, h.fixed, h.variable, h.savings, h.freeCash, h.savingsPct+'%', h.expensePct+'%'
-    ])
-  ];
-
-  // Detail sheet — all line items per month
-  const detailRows = [['Month','Category','Item','Amount']];
-  sorted.forEach(h => {
-    (h.breakdown?.fixedItems    || []).forEach(i => detailRows.push([h.label, 'Fixed',    i.label, i.amount]));
-    (h.breakdown?.variableItems || []).forEach(i => detailRows.push([h.label, 'Variable', i.label, i.amount]));
-    detailRows.push([h.label, 'Savings', 'Sharesave',         h.breakdown?.sharesave || 0]);
-    detailRows.push([h.label, 'Savings', 'SIP (Mutual Funds)',h.breakdown?.sip       || 0]);
-    detailRows.push([h.label, 'Savings', 'Recurring Deposit', h.breakdown?.rd        || 0]);
-    detailRows.push([h.label, 'Savings', 'Emergency Fund',    h.breakdown?.ef        || 0]);
-  });
-
-  const toCSV = rows => rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const combined = '=== MONTHLY SUMMARY ===\n' + toCSV(summaryRows) + '\n\n=== EXPENSE DETAIL ===\n' + toCSV(detailRows);
-
-  const blob = new Blob([combined], { type:'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = Object.assign(document.createElement('a'), { href:url, download:`budget-history-${new Date().toISOString().slice(0,10)}.csv` });
-  a.click(); URL.revokeObjectURL(url);
-}
+function saveBudgetSnapshot() {} // Bound by finance-ui.js.
+function renderBudgetHistory() {}
+function exportBudgetCSV() {}
 
 // Trigger recalc when budget page is opened
 const _origGotoPage = gotoPage;
 gotoPage = function(id, el) {
   _origGotoPage(id, el);
-  if (id === 'budget') { initBudgetPage(); renderBudgetBankSelector(); renderGmailTransactions(); }
+  if (id === 'budget') { initBudgetPage(); refreshBotTransactions(false); }
   if (id === 'mf') { renderManualFunds(); renderMFTracker(); renderMFSummaryStrip(); renderMFNavUpdate(); if (typeof renderBrokerMFSection === 'function') renderBrokerMFSection(); }
   if (id === 'retire') { renderRetirement(); }
   if (id === 'realty') { renderRealty(); }
@@ -12689,5 +11491,6 @@ renderLoans();
   </div>
 </div>
 
+<script src="/assets/finance-ui.js"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ const path = require('path');
 
 const brokerAuth = require('./api/broker-auth.js');
 const brokerProxy = require('./api/broker-proxy.js');
+const goldRates = require('./api/gold-rates.js');
 
 const PORT = process.env.PORT || 8080;
 
@@ -18,12 +19,12 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://accounts.google.com https://cdnjs.cloudflare.com",
+    "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-    "connect-src 'self' http://localhost:11434 http://127.0.0.1:11434 https://*.supabase.co https://api.mfapi.in https://api.gold-api.com https://finnhub.io https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai https://gmail.googleapis.com https://cdn.jsdelivr.net https://query1.finance.yahoo.com https://overpass-api.de",
+    "connect-src 'self' http://localhost:11434 http://127.0.0.1:11434 https://*.supabase.co https://api.mfapi.in https://api.gold-api.com https://finnhub.io https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai https://cdn.jsdelivr.net https://query1.finance.yahoo.com https://overpass-api.de",
     "img-src 'self' data: https://*.tile.openstreetmap.org",
-    "frame-src https://accounts.google.com",
+    "frame-src 'none'",
   ].join('; '),
 };
 
@@ -89,6 +90,11 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
 
+  // Public cached provider rates; fixed upstream, no credentials.
+  if (pathname === '/api/gold-rates/tanishq') return handlerAdapter(goldRates.handler, req, res);
+
+  if (process.env.FINFOLIO_PREVIEW === '1' && pathname === '/__preview') return serveFile(path.join(__dirname, 'tests/preview.html'), res);
+
   // API routes
   if (pathname === '/api/broker-auth') {
     return handlerAdapter(brokerAuth.handler, req, res);
@@ -109,21 +115,16 @@ const server = http.createServer(async (req, res) => {
     return serveFile(path.join(__dirname, 'index.html'), res);
   }
 
-  // Other static files
-  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  const filePath = path.join(__dirname, safePath);
-
-  // Prevent directory traversal
-  if (!filePath.startsWith(__dirname)) {
-    res.writeHead(403, SECURITY_HEADERS);
-    res.end('Forbidden');
-    return;
+  // Serve only the app's public assets, never workspace backups or source configuration.
+  if (!/^\/assets\/[a-zA-Z0-9_.-]+\.(css|js|svg|png|ico)$/.test(pathname)) {
+    res.writeHead(404, SECURITY_HEADERS); res.end('Not found'); return;
   }
+  const filePath = path.join(__dirname, pathname);
 
   serveFile(filePath, res);
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, process.env.HOST || '0.0.0.0', () => {
   console.log(`[finfolio] Server running on port ${PORT}`);
   console.log(`[finfolio] Static IP deployment for broker API compliance`);
 });
