@@ -13,3 +13,11 @@ test('future revisions and snapshots preserve old commitments, payments remain r
 test('drop boundary, missing/stale/mismatched quotes, paid months',()=>{const g=gold(),s=g.schemes[0],q={fresh:true,source:'Tanishq',purity:'22K',today:{date:'2026-10-01',rate:9900},yesterday:{date:'2026-09-30',rate:10000}};assert.equal(C.dropSignal(s,g,q,'2026-10-01').eligible,true);q.today.rate=9900.01;assert.equal(C.dropSignal(s,g,q,'2026-10-01').eligible,false);q.today.rate=9900;q.fresh=false;assert.equal(C.dropSignal(s,g,q,'2026-10-01').reason,'Comparison unavailable');q.fresh=true;q.yesterday.date='2026-09-29';assert.equal(C.dropSignal(s,g,q,'2026-10-01').eligible,false);q.yesterday.date='2026-09-30';g.payments.push({schemeId:s.id,month:'2026-10',amount:10000});assert.equal(C.dropSignal(s,g,q,'2026-10-01').eligible,false);});
 test('versioned round trip preserves ledger and original backups',()=>{const d=input(),map=new Map(),storage={getItem:k=>map.get(k)};map.set(C.GOLD_KEY,JSON.stringify(d.gold));assert.deepEqual(C.read(storage,C.GOLD_KEY,C.emptyGold),d.gold);assert.deepEqual(C.read(storage,C.SAVINGS_KEY,C.emptySavings),C.emptySavings());map.set(C.GOLD_KEY,'{"version":2}');assert.throws(()=>C.read(storage,C.GOLD_KEY,C.emptyGold),/Unsupported/);});
 test('saved RD plan is relinked by source identifier after migration',()=>{const d=input();d.savings.months['2026-08']={income:100000,spending:60000,categories:[{id:'rd:42',name:'Tanishq gold plan',type:'rd',active:true,amount:10000}]};const b=C.budget(d,'2026-08');assert.equal(b.categories.length,1);assert.equal(b.categories[0].type,'gold');assert.equal(b.categories[0].paid,10000);assert.equal(b.planned,10000);});
+test('recurring reminders roll to the next occurrence, keeping month-end', () => {
+  const C = require('../assets/finance-core');
+  assert.equal(C.nextOccurrence('2026-09-04', 'monthly', '2026-11-22'), '2026-12-04');
+  assert.equal(C.nextOccurrence('2026-09-04', 'monthly', '2026-12-04'), '2026-12-04');
+  assert.equal(C.nextOccurrence('2026-01-31', 'monthly', '2026-03-01'), '2026-03-31');
+  assert.equal(C.nextOccurrence('2026-02-10', 'quarterly', '2026-06-01'), '2026-08-10');
+  assert.equal(C.nextOccurrence('2027-01-04', 'monthly', '2026-11-22'), '2027-01-04');
+});

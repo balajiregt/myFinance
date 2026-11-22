@@ -92,6 +92,18 @@
   }
   // Same rule as the VPS bot's spending.py: moving your own money is not spending.
   const NOT_SPENDING=['Investment','Mutual Fund','Transfer','Card Bill Payment','Savings'];
+  // Recurring reminder: first occurrence on or after today, counted from the original date (31st stays month-end).
+  // Same rule as the VPS reminders.py.
+  function nextOccurrence(iso,freq,today=day()) {
+    const months={monthly:1,quarterly:3,'half-yearly':6,yearly:12}[String(freq).toLowerCase()]||12;
+    const [y,m,d]=String(iso).split('-').map(Number); if(!y||!m||!d) return iso;
+    for(let k=0;k<2400;k++) {
+      const t=y*12+(m-1)+k*months, yy=Math.floor(t/12), mm=t%12+1, last=new Date(Date.UTC(yy,mm,0)).getUTCDate();
+      const out=`${yy}-${String(mm).padStart(2,'0')}-${String(Math.min(d,last)).padStart(2,'0')}`;
+      if(out>=today) return out;
+    }
+    return iso;
+  }
   function expenseTransactions(input,m=null) {
     const linked=new Set(input.savings.contributions.filter(c=>!c.voided && c.transactionId).map(c=>String(c.transactionId)));
     return (input.transactions||[]).filter(x=>(!m||(x.date||'').slice(0,7)===m) && !linked.has(String(x.id)) && x.type!=='credit' && x.type!=='income' && x.type!=='transfer' && !NOT_SPENDING.includes(x.category));
@@ -124,5 +136,5 @@
     }
     return entries;
   }
-  return {expenseTransactions,restoreEntries,GOLD_KEY,SAVINGS_KEY,clone,money,sum,day,month,validMonth,validDay,addMonth,lastDay,deadline,emptyGold,emptySavings,read,amountAt,schedule,goldSummary,validatePayment,migratedIds,activeRDs,migrateRD,dropSignal,sources,categories,ledger,budget,snapshot};
+  return {nextOccurrence,expenseTransactions,restoreEntries,GOLD_KEY,SAVINGS_KEY,clone,money,sum,day,month,validMonth,validDay,addMonth,lastDay,deadline,emptyGold,emptySavings,read,amountAt,schedule,goldSummary,validatePayment,migratedIds,activeRDs,migrateRD,dropSignal,sources,categories,ledger,budget,snapshot};
 });
