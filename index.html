@@ -2752,7 +2752,7 @@ select option { background: var(--s2); }
     <!-- No Gmail setup message -->
     <div id="gmailTxnEmpty" style="padding:24px;text-align:center;background:var(--s2);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;">
       <div style="font-size:0.85rem;color:var(--text3);margin-bottom:6px;">No bank transactions for this month yet</div>
-      <div style="font-size:0.72rem;color:var(--text3);">The FinFolio bot adds HDFC payments here automatically (every 15 min, 07:00–23:00). It needs <a href="#" onclick="gotoPage('settings',null);return false;" style="color:var(--blue);">Cloud Backup</a> set up with the same passphrase the bot uses.</div></div>
+      <div style="font-size:0.72rem;color:var(--text3);">The FinFolio bot adds HDFC payments here automatically (every 15 min, 07:00–23:00). It needs <a href="#" onclick="gotoPage('settings',null);return false;" style="color:var(--blue);">Cloud Backup</a> set up with your login.</div></div>
     </div>
 
     <!-- Category filter + summary row -->
@@ -3435,18 +3435,10 @@ select option { background: var(--s2); }
               </button>
             </div>
           </div>
-          <!-- Passphrase config for non-auth (anonymous) users only -->
+          <!-- Cloud rows belong to a login -->
           <div id="supaAnonConfig" style="display:none;margin-bottom:10px;">
-            <div style="font-size:0.68rem;color:var(--text3);margin-bottom:6px;">Not signed in? Use a passphrase to sync data anonymously:</div>
-            <div style="display:flex;gap:8px;align-items:center;">
-              <input type="password" id="supaUserKeyInput" placeholder="Your secret passphrase"
-                style="flex:1;padding:8px 12px;background:var(--s3);border:1px solid var(--border);border-radius:8px;color:var(--text1);font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
-              <button class="key-eye-btn" onclick="toggleKeyVis('supaUserKeyInput',this)" title="Show/hide key"><i class="bi bi-eye-slash"></i></button>
-              <button onclick="saveSupabaseConfig()"
-                style="padding:8px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;font-size:0.8rem;">
-                Save
-              </button>
-            </div>
+            <div style="font-size:0.68rem;color:var(--text3);margin-bottom:6px;">Not signed in. Cloud Backup needs your account, so only you can read your data.</div>
+            <button onclick="showSignIn()" style="padding:8px 16px;background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:8px;color:var(--blue);font-weight:700;cursor:pointer;">Sign in</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button onclick="supaPushNow()"
@@ -3557,34 +3549,60 @@ function saveAuthSession(data) {
   const existing = getSupaAuthConfig();
   const config = { url: existing.url, key: existing.key, userKey: data.user.id, enabled: true };
   localStorage.setItem('mypf_supa_config', JSON.stringify(config));
+  if (typeof flushSupaSync === 'function') setTimeout(flushSupaSync, 0);
+}
+
+function storedAuthSession() {
+  try { return JSON.parse(localStorage.getItem('mypf_supa_session') || 'null'); } catch(e) { return null; }
 }
 
 function loadAuthSession() {
-  try {
-    const s = JSON.parse(localStorage.getItem('mypf_supa_session') || 'null');
-    if (s && s.expires_at > Date.now()) { _supaSession = s; return s; }
-    // Try refresh
-    if (s?.refresh_token) { refreshAuthSession(s); return null; }
-  } catch(e) {}
+  const s = storedAuthSession();
+  if (s?.access_token && s.expires_at > Date.now()) { _supaSession = s; return s; }
+  if (s?.refresh_token) authToken().then(enterApp).catch(() => {});
   return null;
 }
 
-async function refreshAuthSession(oldSession) {
-  if (!oldSession?.refresh_token) return;
-  const config = getSupaAuthConfig();
-  if (!config.url || !config.key) return;
-  try {
+class SignInRequired extends Error { constructor() { super('Sign in again to sync. Your changes are kept on this device.'); this.name = 'SignInRequired'; } }
+
+// The only source of credentials for portfolio data. Cloud rows are private to a
+// login, so there is no anonymous fallback: an unusable login fails here.
+let _authRefresh = null;
+async function authToken(force) {
+  const s = storedAuthSession();
+  if (!s?.refresh_token && !s?.access_token) throw new SignInRequired();
+  if (!force && s.access_token && s.expires_at > Date.now() + 60000) { _supaSession = s; return s.access_token; }
+  if (!_authRefresh) _authRefresh = renewAuthSession(s.access_token).finally(() => { _authRefresh = null; });
+  return _authRefresh;
+}
+
+async function renewAuthSession(usedToken) {
+  const renew = async () => {
+    // Another tab may have renewed while this one waited: refresh tokens work only once.
+    const s = storedAuthSession();
+    if (s?.access_token && s.access_token !== usedToken && s.expires_at > Date.now() + 60000) { _supaSession = s; return s.access_token; }
+    const config = getSupaAuthConfig();
+    if (!s?.refresh_token || !config.url || !config.key) throw new SignInRequired();
     const res = await fetch(`${config.url}/auth/v1/token?grant_type=refresh_token`, {
       method: 'POST',
       headers: { 'apikey': config.key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: oldSession.refresh_token }),
+      body: JSON.stringify({ refresh_token: s.refresh_token }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      saveAuthSession(data);
-      enterApp();
+    if (!res.ok) {
+      if (res.status === 429 || res.status >= 500) throw new Error('Login service unavailable (' + res.status + ')');
+      localStorage.removeItem('mypf_supa_session'); _supaSession = null;  // really signed out; data on this device stays
+      throw new SignInRequired();
     }
-  } catch(e) { console.warn('[auth] refresh failed:', e.message); }
+    saveAuthSession(await res.json());
+    return _supaSession.access_token;
+  };
+  return navigator.locks?.request ? navigator.locks.request('mypf-auth-renew', renew) : renew();
+}
+
+function showSignIn() {
+  switchAuthMode('login');
+  document.getElementById('authOverlay')?.classList.remove('hidden');
+  document.getElementById('authEmail')?.focus();
 }
 
 function switchAuthMode(mode) {
@@ -9315,7 +9333,7 @@ function initSettingsPage() {
   const supaConfig = getSupaConfig();
   updateSupaToggleUI(supaConfig?.enabled || false);
   renderSupaCredStatus();
-  // Show account status if logged in, or passphrase config if not
+  // Show account status if logged in, or a sign-in prompt if not
   const session = JSON.parse(localStorage.getItem('mypf_supa_session') || 'null');
   const acctEl = document.getElementById('supaAccountStatus');
   const emailEl = document.getElementById('supaUserEmail');
@@ -9672,11 +9690,11 @@ function toggleSupabaseSync() {
     const c = { ...config, enabled: false };
     localStorage.setItem('mypf_supa_config', JSON.stringify(c));
   } else {
-    // Turning ON — check if user is logged in or has a passphrase
-    if (!config?.userKey) {
-      // No userKey yet — show config section so they can set passphrase (if not logged in)
+    // Turning ON needs a login: cloud rows belong to an account
+    if (!storedAuthSession()) {
       document.getElementById('supaConfigSection').style.display = 'block';
       updateSupaToggleUI(false);
+      if (config?.url && config?.key) showSignIn();
       return;
     }
     const c = { ...config, enabled: true };
@@ -9696,32 +9714,10 @@ function updateSupaToggleUI(enabled) {
   if (section) section.style.display = 'block';
 }
 
-function saveSupabaseConfig() {
-  const userKey = document.getElementById('supaUserKeyInput')?.value?.trim();
-  const msg = document.getElementById('supa-status-msg');
-  if (!userKey) {
-    if (msg) { msg.textContent = '⚠ Passphrase is required.'; msg.style.color = 'var(--red)'; }
-    return;
-  }
-  const existing = getSupaConfig();
-  if (!existing.url || !existing.key) {
-    if (msg) { msg.textContent = '⚠ Configure Supabase URL and Anon Key first.'; msg.style.color = 'var(--red)'; }
-    return;
-  }
-  const config = { url: existing.url, key: existing.key, userKey, enabled: true };
-  localStorage.setItem('mypf_supa_config', JSON.stringify(config));
-  updateSupaToggleUI(true);
-  if (msg) { msg.textContent = '✅ Config saved. Auto-sync enabled.'; msg.style.color = 'var(--green)'; setTimeout(() => msg.textContent = '', 3000); }
-  document.getElementById('supaUserKeyInput').value = '';
-}
-
 async function supaRequest(method, path, body) {
   const config = getSupaConfig();
   if (!config?.url || !config?.key) throw new Error('Supabase not configured');
-  // Use auth token if logged in, otherwise anon key
-  const session = _supaSession || JSON.parse(localStorage.getItem('mypf_supa_session') || 'null');
-  const token = (session?.access_token && session.expires_at > Date.now()) ? session.access_token : config.key;
-  const opts = {
+  const send = token => fetch(`${config.url}/rest/v1${path}`, {
     method,
     headers: {
       'apikey': config.key,
@@ -9729,9 +9725,10 @@ async function supaRequest(method, path, body) {
       'Content-Type': 'application/json',
       'Prefer': method === 'POST' ? 'resolution=merge-duplicates,return=minimal' : '',
     },
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${config.url}/rest/v1${path}`, opts);
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  let res = await send(await authToken());
+  if (res.status === 401) res = await send(await authToken(true));  // revoked early: renew once
   if (!res.ok) {
     const errText = await res.text();
     throw new Error(`Supabase ${res.status}: ${errText}`);
@@ -9761,7 +9758,7 @@ async function supaPullAll() {
   const config = getSupaConfig();
   if (!config?.url || !config?.key || !config?.userKey) throw new Error('Supabase not configured');
   const rows = await supaRequest('GET', `/portfolio?user_key=eq.${encodeURIComponent(config.userKey)}&select=data_key,value`);
-  if (!rows || !rows.length) throw new Error('No data found in cloud for this passphrase');
+  if (!rows || !rows.length) throw new Error('No data found in the cloud for this login');
   const incoming = Object.fromEntries(rows.filter(r => r.data_key && SYNC_KEYS.includes(r.data_key) && r.value).map(r => [r.data_key, r.value]));
   const validated = FinanceCore.restoreEntries(incoming);
   let restored = 0;
@@ -9802,6 +9799,7 @@ async function supaPullNow() {
 // Durable pending marker: offline edits retry when the app next has a connection.
 let _supaSyncTimer = null;
 let _supaSyncRunning = false;
+let _supaSignInNeeded = false;
 let _supaSyncRevision = 0;
 function scheduleSupaSync() {
   const config = getSupaConfig();
@@ -9820,8 +9818,10 @@ async function flushSupaSync() {
     await supaUpsertAll();
     if (revision === _supaSyncRevision) localStorage.removeItem('mypf_sync_pending');
     _origSetItem('mypf_sync_last_success', new Date().toISOString());
+    _supaSignInNeeded = false;
   } catch (e) {
-    console.warn('[supa-sync] Pending changes retained; will retry when online.');
+    _supaSignInNeeded = e?.name === 'SignInRequired';
+    console.warn('[supa-sync] Pending changes retained; will retry.');
   } finally {
     _supaSyncRunning = false;
     updateCloudSyncStatus();
@@ -9831,7 +9831,7 @@ function updateCloudSyncStatus() {
   const el = document.getElementById('ff-cloud-status');
   if (!el) return;
   const last = localStorage.getItem('mypf_sync_last_success');
-  el.textContent = !getSupaConfig()?.enabled ? 'Cloud sync is not configured.' : localStorage.getItem('mypf_sync_pending') ? 'Changes saved on this device · waiting to sync.' : last ? 'Last automatic sync: ' + new Date(last).toLocaleString('en-IN') : 'Automatic sync is enabled.';
+  el.textContent = _supaSignInNeeded ? 'Sign in again to sync. Your changes are kept on this device.' : !getSupaConfig()?.enabled ? 'Cloud sync is not configured.' : localStorage.getItem('mypf_sync_pending') ? 'Changes saved on this device · waiting to sync.' : last ? 'Last automatic sync: ' + new Date(last).toLocaleString('en-IN') : 'Automatic sync is enabled.';
 }
 window.addEventListener('online', flushSupaSync);
 window.addEventListener('load', () => { updateCloudSyncStatus(); flushSupaSync(); });
