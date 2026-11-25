@@ -52,3 +52,23 @@ dialog.ff::backdrop {background:#061018b0;backdrop-filter:blur(3px);}dialog.ff f
 
 /* Bank transactions: stack chart above the table on phones (the inline layout is 280px + table). */
 @media (max-width: 700px) { #gmailChartAndTable { grid-template-columns: 1fr !important; } }
+
+/* 22K gold history graph */
+.gh-controls {display:flex;flex-wrap:wrap;gap:8px 16px;margin:6px 0 14px;}
+.gh-seg {display:flex;flex-wrap:wrap;gap:4px;}
+.gh-plot {position:relative;}
+.gh-plot svg {display:block;touch-action:pan-y;}
+.gh-grid {stroke:var(--border);stroke-width:1;}
+.gh-event,.gh-cross {stroke:var(--border2);stroke-width:1;}
+.gh-axis {fill:var(--text3);font-size:12px;}
+.gh-label {fill:var(--text);font-size:12px;font-weight:600;paint-order:stroke;stroke:var(--s1);stroke-width:4px;}
+.gh-line {fill:none;stroke:var(--ff-accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;}
+.gh-dot {fill:var(--ff-accent);}
+.gh-ring {stroke:var(--s1);stroke-width:2;}
+.gh-tip {position:absolute;top:0;pointer-events:none;background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;font-size:12px;white-space:nowrap;}
+.gh-tip[hidden] {display:none;}
+.gh-tip strong {font-size:15px;color:var(--text);} .gh-tip span {color:var(--text2);}
+.gh-table {max-height:340px;overflow:auto;}
+.gh-adjust {display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 8px;font-size:13px;}
+.gh-adjust input {width:120px;}
+.gh-warn {color:var(--amber);}

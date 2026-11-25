@@ -172,11 +172,11 @@
     document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&!$('ff-dialog')){closeSidebar();if(ai.classList.contains('open'))toggleAIPanel();}});
     const bar=document.createElement('div');bar.className='ff';bar.innerHTML='<div class="toolbar"><label style="max-width:210px">Budget month<input id="ff-month" type="month"></label><span class="muted">One month across Overview, Savings and history</span></div>';$('budgetSubTabs').before(bar);$('ff-month').onchange=ev=>changeMonth(ev.target.value);
     if($('budgetMonthPicker')){$('budgetMonthPicker').value=selected;$('budgetMonthPicker').onchange=ev=>changeMonth(ev.target.value);}
-    const wrap=document.querySelector('#page-gold>.wrap'),children=[...wrap.children],physical=children.find(x=>x.querySelector('#pgType'));
-    const legacy=document.createElement('div');legacy.id='ff-sgb';children.slice(1).filter(x=>x!==physical).forEach(x=>legacy.append(x));
+    const wrap=document.querySelector('#page-gold>.wrap'),children=[...wrap.children],physical=children.find(x=>x.querySelector('#pgType')),history=children.find(x=>x.id==='goldHistoryMount');
+    const legacy=document.createElement('div');legacy.id='ff-sgb';children.slice(1).filter(x=>x!==physical&&x!==history).forEach(x=>legacy.append(x));
     if(physical){physical.id='ff-physical';physical.style.marginTop='0';}
     const tabs=document.createElement('div');tabs.className='ff ff-tabs';tabs.innerHTML=['schemes','sgb','physical'].map((x,i)=>`<button type="button" data-gold-tab="${x}" aria-pressed="${!i}">${['Savings Schemes','Sovereign Gold Bonds','Physical Gold'][i]}</button>`).join('');
-    const schemes=document.createElement('div');schemes.id='ff-gold';schemes.className='ff';wrap.append(tabs,schemes,legacy);if(physical)wrap.append(physical);legacy.hidden=true;if(physical)physical.hidden=true;
+    const schemes=document.createElement('div');schemes.id='ff-gold';schemes.className='ff';wrap.append(...(history?[history]:[]),tabs,schemes,legacy);if(physical)wrap.append(physical);legacy.hidden=true;if(physical)physical.hidden=true;
     tabs.addEventListener('click',ev=>{const b=ev.target.closest('[data-gold-tab]');if(!b)return;schemes.hidden=b.dataset.goldTab!=='schemes';legacy.hidden=b.dataset.goldTab!=='sgb';if(physical)physical.hidden=b.dataset.goldTab!=='physical';tabs.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
     const rem=document.createElement('div');rem.id='ff-reminders';rem.className='ff';document.querySelector('#page-planner .wrap').prepend(rem);
     document.addEventListener('click',ev=>{const b=ev.target.closest('[data-ff]');if(b){ev.preventDefault();Promise.resolve(action(b.dataset.ff,b.dataset.id)).catch(err=>notify(err.message));}});

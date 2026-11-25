@@ -838,6 +838,7 @@ select option { background: var(--s2); }
 <link rel="stylesheet" href="/assets/finfolio.css">
 <script src="/assets/finance-core.js"></script>
 <script src="/assets/bot-transactions.js"></script>
+<script src="/assets/gold-history.js"></script>
 <script src="/assets/finance-bridge.js"></script>
 </head>
 <body>
@@ -1642,6 +1643,8 @@ select option { background: var(--s2); }
     <div><div style="font-family:'Cabinet Grotesk',sans-serif;font-weight:900;font-size:1.3rem;">Gold Portfolio</div><div style="font-size:0.8rem;color:var(--text2);">Savings Schemes · SGB · Physical Gold</div></div>
   </div>
 
+  <div id="goldHistoryMount" style="margin-bottom:18px;"></div>
+
   <div class="g2" style="margin-bottom:18px;">
     <!-- ADD SGB TRANCHE -->
     <div style="background:linear-gradient(135deg,rgba(240,192,64,0.06),var(--s1));border:1.5px solid rgba(240,192,64,0.2);border-radius:18px;padding:22px 24px;">
@@ -1736,7 +1739,7 @@ select option { background: var(--s2); }
       <span id="goldDutyMsg" style="font-size:0.68rem;color:var(--text3);"></span>
     </div>
     <div style="font-size:0.65rem;color:var(--text3);line-height:1.5;">
-      Current: 6% duty (5% BCD + 1% AIDC) + 3% IGST = ~9.18% effective. Update if government revises rates.
+      Default: 15% duty since 13 May 2026 (10% BCD + 5% AIDC), 0% GST. GST and making charges are buying costs, so they are left out of what your gold is worth. Update if government revises rates.
     </div>
   </div>
 
@@ -3769,6 +3772,7 @@ function gotoPage(id, el) {
   if (id === 'budget' && typeof recalcBudget === 'function') recalcBudget();
   if (id === 'planner') { renderRemindersPage(); }
   if (id === 'gold' && typeof renderPhysicalGold === 'function') renderPhysicalGold();
+  if (id === 'gold' && window.GoldHistory) GoldHistory.open();
 }
 
 function toggleSidebar() {
@@ -3981,7 +3985,7 @@ function initDashboard() {
   restoreCachedGoldRate();
   try {
     const cached = JSON.parse(localStorage.getItem('mypf_gold_rate') || 'null');
-    const stale  = !cached || (Date.now() - new Date(cached.ts).getTime() > 4 * 60 * 60 * 1000);
+    const stale  = !(cached?.v === 2 && Date.now() - cached.at < 4 * 60 * 60 * 1000);
     if (stale) fetchLiveGoldRate();
   } catch(e) { fetchLiveGoldRate(); }
 
@@ -4760,12 +4764,9 @@ function updateDonut() {
 
   // Physical gold value — use Gemini purity-specific rates if available, else derive from 24K
   const pgGoldPrice = curPriceGold || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || cachedGoldRate || 7500;
-  const pgRatesOverview = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
   const physGoldV = physicalGold.reduce((s, g) => {
     if (g.sourceSchemeId) return s + ffRedeemedValue(g);
-    const key = 'k' + g.purity;
-    const rate = (pgRatesOverview && pgRatesOverview[key]) ? pgRatesOverview[key] : Math.round(pgGoldPrice * g.purity / 24);
-    return s + Math.round(g.grams * rate);
+    return s + Math.round(g.grams * jewelleryRate(g.purity, pgGoldPrice));
   }, 0);
   const goldV = sgbV + physGoldV + ffGoldValue(); // Schemes use deposited cost until redemption.
 
@@ -5132,11 +5133,23 @@ function onSGBSeriesChange() {
 // ── GEMINI GOLD RATE HELPER ──
 
 // ── GOLD IMPORT DUTY + GST ──
+function goldDutyPct() {
+  const saved = parseFloat(localStorage.getItem('mypf_gold_duty_pct'));
+  return saved >= 0 && saved <= 30 ? saved : GoldHistory.dutyOn(FinanceCore.day());
+}
+function goldGstPct() {
+  const saved = parseFloat(localStorage.getItem('mypf_gold_gst_pct'));
+  return saved >= 0 && saved <= 30 ? saved : 0;
+}
+/** Metal value of jewellery: Chennai base rate (before GST and making) for a purity. SGBs use the bullion price itself. */
+function jewelleryRate(karat, bullion24) {
+  return Math.round(bullion24 * (1 + GoldHistory.adj() / 100) * karat / 24);
+}
 function initGoldDutyPct() {
   const dutyInp = document.getElementById('goldDutyPctInput');
   const gstInp = document.getElementById('goldGstPctInput');
-  if (dutyInp) dutyInp.value = parseFloat(localStorage.getItem('mypf_gold_duty_pct')) || 6;
-  if (gstInp) gstInp.value = parseFloat(localStorage.getItem('mypf_gold_gst_pct')) || 3;
+  if (dutyInp) dutyInp.value = goldDutyPct();
+  if (gstInp) gstInp.value = goldGstPct();
 }
 function saveGoldDutyPct() {
   const dutyInp = document.getElementById('goldDutyPctInput');
@@ -5198,8 +5211,8 @@ async function fetchSpotGoldPrice() {
 
   if (!usdPerOz) throw new Error('Could not fetch gold spot price');
 
-  const dutyPct = parseFloat(localStorage.getItem('mypf_gold_duty_pct')) || 6;
-  const gstPct = parseFloat(localStorage.getItem('mypf_gold_gst_pct')) || 3;
+  const dutyPct = goldDutyPct();
+  const gstPct = goldGstPct();
   const k24 = Math.round((usdPerOz * usdInr / 31.1035) * (1 + dutyPct / 100) * (1 + gstPct / 100));
   if (k24 < 3000 || k24 > 50000) throw new Error('Rate out of sanity range: ₹' + k24);
   return { usdPerOz, usdInr, dutyPct, gstPct, k24, viaAI: goldViaAI };
@@ -5222,7 +5235,7 @@ async function fetchSGBRate() {
     console.warn('Spot gold rate failed:', e.message);
     if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch SGB Rate'; }
     if (src) {
-      src.innerHTML = `⚠ ${e.message} — try again or check <a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
+      src.innerHTML = `⚠ ${escHTML(e.message)} — try again or check <a href="https://ibjarates.com" target="_blank" style="color:var(--blue);">ibjarates.com</a>`;
       src.style.color = 'var(--amber)';
     }
   }
@@ -5237,38 +5250,14 @@ async function fetchPhysicalGoldRates() {
 
   try {
     const spot = await fetchSpotGoldPrice();
-    // Calculate purity rates from 24K base price
-    const rates = {
-      k24: spot.k24,
-      k22: Math.round(spot.k24 * 22 / 24),
-      k18: Math.round(spot.k24 * 18 / 24),
-      k14: Math.round(spot.k24 * 14 / 24),
-    };
-
-    const ts = new Date().toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-    localStorage.setItem('mypf_physical_gold_rates', JSON.stringify({ ...rates, ts }));
-    localStorage.setItem('mypf_gold_price_per_gram', rates.k24);
-
     if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch Gold Rates'; }
-    if (src) { src.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${rates.k24.toLocaleString('en-IN')}/g</span>`; }
-
-    // Update purity rates display
-    const container = document.getElementById('pgPurityRates');
-    if (container) {
-      container.style.display = 'flex';
-      container.innerHTML = `<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;width:100%;">
-        <span style="font-size:0.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;">Today's Rates</span>
-        ${Object.entries(rates).filter(([k]) => k.startsWith('k')).map(([k,v]) => `<span style="font-family:'JetBrains Mono',monospace;font-size:0.8rem;"><strong style="color:var(--yellow);">${k.replace('k','') + 'K'}</strong> <span style="color:var(--text1);">₹${v.toLocaleString('en-IN')}/g</span></span>`).join('')}
-        <span style="font-size:0.58rem;color:var(--text3);margin-left:auto;">Spot · $${spot.usdPerOz.toFixed(0)}/oz · ${spot.dutyPct}%+${spot.gstPct}% GST · ${ts}${spot.viaAI ? ' · 🤖 AI' : ''}</span>
-      </div>`;
-    }
-    renderPhysicalGold();
-    updateDonut();
+    const aiTag = spot.viaAI ? ' · 🤖 AI estimate' : '';
+    applyGoldRate(spot.k24, `Spot · $${spot.usdPerOz.toFixed(0)}/oz · ₹${spot.usdInr.toFixed(1)}/$ · ${spot.dutyPct}% duty + ${spot.gstPct}% GST${aiTag}`);
   } catch(e) {
     console.warn('Physical gold rates failed:', e.message);
     if (btn) { btn.disabled = false; btn.textContent = '⟳ Fetch Gold Rates'; }
     if (src) {
-      src.innerHTML = `⚠ <span style="font-size:0.68rem;">${e.message}</span>`;
+      src.innerHTML = `⚠ <span style="font-size:0.68rem;">${escHTML(e.message)}</span>`;
       src.style.color = 'var(--amber)';
     }
   }
@@ -5291,7 +5280,7 @@ function applyGoldRate(pricePerGram, sourceLabel) {
   }
   const updEl = document.getElementById('goldLastUpdated');
   if (updEl) updEl.textContent = ts;
-  localStorage.setItem('mypf_gold_rate', JSON.stringify({ pricePerGram, ts, sourceLabel }));
+  localStorage.setItem('mypf_gold_rate', JSON.stringify({ v: 2, at: Date.now(), pricePerGram, ts, sourceLabel }));
   localStorage.setItem('mypf_gold_price_per_gram', pricePerGram);
   renderSGBHoldings();
   renderPhysicalGold();
@@ -5321,12 +5310,8 @@ function restoreCachedGoldRate() {
 }
 
 function updatePurityRates(price24K, ts) {
-  // If Gemini-fetched purity rates exist, use those; else derive from 24K
-  const geminiRates = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
-  const rates = geminiRates
-    ? { '24K': geminiRates.k24 || price24K, '22K': geminiRates.k22 || Math.round(price24K * 22/24), '18K': geminiRates.k18 || Math.round(price24K * 18/24), '14K': geminiRates.k14 || Math.round(price24K * 14/24) }
-    : { '24K': price24K, '22K': Math.round(price24K * 22/24), '18K': Math.round(price24K * 18/24), '14K': Math.round(price24K * 14/24) };
-  const source = geminiRates ? 'Gemini' : 'Derived from SGB';
+  const rates = Object.fromEntries([24, 22, 18, 14].map(k => [k + 'K', jewelleryRate(k, price24K)]));
+  const source = 'Est. Chennai base rate, before GST and making';
   const container = document.getElementById('pgPurityRates');
   if (container) {
     container.style.display = 'flex';
@@ -5337,7 +5322,7 @@ function updatePurityRates(price24K, ts) {
     </div>`;
   }
   const pgSrc = document.getElementById('pgRateSource');
-  if (pgSrc && !geminiRates) pgSrc.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">24K: ₹${price24K.toLocaleString('en-IN')}/g</span>`;
+  if (pgSrc) pgSrc.innerHTML = `<span style="color:var(--green);font-size:0.68rem;">22K: ₹${rates['22K'].toLocaleString('en-IN')}/g</span>`;
 }
 
 function addSGBHolding() {
@@ -5467,17 +5452,9 @@ function renderPhysicalGold() {
   const tbody = document.getElementById('pgTbody');
   const summary = document.getElementById('pgSummary');
   const consolidated = document.getElementById('goldConsolidatedContent');
-  // Get purity-specific rates from Gemini (if available) or derive from 24K rate
-  const pgRatesRaw = (() => { try { return JSON.parse(localStorage.getItem('mypf_physical_gold_rates')); } catch(e) { return null; } })();
   const goldPricePerGram = parseFloat(document.getElementById('sgbCurrentPrice')?.value) || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || (() => { try { return JSON.parse(localStorage.getItem('mypf_gold_rate'))?.pricePerGram || 7500; } catch(e) { return 7500; } })();
   // Returns per-gram rate for a given purity karat
-  function rateForKarat(k) {
-    if (pgRatesRaw) {
-      const key = 'k' + k;
-      if (pgRatesRaw[key]) return pgRatesRaw[key];
-    }
-    return Math.round(goldPricePerGram * k / 24);
-  }
+  function rateForKarat(k) { return jewelleryRate(k, goldPricePerGram); }
 
   if (!physicalGold.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="color:var(--text3);text-align:center;padding:20px;">No physical gold items tracked yet</td></tr>';
@@ -5511,7 +5488,7 @@ function renderPhysicalGold() {
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Total Weight</span><strong style="font-family:'JetBrains Mono',monospace;">${totalGrams.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Pure Gold (24K equiv)</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--yellow);">${totalPure.toFixed(2)}g</strong></div>
       <div style="display:flex;justify-content:space-between;"><span style="color:var(--text2);">Current Value</span><strong style="font-family:'JetBrains Mono',monospace;color:var(--green);">₹${totalValue.toLocaleString('en-IN')}</strong></div>
-      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">${pgRatesRaw ? 'Existing purity rates' : '@ ₹' + goldPricePerGram.toLocaleString('en-IN') + '/g (24K)'} · Redeemed schemes use fresh Tanishq 22K or deposited cost.</div>`;
+      <div style="font-size:0.62rem;color:var(--text3);margin-top:4px;">@ ₹${jewelleryRate(22, goldPricePerGram).toLocaleString('en-IN')}/g (22K, before GST and making) · Redeemed schemes use fresh Tanishq 22K or deposited cost.</div>`;
   }
 
   // Consolidated: SGB + Physical
@@ -9413,7 +9390,7 @@ const SYNC_KEYS = ['mypf_v3','mypf_fds','mypf_rds','mypf_sgb_v2','mypf_mflogs','
                    'mypf_broker_mf','mypf_broker_stocks','mypf_broker_sgb','mypf_broker_etf',
                    'mypf_broker_bonds','mypf_broker_mf_schemes',
                    'mypf_sipday','mypf_sip_plans','mypf_manual_funds',
-                   'mypf_gmail_transactions','mypf_txn_overrides','mypf_gmail_bank_configs','mypf_retirement',
+                   'mypf_gmail_transactions','mypf_txn_overrides','mypf_gold_local_adj','mypf_gmail_bank_configs','mypf_retirement',
                    'mypf_realty','mypf_insurance','mypf_loans','mypf_custom_reminders',
                    'mypf_gold_schemes_v1','mypf_savings_v1','mypf_migration_backup_v1'];
 // Preserve the native setter for cloud pulls, which must not trigger a push loop.
@@ -9476,13 +9453,12 @@ function exportProfileForAI() {
   const goldPPG = goldRate?.pricePerGram || parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || 0;
   const sgbCurrentVal = sgbs.reduce((s,h) => s + (h.grams||0), 0) * goldPPG;
   const pgInvested = physicalGold.reduce((s,h) => s + (h.investedAmount || (h.grams||0)*(h.buyPricePerGram||0)), 0);
-  const pgCurrentVal = physicalGold.reduce((s,h) => s + (h.grams||0), 0) * goldPPG;
+  const pgCurrentVal = physicalGold.reduce((s,h) => s + (h.grams||0) * jewelleryRate(h.purity || 22, goldPPG), 0);
   const poTotal = poSchemes.reduce((s,p) => s + (p.invested||0), 0);
   const loanOutstanding = loans.reduce((s,l) => s + (l.outstanding||0), 0);
   const insuranceCover = insurance.reduce((s,p) => s + (p.cover||0), 0);
 
   // Market context for better local LLM analysis
-  const physGoldRates = jp('mypf_physical_gold_rates');
   const rbiRepoRate = 6.5; // last known RBI repo rate
   const fdBenchmarkRate = 7.1; // avg top-bank FD rate
 
@@ -9520,9 +9496,8 @@ function exportProfileForAI() {
     marketContext: {
       nifty50: niftyLast ? { price: niftyLast.price, change: niftyLast.change, changePct: niftyLast.pct, fetchedAt: niftyFetchedAt } : null,
       goldPricePerGram: goldPPG,
-      gold24k: physGoldRates?.k24 || null,
-      gold22k: physGoldRates?.k22 || null,
-      silverPerKg: physGoldRates?.silverKg || null,
+      gold24k: goldPPG ? jewelleryRate(24, goldPPG) : null,
+      gold22k: goldPPG ? jewelleryRate(22, goldPPG) : null,
       goldFetchedAt: goldFetchedAt,
       rbiRepoRate: rbiRepoRate,
       fdBenchmarkRate: fdBenchmarkRate,
@@ -10286,8 +10261,7 @@ const AI_MODULE_CONFIG = {
       const cachedGoldRate = (() => { try { return JSON.parse(localStorage.getItem('mypf_gold_rate'))?.pricePerGram || 0; } catch(e) { return 0; } })();
       const goldPricePerGram = parseFloat(localStorage.getItem('mypf_gold_price_per_gram')) || cachedGoldRate || 0;
       const pgoldTotal = pgold.reduce((s, g) => {
-        const pureGrams = (g.grams || 0) * ((g.purity || 24) / 24);
-        return s + pureGrams * goldPricePerGram;
+        return s + (g.grams || 0) * jewelleryRate(g.purity || 24, goldPricePerGram);
       }, 0);
 
       let mfBlock = '';
